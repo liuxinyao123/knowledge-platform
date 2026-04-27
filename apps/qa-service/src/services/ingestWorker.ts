@@ -80,7 +80,13 @@ interface ClaimedRow {
   error: string | null
 }
 
-/** 原子认领一行 queued → in_progress；无可认领则返回 undefined */
+/** 原子认领一行 queued → in_progress；无可认领则返回 undefined
+ *
+ * 修复（2026-04-26 · ADR-34 候选）：之前漏掉 bytes_ref 检查导致 race —— enqueueIngestJob
+ *   先 INSERT row(status='queued', bytes_ref=NULL) 再 write tmp 再 UPDATE bytes_ref，
+ *   worker 在 UPDATE 之前就 claim 走会触发 "bytes_ref missing" 失败。
+ *   修法：claim 时要求 bytes_ref IS NOT NULL；abstract 类型例外（不需要 bytes，只需 input_payload）。
+ */
 async function claimOne(): Promise<ClaimedRow | undefined> {
   const pool = getPgPool()
   const { rows } = await pool.query<ClaimedRow>(
@@ -92,6 +98,7 @@ async function claimOne(): Promise<ClaimedRow | undefined> {
       WHERE id = (
         SELECT id FROM ingest_job
           WHERE status = 'queued'
+            AND (kind = 'abstract' OR bytes_ref IS NOT NULL)
           ORDER BY created_at
           FOR UPDATE SKIP LOCKED
           LIMIT 1

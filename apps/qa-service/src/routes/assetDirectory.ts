@@ -398,12 +398,16 @@ assetDirectoryRouter.get('/pg-assets/:id/detail', async (req: Request, res: Resp
     }
     const a = assetRows[0]
 
+    // 修复（2026-04-26 · ADR-34 v3）：之前 headings SQL 只查 chunk_level=1，
+    //   xlsx 靠 SheetJS 兜底产生的 22 个 paragraph chunk（chunk_level=3）全部没显示。
+    //   改成两级一起取，带 kind + chunk_level 字段；前端按 kind 显示 badge 区分类型。
+    //   samples 字段保留供 RAGFlow 摘要 tab 用（限 10 条预览）。
     const { rows: headings } = await pool.query(
-      `SELECT page, content AS text, heading_path
+      `SELECT page, content AS text, heading_path, kind, chunk_level
        FROM metadata_field
-       WHERE asset_id = $1 AND chunk_level = 1
-       ORDER BY page, chunk_index
-       LIMIT 200`,
+       WHERE asset_id = $1 AND chunk_level IN (1, 3)
+       ORDER BY COALESCE(page, 0), chunk_index
+       LIMIT 500`,
       [id],
     )
     const { rows: samples } = await pool.query(

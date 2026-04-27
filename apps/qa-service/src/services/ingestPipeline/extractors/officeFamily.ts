@@ -37,6 +37,49 @@ async function loadParseOffice(): Promise<(
   return fn
 }
 
+/**
+ * SheetJS 兜底解析 xlsx（ADR-34 v3 · 2026-04-26）
+ *
+ * 背景：实测某些 xlsx 文件 officeparser 给出 AST.content 有 sheet 但 sheet.children 为
+ *   空数组（比如 GM_尾门工程最佳实践_评测集.xlsx，openpyxl 能读出 71×9 数据）。
+ *   这是 officeparser 解析 worksheet XML 的已知不稳。
+ *
+ * SheetJS（xlsx 包，从官方 CDN 安装）几乎万能，对中文 sheet 名 / 合并单元格 / 公式都稳。
+ * 失败时返回 null，让上层回到 toText() 兜底链。
+ */
+async function parseXlsxWithSheetJS(
+  buffer: Buffer,
+): Promise<Array<{ sheetName: string; rows: string[][] }> | null> {
+  try {
+    // @ts-ignore xlsx 通过 SheetJS CDN 安装（package.json 里指向 cdn.sheetjs.com tarball），
+    //    但 tsc 在装包前看不到类型；运行时由 pnpm 装上后正常加载
+    const mod: any = await import('xlsx')
+    const XLSX = mod.default ?? mod
+    const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true, dense: false })
+    const out: Array<{ sheetName: string; rows: string[][] }> = []
+    for (const name of wb.SheetNames || []) {
+      const sheet = wb.Sheets[name]
+      if (!sheet) continue
+      // sheet_to_json with header:1 → 2D 数组，每行 cells；空 cell 用 '' 占位
+      const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: '',
+        raw: false,         // 走显示格式（日期/数字会被格式化为字符串）
+        blankrows: false,
+      })
+      const cleanRows: string[][] = rows.map((row) =>
+        row.map((cell) => (cell == null ? '' : String(cell).trim())),
+      )
+      out.push({ sheetName: name, rows: cleanRows })
+    }
+    return out
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[xlsx] SheetJS fallback failed:', (err as Error).message.slice(0, 200))
+    return null
+  }
+}
+
 function astToText(ast: unknown): string {
   const a: any = ast
   if (!a) return ''
@@ -154,25 +197,126 @@ export const xlsxExtractor: Extractor = {
           flush()  // 收尾
         }
         fullText = chunks.map((c) => c.text).join('\n')
-      } else {
-        // 路径 B：AST 为空 —— 降级到 toText() 聚合 split
-        warnings.push('xlsx AST empty, falling back to toText()')
-        const text = astToText(ast).trim()
-        fullText = text
-        // 按目标字数聚合（而不是按单换行 split），保证单块够长
-        let buffer: string[] = []
-        let bufLen = 0
-        for (const line of text.split('\n')) {
-          const t = line.trim()
-          if (!t) continue
-          if (bufLen > 0 && bufLen + t.length + 1 > XLSX_CHUNK_TARGET_CHARS) {
-            chunks.push({ kind: 'paragraph', text: buffer.join('\n') })
-            buffer = []; bufLen = 0
+
+        // 修复（2026-04-26 · ADR-34 v3）：如果 AST 有 sheet 但行全为空
+        //   （officeparser 对中文 sheet 名 / 合并单元格的 xlsx 已知 AST.children 解析不稳；
+        //   实测 GM_尾门工程最佳实践_评测集.xlsx 71×9 完整数据，officeparser AST 0 行）
+        //
+        // 兜底链：SheetJS → toText()。SheetJS 几乎万能，toText() 是最后保底。
+        const paragraphCount = chunks.filter((c) => c.kind === 'paragraph').length
+        if (paragraphCount === 0) {
+          warnings.push('xlsx officeparser AST yielded 0 rows; falling back to SheetJS')
+          const sjs = await parseXlsxWithSheetJS(buffer)
+          if (sjs && sjs.some((s) => s.rows.length > 0)) {
+            // SheetJS 成功 —— 重置 chunks（清掉 officeparser 的 heading 占位），重新出全套
+            chunks.length = 0
+            sheetCount = 0
+            for (const sheet of sjs) {
+              if (sheet.rows.length === 0) continue
+              sheetCount++
+              chunks.push({
+                kind: 'heading',
+                text: `Sheet: ${sheet.sheetName}`,
+                headingLevel: 1,
+                headingPath: sheet.sheetName,
+              })
+              let buffer2: string[] = []
+              let bufLen2 = 0
+              const flush2 = (): void => {
+                if (buffer2.length === 0) return
+                const text = `Sheet: ${sheet.sheetName}\n${buffer2.join('\n')}`
+                chunks.push({ kind: 'paragraph', text, headingPath: sheet.sheetName })
+                buffer2 = []
+                bufLen2 = 0
+              }
+              for (const row of sheet.rows) {
+                // 把行 cells 拼成 `cell1 | cell2 | cell3`，空 cell 跳过
+                const line = row.filter((c) => c.length > 0).join(' | ')
+                if (line.length === 0) continue
+                if (bufLen2 > 0 && bufLen2 + line.length + 1 > XLSX_CHUNK_TARGET_CHARS) {
+                  flush2()
+                }
+                buffer2.push(line)
+                bufLen2 += line.length + 1
+              }
+              flush2()
+            }
+            fullText = chunks.map((c) => c.text).join('\n')
+            warnings.push(`SheetJS recovered ${sheetCount} sheets, ${chunks.filter(c => c.kind === 'paragraph').length} paragraphs`)
+          } else {
+            // SheetJS 也失败 —— 最后兜到 toText()
+            warnings.push('SheetJS fallback also empty; falling back to toText()')
+            const fallback = astToText(ast).trim()
+            if (fallback.length > 0) {
+              let buffer3: string[] = []
+              let bufLen3 = 0
+              for (const line of fallback.split('\n')) {
+                const t = line.trim()
+                if (!t) continue
+                if (bufLen3 > 0 && bufLen3 + t.length + 1 > XLSX_CHUNK_TARGET_CHARS) {
+                  chunks.push({ kind: 'paragraph', text: buffer3.join('\n') })
+                  buffer3 = []; bufLen3 = 0
+                }
+                buffer3.push(t)
+                bufLen3 += t.length + 1
+              }
+              if (buffer3.length > 0) chunks.push({ kind: 'paragraph', text: buffer3.join('\n') })
+              fullText = fullText + '\n' + fallback
+            }
           }
-          buffer.push(t)
-          bufLen += t.length + 1
         }
-        if (buffer.length > 0) chunks.push({ kind: 'paragraph', text: buffer.join('\n') })
+      } else {
+        // 路径 B：AST 整个 sheet 列表都为空 —— SheetJS 兜底
+        warnings.push('xlsx AST empty, falling back to SheetJS')
+        const sjs = await parseXlsxWithSheetJS(buffer)
+        if (sjs && sjs.some((s) => s.rows.length > 0)) {
+          for (const sheet of sjs) {
+            if (sheet.rows.length === 0) continue
+            sheetCount++
+            chunks.push({
+              kind: 'heading',
+              text: `Sheet: ${sheet.sheetName}`,
+              headingLevel: 1,
+              headingPath: sheet.sheetName,
+            })
+            let buffer: string[] = []
+            let bufLen = 0
+            const flush = (): void => {
+              if (buffer.length === 0) return
+              const text = `Sheet: ${sheet.sheetName}\n${buffer.join('\n')}`
+              chunks.push({ kind: 'paragraph', text, headingPath: sheet.sheetName })
+              buffer = []
+              bufLen = 0
+            }
+            for (const row of sheet.rows) {
+              const line = row.filter((c) => c.length > 0).join(' | ')
+              if (line.length === 0) continue
+              if (bufLen > 0 && bufLen + line.length + 1 > XLSX_CHUNK_TARGET_CHARS) flush()
+              buffer.push(line)
+              bufLen += line.length + 1
+            }
+            flush()
+          }
+          fullText = chunks.map((c) => c.text).join('\n')
+        } else {
+          // SheetJS 也空 → 最后保底 toText()
+          warnings.push('SheetJS also empty, falling back to toText()')
+          const text = astToText(ast).trim()
+          fullText = text
+          let buffer: string[] = []
+          let bufLen = 0
+          for (const line of text.split('\n')) {
+            const t = line.trim()
+            if (!t) continue
+            if (bufLen > 0 && bufLen + t.length + 1 > XLSX_CHUNK_TARGET_CHARS) {
+              chunks.push({ kind: 'paragraph', text: buffer.join('\n') })
+              buffer = []; bufLen = 0
+            }
+            buffer.push(t)
+            bufLen += t.length + 1
+          }
+          if (buffer.length > 0) chunks.push({ kind: 'paragraph', text: buffer.join('\n') })
+        }
       }
     } catch (e) {
       warnings.push(`officeparser xlsx failed: ${e instanceof Error ? e.message : 'unknown'}`)

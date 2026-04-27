@@ -109,24 +109,47 @@ export async function enqueueIngestJob(
     throw new IngestEnqueueError(`无法暂存入库文件: ${msg}`, 'TMP_WRITE_FAILED')
   }
 
-  // 3) UPDATE ingest_job.bytes_ref + input_payload（含 opts 和 principal 最小信息）
-  //    createJob 已 INSERT 过一行；这里补上 bytes_ref 与异步所需的重建信息。
-  const extendedPayload = {
+  // 3) UPSERT ingest_job 含 bytes_ref + input_payload
+  //
+  // 修复（2026-04-26 · ADR-34 v2）：之前是 UPDATE WHERE id=$1，但 createJob 内部
+  //   dbInsertJob 是 fire-and-forget，UPDATE 可能在 INSERT 之前到达 DB → rowCount=0
+  //   静默失败 → row 永远 bytes_ref=NULL stuck。
+  //
+  // 改成 INSERT ... ON CONFLICT (id) DO UPDATE：
+  //   - 我的 INSERT 先到 → 建立完整 row（含 bytes_ref）；createJob 那边晚到的 INSERT 走自己的 ON CONFLICT DO NOTHING
+  //   - createJob INSERT 先到 → 我的 INSERT 走 ON CONFLICT，UPDATE bytes_ref + input_payload
+  // 不论顺序，row 必含 bytes_ref。
+  const initialPayload = {
     space: opts.space ?? '',
     opts: opts.persistOpts ? input.opts ?? null : null,
     principalEmail: input.principal?.email ?? null,
+    tags: [],
+    strategy: 'heading',
+    vectorize: true,
   }
   try {
     await getPgPool().query(
-      `UPDATE ingest_job
-         SET bytes_ref = $2, input_payload = input_payload || $3::jsonb
-       WHERE id = $1`,
-      [job.id, bytesRef, JSON.stringify(extendedPayload)],
+      `INSERT INTO ingest_job
+         (id, kind, source_id, name, input_payload, status, phase, progress, log, preview, created_by, bytes_ref)
+       VALUES ($1, $2, $3, $4, $5::jsonb, 'queued', 'pending', 0, '[]'::jsonb, '{}'::jsonb, $6, $7)
+       ON CONFLICT (id) DO UPDATE SET
+         bytes_ref     = EXCLUDED.bytes_ref,
+         input_payload = ingest_job.input_payload || EXCLUDED.input_payload,
+         updated_at    = NOW()`,
+      [
+        job.id,
+        opts.kind ?? 'upload',
+        input.sourceId,
+        input.name,
+        JSON.stringify(initialPayload),
+        opts.createdBy ?? 'system',
+        bytesRef,
+      ],
     )
   } catch (err) {
-    // DB UPDATE 失败：tmp 已写但 DB 没记录 bytes_ref —— worker 接不到，标失败
+    // DB 真挂了：清 tmp + 标失败
     await fs.unlink(bytesRef).catch(() => {})
-    failJob(job.id, `ingest_job update failed: ${(err as Error).message}`)
+    failJob(job.id, `ingest_job upsert failed: ${(err as Error).message}`)
     throw new IngestEnqueueError(
       `登记 ingest_job 失败: ${(err as Error).message}`,
       'DB_UPDATE_FAILED',

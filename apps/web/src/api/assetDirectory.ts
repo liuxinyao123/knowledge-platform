@@ -115,7 +115,18 @@ export interface PgAssetDetail {
     id: number; name: string | null; type: string | null; connector: string | null
   }
   chunks: {
-    headings: Array<{ page: number; text: string; heading_path: string | null }>
+    /**
+     * 全部 L1 + L3 chunks（ADR-34 v3 · 2026-04-26 起）
+     * 字段名沿用 "headings" 是为了向后兼容老 API consumer；实际是混合列表。
+     * 用 chunk_level 字段区分（1=heading 标题，3=paragraph 段落）。
+     */
+    headings: Array<{
+      page: number
+      text: string
+      heading_path: string | null
+      kind?: string | null
+      chunk_level?: 1 | 3
+    }>
     samples: Array<{ page: number; text: string; kind: string | null }>
     total: number
   }

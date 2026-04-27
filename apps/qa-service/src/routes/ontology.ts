@@ -82,22 +82,26 @@ function parseAgString(v: unknown): string {
   return s.replace(/::\w+$/, '')
 }
 
-/** 给 asset_id 拿一跳邻居（仅 Asset 节点；保留 HAS_TAG/CITED/CO_CITED/CONTAINS 反向也算） */
+/** 给 asset_id 拿一跳邻居（仅 Asset 节点；遍历 CITED + CO_CITED 边）
+ *
+ * 修复（2026-04-26 · ADR-34）：AGE 1.6 Cypher 不支持 `-[r:CITED|CO_CITED]-` 的关系类型 alternation
+ *   语法（`syntax error at or near "|"`）。改成两次 query 合并结果。
+ */
 async function getOneHopAssetNeighbors(
   assetId: string,
 ): Promise<Array<{ neighbor: string; kind: string }>> {
-  // 先取 Asset->Asset 的 CITED / CO_CITED 边（双向）
-  const rows = await runCypher(
-    `MATCH (a:Asset {id: $aid})-[r:CITED|CO_CITED]-(b:Asset)
-     RETURN b.id AS id, type(r) AS kind`,
-    { aid: assetId },
-    'id agtype, kind agtype',
-  )
   const out: Array<{ neighbor: string; kind: string }> = []
-  for (const r of rows) {
-    const id = parseAgString(r.id)
-    const kind = parseAgString(r.kind)
-    if (id && id !== assetId) out.push({ neighbor: id, kind })
+  for (const kind of ['CITED', 'CO_CITED'] as const) {
+    const rows = await runCypher(
+      `MATCH (a:Asset {id: $aid})-[r:${kind}]-(b:Asset)
+       RETURN b.id AS id`,
+      { aid: assetId },
+      'id agtype',
+    )
+    for (const r of rows) {
+      const id = parseAgString(r.id)
+      if (id && id !== assetId) out.push({ neighbor: id, kind })
+    }
   }
   return out
 }
