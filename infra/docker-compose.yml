@@ -99,6 +99,16 @@ services:
       L0_FILTER_ENABLED:          ${L0_FILTER_ENABLED:-false}
       L0_FILTER_TOP_ASSETS:       ${L0_FILTER_TOP_ASSETS:-50}
       L0_LAZY_BACKFILL_ENABLED:   ${L0_LAZY_BACKFILL_ENABLED:-false}
+      # ADR-35（2026-04-26）：QA 联网检索 + 多模态。前端 toggle 触发，后端 env 决定 provider
+      # provider=none 时 toggle 仍可点（前端可见），后端跳过实际调用并 emit warn
+      WEB_SEARCH_PROVIDER:        ${WEB_SEARCH_PROVIDER:-none}
+      TAVILY_API_KEY:             ${TAVILY_API_KEY:-}
+      BING_API_KEY:               ${BING_API_KEY:-}
+      BING_MARKET:                ${BING_MARKET:-zh-CN}
+      WEB_SEARCH_TIMEOUT_MS:      ${WEB_SEARCH_TIMEOUT_MS:-5000}
+      WEB_SEARCH_DEFAULT_TOP_K:   ${WEB_SEARCH_DEFAULT_TOP_K:-5}
+      # 多模态走 Qwen2.5-VL-72B（已有 INGEST_VLM_MODEL 复用）；图片上限 6MB
+      INGEST_VLM_MODEL:           ${INGEST_VLM_MODEL:-Qwen/Qwen2.5-VL-72B-Instruct}
     depends_on:
       bookstack_db:
         condition: service_healthy

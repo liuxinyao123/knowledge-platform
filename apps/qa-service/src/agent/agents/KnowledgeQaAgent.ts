@@ -30,6 +30,8 @@ export class KnowledgeQaAgent implements Agent {
       await runRagPipeline(ctx.question, ctx.history, ctx.emit, ctx.signal, {
         spaceId: ctx.spaceId,
         principal: ctx.principal,
+        webSearch: ctx.webSearch,
+        image: ctx.image,
       })
       return
     }
@@ -40,6 +42,8 @@ export class KnowledgeQaAgent implements Agent {
       await runRagPipeline(ctx.question, ctx.history, ctx.emit, ctx.signal, {
         spaceId: ctx.spaceId,
         principal: ctx.principal,
+        webSearch: ctx.webSearch,
+        image: ctx.image,
       })
       return
     }
@@ -79,6 +83,8 @@ export class KnowledgeQaAgent implements Agent {
       await runRagPipeline(ctx.question, augmentedHistory, wrappedEmit, ctx.signal, {
         spaceId: ctx.spaceId,
         principal: ctx.principal,
+        webSearch: ctx.webSearch,
+        image: ctx.image,
       })
     } finally {
       // ── 4. fire-and-forget save（即便 RAG 抛了也尽量保留 partial answer）

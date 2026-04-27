@@ -413,26 +413,67 @@ export async function generateAnswer(
   emit: EmitFn,
   signal: AbortSignal,
   systemPromptOverride?: string,
+  extras?: {
+    webHits?: Array<{ title: string; url: string; snippet: string }>
+    image?: { base64: string; mimeType?: string }
+  },
 ): Promise<void> {
   emit({ type: 'rag_step', icon: '💡', label: '正在生成回答...' })
-  const context = docs
+  const docContext = docs
     .map((d, i) => `[${i + 1}] ${d.asset_name}\n${d.chunk_content}`)
     .join('\n\n---\n\n')
 
+  // ADR-35：把联网检索结果也拼进 context（编号 [w1] [w2]，与文档 [N] 区分）
+  const webContext = extras?.webHits?.length
+    ? '\n\n【联网检索结果】\n' + extras.webHits.map((h, i) =>
+        `[w${i + 1}] ${h.title}\nURL: ${h.url}\n${h.snippet}`,
+      ).join('\n---\n')
+    : ''
+  const context = docContext + webContext
+
   const trimmedHistory = history.slice(-HISTORY_MAX_MESSAGES)
+
+  // ADR-35：图片附件 → 用户消息走 ContentBlock[] 格式（OpenAI 兼容协议）
+  const userContent = extras?.image
+    ? [
+        { type: 'text' as const, text: question },
+        { type: 'image_url' as const, image_url: {
+            url: `data:${extras.image.mimeType ?? 'image/png'};base64,${extras.image.base64}`,
+            detail: 'auto' as const,
+        }},
+      ]
+    : question
   const messages: ChatMessage[] = [
     ...trimmedHistory.map((h) => ({ role: h.role, content: h.content })),
-    { role: 'user' as const, content: question },
+    { role: 'user' as const, content: userContent },
   ]
 
-  const defaultSystem = `你是知识库助手。严格按以下规则回答：
+  // ADR-35：根据是否有 web hits 切换 prompt 严格度
+  //   无 web hits（默认 RAG）：严格只用文档 [N]，找不到说"知识库中没有"
+  //   有 web hits（用户开了 🌐）：文档 [N] 优先，网络 [wN] 作补充，标明来源
+  const hasWeb = (extras?.webHits?.length ?? 0) > 0
+  const headerAndRules = hasWeb
+    ? `你是知识库 + 联网检索助手。可用两类来源：
+
+  · [N] 知识库内部文档（权威，优先采用）
+  · [wN] 联网检索结果（公开网络信息，知识库无答案时使用）
+
+【硬性规则】
+1. **优先用 [N] 文档作答**，文档无相关内容时才用 [wN] 网络结果
+2. **每个事实陈述都要加引用**：内部用 [N]，网络用 [wN]，混合用 [1][w2]
+3. **明确标注来源类型**：用网络信息时在答案里说明"根据公开网络信息..."
+4. **数值/规格 verbatim**：原文「7 degrees」就写「7°」，禁止近似
+5. **两类都没相关**才说「知识库 + 公开网络都没找到该信息」`
+    : `你是知识库助手。严格按以下规则回答：
 
 【硬性规则】
 1. **只使用提供的文档作答**，不引入外部知识。找不到信息就明确说「知识库中没有相关内容」，不要猜
 2. **禁止使用模糊措辞**：不要「可能」「似乎」「大约」「应该是」「左右」「估计」。要么给确定答案，要么明说找不到
 3. **数值/规格题必须 verbatim 提取原文**：如果原文写「7 degrees」，答案就用「7 degrees」或「7°」，不要近似为「约 7 度」
 4. **每个事实陈述后加 [N] 引用**（N 是文档编号）。同一句多个来源用 [1][2]
-5. **复合答案不要漏组件**：如果原文是「X = A + B」，答案要包含 A 和 B 两部分，不能只说 X
+5. **复合答案不要漏组件**：如果原文是「X = A + B」，答案要包含 A 和 B 两部分，不能只说 X`
+
+  const defaultSystem = `${headerAndRules}
 
 【输出格式】
 - 简洁直接，不复述问题
@@ -467,8 +508,13 @@ Q: COF 代表什么？
 文档内容：
 ${context}`
 
+  // 有图时优先 VLM；没图沿用默认 LLM
+  const visionModel = process.env.INGEST_VLM_MODEL?.trim()
+    || 'Qwen/Qwen2.5-VL-72B-Instruct'
+  const model = extras?.image ? visionModel : getLlmModel()
+
   const stream = chatStream(messages, {
-    model: getLlmModel(),
+    model,
     maxTokens: 2000,
     system: systemPromptOverride
       ? `${systemPromptOverride}\n\n文档内容：\n${context}`
@@ -504,6 +550,10 @@ export interface RunRagOptions {
   systemPromptOverride?: string
   /** OAG (Ontology-Augmented Generation)：当前用户的 principal，用于 ACL 过滤 */
   principal?: any
+  /** ADR-35：联网检索 toggle，true 时调 webSearch 把结果合进 LLM 上下文 */
+  webSearch?: boolean
+  /** ADR-35：多模态附件（base64 图片），存在时走 Qwen2.5-VL 视觉模型 */
+  image?: { base64: string; mimeType?: string }
 }
 
 export async function runRagPipeline(
@@ -702,8 +752,38 @@ export async function runRagPipeline(
       emit({ type: 'done' })
       return
     }
+    // ADR-35：联网检索（toggled）—— 在 answer 生成之前异步并发跑，结果作为 [w1..wN] 拼进 LLM context
+    let webHits: Array<{ title: string; url: string; snippet: string }> = []
+    if (opts.webSearch) {
+      try {
+        const { webSearch, getProvider, isWebSearchConfigured } =
+          await import('./webSearch.ts')
+        if (isWebSearchConfigured()) {
+          emit({ type: 'rag_step', icon: '🌐', label: `联网检索（${getProvider()}）...` })
+          const hits = await webSearch(question, { topK: 5 })
+          webHits = hits.map((h) => ({ title: h.title, url: h.url, snippet: h.snippet }))
+          emit({
+            type: 'web_step',
+            data: { provider: getProvider(), count: webHits.length, hits: webHits },
+          })
+        } else {
+          emit({ type: 'rag_step', icon: '⚠️', label: '联网检索未配置（缺 TAVILY/BING_API_KEY），跳过' })
+        }
+      } catch {
+        // 已在 webSearch 内部 warn
+      }
+    }
+
     // Step 4
-    await generateAnswer(question, finalDocs, history, emit, signal, opts.systemPromptOverride)
+    await generateAnswer(
+      question,
+      finalDocs,
+      history,
+      emit,
+      signal,
+      opts.systemPromptOverride,
+      { webHits, image: opts.image },
+    )
     // Step 5
     emit({ type: 'trace', data: trace })
     // 知识图谱：写 Question → CITED → Asset + CO_CITED（ADR 2026-04-23-27 · fire-and-forget）

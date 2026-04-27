@@ -38,6 +38,21 @@ function validateHistory(input: unknown): { ok: true; value: HistoryMessage[] } 
   return { ok: true, value: out.slice(-MAX_HISTORY_LEN) }
 }
 
+/** ADR-35: 解析可选的 image 字段；非法格式 / 过大返回 undefined（不抛） */
+function parseImageField(raw: unknown): AgentContext['image'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as { base64?: unknown; mimeType?: unknown }
+  if (typeof r.base64 !== 'string' || r.base64.length === 0) return undefined
+  // 上限 8MB（base64 编码后约 6MB 原始图）
+  if (r.base64.length > 8 * 1024 * 1024) return undefined
+  return {
+    base64: r.base64,
+    mimeType: typeof r.mimeType === 'string' && /^image\//.test(r.mimeType)
+      ? r.mimeType
+      : 'image/png',
+  }
+}
+
 export const dispatchHandler: RequestHandler = async (req: Request, res) => {
   const body = (req.body ?? {}) as {
     question?: unknown
@@ -145,6 +160,9 @@ export const dispatchHandler: RequestHandler = async (req: Request, res) => {
       spaceId: typeof body.space_id === 'number' && Number.isFinite(body.space_id)
         ? body.space_id
         : undefined,
+      // ADR-35：联网检索 + 多模态附件
+      webSearch: (body as Record<string, unknown>).web_search === true,
+      image: parseImageField((body as Record<string, unknown>).image),
     }
 
     await agent.run(ctx)

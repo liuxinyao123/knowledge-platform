@@ -35,6 +35,10 @@ export interface AgentContext {
   emit: EmitFn
   /** space-permissions (ADR 2026-04-23-26)：限定检索到该空间 */
   spaceId?: number
+  /** ADR-35：是否启用联网检索（合并到 RAG context） */
+  webSearch?: boolean
+  /** ADR-35：多模态附件，base64 编码的图片，配合 Qwen2.5-VL 走视觉 LLM */
+  image?: { base64: string; mimeType?: string }
 }
 
 export interface Agent {

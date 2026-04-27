@@ -280,6 +280,22 @@ function AiBubble({ msg }: { msg: AiMessage }) {
   )
 }
 
+/** ADR-35：File → base64（不带 data: 前缀，仅原始 base64） */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const r = reader.result
+      if (typeof r !== 'string') return reject(new Error('FileReader returned non-string'))
+      // r 形如 "data:image/png;base64,xxxxx"，截掉前缀
+      const idx = r.indexOf(',')
+      resolve(idx > 0 ? r.slice(idx + 1) : r)
+    }
+    reader.onerror = () => reject(reader.error || new Error('FileReader failed'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function parseSseEvent(block: string): any | null {
   for (const line of block.split('\n')) {
     const trimmed = line.trim()
@@ -319,6 +335,10 @@ export default function QA() {
   const [loading, setLoading] = useState(false)
   const [spaces, setSpaces] = useState<SpaceSummary[]>([])
   const [spaceId, setSpaceId] = useState<number | null>(null)
+  // ADR-35：联网检索 toggle + 多模态附件
+  const [webSearch, setWebSearch] = useState<boolean>(false)
+  const [image, setImage] = useState<{ base64: string; mimeType: string; name: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const sessionIdRef = useRef<string>(initialBootstrap.activeId)
@@ -439,6 +459,8 @@ export default function QA() {
       } satisfies { role: 'ai' } & AiMessage,
     ])
     setInput('')
+    // ADR-35：发送后清掉本轮的 image 附件（webSearch toggle 保留状态）
+    setImage(null)
     setCitations([])
     setLoading(true)
 
@@ -475,6 +497,9 @@ export default function QA() {
           session_id: sessionIdRef.current,
           history,
           space_id: spaceId ?? undefined,
+          // ADR-35：联网检索 toggle + 多模态图片附件
+          web_search: webSearch || undefined,
+          image: image ? { base64: image.base64, mimeType: image.mimeType } : undefined,
         }),
         signal: ac.signal,
       })
@@ -733,6 +758,33 @@ export default function QA() {
                   placeholder="输入你的问题，例如：「如何降低知识重复率？」"
                   disabled={loading}
                 />
+                {/* ADR-35：图片附件预览（缩略图 + 文件名 + 移除） */}
+                {image && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 8px', margin: '4px 8px',
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid #6ee7b7', borderRadius: 8,
+                    fontSize: 12,
+                  }}>
+                    <img
+                      src={`data:${image.mimeType};base64,${image.base64}`}
+                      alt={image.name}
+                      style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }}
+                    />
+                    <span style={{ color: '#065f46', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      🖼 已附图：<strong>{image.name}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setImage(null)}
+                      style={{
+                        padding: '2px 8px', fontSize: 11,
+                        background: 'transparent', border: '1px solid #6ee7b7',
+                        borderRadius: 4, color: '#065f46', cursor: 'pointer',
+                      }}>移除</button>
+                  </div>
+                )}
                 <div className="kc-qa-composer-bar">
                   <select
                     className="mini-select"
@@ -754,15 +806,45 @@ export default function QA() {
                   <button
                     type="button"
                     className="kc-qa-cbar-ico"
-                    title="联网检索（待接入）"
-                    onClick={() => { /* placeholder */ }}
+                    title={webSearch ? '联网检索：开（再点关闭）' : '联网检索：关（点开）'}
+                    aria-pressed={webSearch}
+                    onClick={() => setWebSearch((v) => !v)}
+                    style={{
+                      background: webSearch ? 'rgba(124, 58, 237, 0.12)' : undefined,
+                      color: webSearch ? '#7c3aed' : undefined,
+                      borderColor: webSearch ? '#a78bfa' : undefined,
+                    }}
                   >🌐</button>
                   <button
                     type="button"
                     className="kc-qa-cbar-ico"
-                    title="附图（待接入）"
-                    onClick={() => { /* placeholder */ }}
+                    title={image ? `已附图：${image.name}（点击重新选择）` : '附图（多模态 QA · Qwen2.5-VL）'}
+                    aria-pressed={!!image}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      background: image ? 'rgba(16, 185, 129, 0.12)' : undefined,
+                      color: image ? '#10b981' : undefined,
+                      borderColor: image ? '#6ee7b7' : undefined,
+                    }}
                   >🖼</button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ''  // 让用户能再次选同一文件
+                      if (!file) return
+                      // 6MB 上限，避免 8MB base64 上限超出
+                      if (file.size > 6 * 1024 * 1024) {
+                        alert(`图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），上限 6MB`)
+                        return
+                      }
+                      const base64 = await fileToBase64(file)
+                      setImage({ base64, mimeType: file.type || 'image/png', name: file.name })
+                    }}
+                  />
                   <div className="kc-qa-cbar-right">
                     {loading ? (
                       <button

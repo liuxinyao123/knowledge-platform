@@ -76,6 +76,16 @@ export interface VikingStepPayload {
   uri?: string
 }
 
+/** ADR-35：联网检索结果（前端引用 web 类型显示） */
+export interface WebStepPayload {
+  /** provider 名（tavily / bing / none） */
+  provider: string
+  /** 命中条数 */
+  count: number
+  /** 命中列表（供前端右栏渲染） */
+  hits: Array<{ title: string; url: string; snippet: string }>
+}
+
 export type SseEvent =
   | { type: 'rag_step'; icon: string; label: string }
   | { type: 'content'; text: string }
@@ -84,6 +94,7 @@ export type SseEvent =
   | { type: 'agent_selected'; data: AgentSelectedPayload }
   | { type: 'ontology_context'; data: { entities_count: number; edges_count: number; hop_depth: number; fallback: boolean } }
   | { type: 'viking_step'; data: VikingStepPayload }
+  | { type: 'web_step'; data: WebStepPayload }
   | { type: 'error'; message: string }
   | { type: 'done' }
 
