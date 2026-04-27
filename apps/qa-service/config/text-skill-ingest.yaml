@@ -1,0 +1,25 @@
+# 入库专用：不调用 LLM，仅做结构解析（标题/段落/source_anchor），供 qa-service 上传链路使用
+summary:
+  enable: false
+
+tags:
+  enable_business_tags: false
+  enable_project_tags: false
+
+llm:
+  provider: openai_compatible
+  base_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  api_key: ""
+  timeout_seconds: 60
+  max_retries: 0
+  temperature: 0.3
+
+storage:
+  image_dir: runtime/images
+  output_dir: runtime/output
+  temp_dir: runtime/tmp
+
+output:
+  enable_markdown: false
+  json_indent: 2

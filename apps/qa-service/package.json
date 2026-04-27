@@ -1,0 +1,49 @@
+{
+  "name": "qa-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "@marsaud/smb2": "^0.18.0",
+    "axios": "^1.15.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "http-proxy": "^1.18.1",
+    "mammoth": "^1.12.0",
+    "multer": "^2.1.1",
+    "mysql2": "^3.11.0",
+    "node-cron": "^3.0.3",
+    "officeparser": "^6.1.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.20.0"
+  },
+  "optionalDependencies": {
+    "@opendataloader/pdf": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/http-proxy": "^1.17.17",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^24.12.2",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^6.0.3",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^3.0.0"
+  }
+}

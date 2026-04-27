@@ -1,0 +1,52 @@
+name: action.status
+version: 1
+description: 查询 Action 运行状态
+category: action
+stability: beta
+
+input:
+  type: object
+  properties:
+    run_id:
+      type: string
+      description: 运行 ID
+  required:
+    - run_id
+
+output:
+  type: object
+  properties:
+    run_id:
+      type: string
+    state:
+      type: string
+      enum:
+        - pending
+        - executing
+        - succeeded
+        - failed
+    attempts:
+      type: integer
+    last_error:
+      type: string
+    audit_log_id:
+      type: string
+  required:
+    - run_id
+    - state
+    - attempts
+
+backend:
+  kind: http
+  method: GET
+  path: /api/actions/runs/{{ input.run_id }}
+  response:
+    map:
+      run_id: "{{ response.run_id }}"
+      state: "{{ response.state }}"
+      attempts: "{{ response.attempts }}"
+      last_error: "{{ response.last_error }}"
+      audit_log_id: "{{ response.audit_log_id }}"
+
+auth:
+  forward: true

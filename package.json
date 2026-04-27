@@ -1,0 +1,23 @@
+{
+  "name": "knowledge-platform",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:qa": "pnpm --filter qa-service dev",
+    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:qa\"",
+    "dev:up": "bash scripts/dev-up.sh",
+    "dev:down": "bash scripts/dev-down.sh",
+    "dev:status": "bash scripts/dev-status.sh",
+    "dev:logs": "bash scripts/dev-logs.sh",
+    "stack:up": "docker compose -f infra/docker-compose.yml up -d",
+    "stack:down": "docker compose -f infra/docker-compose.yml down",
+    "stack:build": "docker compose -f infra/docker-compose.yml build",
+    "build": "pnpm --filter web build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "typescript": "^5.4.0"
+  }
+}

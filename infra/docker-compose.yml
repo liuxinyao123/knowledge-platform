@@ -1,0 +1,211 @@
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:latest
+    container_name: bookstack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - APP_URL=http://localhost:6875
+      # ✅ 你生成的 APP_KEY 已加上（解决启动失败）
+      - APP_KEY=base64:0kwUdNlcBIUGGVsJ8Yy9udMR9YcUDIHSDf5aGbEssWU=
+      - DB_HOST=bookstack_db
+      - DB_PORT=3306
+      - DB_DATABASE=bookstack
+      - DB_USERNAME=bookstack
+      - DB_PASSWORD=bookstack_secret
+      - ALLOWED_IFRAME_HOSTS=http://localhost:5173 http://localhost:5174 http://localhost:5175 http://localhost:5176
+      # 飞书 OIDC
+      #- AUTH_METHOD=oidc
+      #- OIDC_NAME=飞书登录
+      #- OIDC_DISPLAY_NAME_CLAIMS=name
+      #- OIDC_ISSUER=https://open.feishu.cn/open-apis/authen/v2
+      #- OIDC_CLIENT_ID=${FEISHU_CLIENT_ID}
+      #- OIDC_CLIENT_SECRET=${FEISHU_CLIENT_SECRET}
+      #- REGISTRATION_ENABLED=true
+    volumes:
+      - ./bookstack_data:/config
+    ports:
+      - "6875:80"
+    depends_on:
+      bookstack_db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  qa_service:
+    build:
+      context: ..
+      dockerfile: apps/qa-service/Dockerfile
+    container_name: qa_service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      # 容器内访问 BookStack（与 bookstack 服务同网络）
+      BOOKSTACK_URL: http://bookstack
+      # 治理扩展表与 BookStack 共用 MySQL
+      DB_HOST: bookstack_db
+      DB_PORT: "3306"
+      DB_NAME: bookstack
+      DB_USER: bookstack
+      DB_PASS: bookstack_secret
+      # 从 infra/.env 注入（勿提交密钥）
+      BOOKSTACK_TOKEN_ID: ${BOOKSTACK_TOKEN_ID:-}
+      BOOKSTACK_TOKEN_SECRET: ${BOOKSTACK_TOKEN_SECRET:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      # 未设置时由 qa-service 按 Base URL 解析（硅基流动默认 Qwen 嵌入）
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-}
+      INGEST_MAX_FILE_MB: ${INGEST_MAX_FILE_MB:-50}
+      INGEST_OCR: ${INGEST_OCR:-}
+      INGEST_EXTRACT_HOOK: ${INGEST_EXTRACT_HOOK:-}
+      PG_HOST: pg_db
+      PG_PORT: "5432"
+      PG_DB: knowledge
+      PG_USER: knowledge
+      PG_PASS: knowledge_secret
+      # Knowledge Graph sidecar (Apache AGE · 可选)
+      # 未连通时 runCypher 自动降级到 no-op，不阻塞主流程
+      KG_HOST: kg_db
+      KG_PORT: "5432"
+      KG_DB: kg
+      KG_USER: kg
+      KG_PASS: kg_secret
+      # ⚠ AGE 对 1-2 字符 graph name 会报 "graph name is invalid"，默认用 3 字符以上
+      KG_GRAPH: ${KG_GRAPH:-knowledge}
+      KG_ENABLED: ${KG_ENABLED:-1}
+      # ingest-async-pipeline (ADR-40 · 2026-04-25)：异步 ingest 队列 + worker 调参
+      INGEST_ASYNC_ENABLED:           ${INGEST_ASYNC_ENABLED:-true}
+      INGEST_ASYNC_THRESHOLD_BYTES:   ${INGEST_ASYNC_THRESHOLD_BYTES:-2097152}
+      INGEST_WORKER_CONCURRENCY:      ${INGEST_WORKER_CONCURRENCY:-2}
+      INGEST_WORKER_INTERVAL_MS:      ${INGEST_WORKER_INTERVAL_MS:-500}
+      INGEST_WORKER_SHUTDOWN_GRACE_MS: ${INGEST_WORKER_SHUTDOWN_GRACE_MS:-30000}
+      # OpenViking sidecar (ADR-31 候选 · 2026-04-26)：Agent 跨会话长期记忆
+      # 默认 off；显式 VIKING_ENABLED=1 才启用，关闭时 client 全 no-op 不影响主链路
+      # 不加 depends_on，故意解耦——viking 没起也能跑 qa-service
+      VIKING_ENABLED:           ${VIKING_ENABLED:-0}
+      VIKING_BASE_URL:          ${VIKING_BASE_URL:-http://openviking:1933}
+      VIKING_ROOT_KEY:          ${VIKING_ROOT_KEY:-}
+      VIKING_RECALL_TIMEOUT_MS: ${VIKING_RECALL_TIMEOUT_MS:-200}
+      VIKING_SAVE_TIMEOUT_MS:   ${VIKING_SAVE_TIMEOUT_MS:-1000}
+      # ingest-l0-abstract (ADR-32 候选 · 2026-04-26)：L0/L1 分级摘要 + RAG L0 粗筛
+      # 三档 flag 全关 = 行为字节级 baseline（chunk_abstract 表存在但不读写）
+      L0_GENERATE_ENABLED:        ${L0_GENERATE_ENABLED:-true}
+      L0_GENERATE_CONCURRENCY:    ${L0_GENERATE_CONCURRENCY:-4}
+      L0_GENERATE_MIN_CHARS:      ${L0_GENERATE_MIN_CHARS:-60}
+      L0_FILTER_ENABLED:          ${L0_FILTER_ENABLED:-false}
+      L0_FILTER_TOP_ASSETS:       ${L0_FILTER_TOP_ASSETS:-50}
+      L0_LAZY_BACKFILL_ENABLED:   ${L0_LAZY_BACKFILL_ENABLED:-false}
+    depends_on:
+      bookstack_db:
+        condition: service_healthy
+      bookstack:
+        condition: service_started
+      pg_db:
+        condition: service_healthy
+      kg_db:
+        condition: service_started
+
+  bookstack_db:
+    image: mysql:8.0
+    container_name: bookstack_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_secret
+      - MYSQL_DATABASE=bookstack
+      - MYSQL_USER=bookstack
+      - MYSQL_PASSWORD=bookstack_secret
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 25s
+    restart: unless-stopped
+
+  pg_db:
+    image: pgvector/pgvector:pg16
+    container_name: pg_db
+    environment:
+      - POSTGRES_DB=knowledge
+      - POSTGRES_USER=knowledge
+      - POSTGRES_PASSWORD=knowledge_secret
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  # Apache AGE sidecar —— 知识图谱专用 PG 实例
+  # ADR 2026-04-23-27：与主 pg_db (pgvector) 隔离，方便独立下架/回退
+  # 官方镜像已内建 AGE 扩展；容器起来后 qa-service 连进去自动 CREATE EXTENSION age + create_graph('kg')
+  #
+  # Tag 命名：apache/age 的 tag 格式为 release_PG<pg>_<age>（见 https://hub.docker.com/r/apache/age/tags）
+  # 选 1.6.0 + PG16；如要切版本改下面一行即可。
+  kg_db:
+    image: apache/age:release_PG16_1.6.0
+    container_name: kg_db
+    environment:
+      - POSTGRES_DB=kg
+      - POSTGRES_USER=kg
+      - POSTGRES_PASSWORD=kg_secret
+    volumes:
+      - ./kg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kg -d kg"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  # OpenViking sidecar —— Agent 上下文数据库 (memory + L0/L1/L2 分级)
+  # ADR 2026-04-26-31 (候选)：方案 A，filesystem 范式 + 跨会话记忆
+  # 自建 Dockerfile 见 apps/openviking-service/，复用硅基 Qwen 做 L0/L1
+  # 默认不参与 depends_on：关掉 viking 不影响 qa-service 启动
+  # 想停掉：docker compose stop openviking
+  # 想抹掉所有记忆：rm -rf infra/openviking_data
+  openviking:
+    build:
+      context: ../apps/openviking-service
+      dockerfile: Dockerfile
+    container_name: openviking
+    profiles:
+      - viking      # 默认不启动；显式 `--profile viking` 或 `VIKING_ENABLED=1 pnpm stack:up` 才起
+    environment:
+      # 透传硅基账号给 OpenViking（OpenAI 兼容协议）
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}
+      EMBEDDING_API_KEY:  ${EMBEDDING_API_KEY:-}
+      OPENAI_BASE_URL:    ${OPENAI_BASE_URL:-${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}}
+      OPENAI_API_KEY:     ${OPENAI_API_KEY:-${EMBEDDING_API_KEY:-}}
+      OPENAI_MODEL:       ${VIKING_LLM_MODEL:-Qwen/Qwen2.5-72B-Instruct}
+      OPENAI_EMBEDDING_MODEL: ${VIKING_EMBEDDING_MODEL:-Qwen/Qwen3-Embedding-8B}
+      VIKING_ROOT_KEY:    ${VIKING_ROOT_KEY:-}
+      VIKING_HOST:        0.0.0.0
+      VIKING_PORT:        "1933"
+      VIKING_DATA_DIR:    /data
+    volumes:
+      - ./openviking_data:/data
+    ports:
+      - "1933:1933"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:1933/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped

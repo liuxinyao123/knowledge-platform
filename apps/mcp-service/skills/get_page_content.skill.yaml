@@ -1,0 +1,42 @@
+name: get_page_content
+version: 1
+description: 获取指定知识库页面的完整内容
+legacy_tool_name: get_page_content
+category: legacy
+
+input:
+  type: object
+  properties:
+    page_id:
+      type: number
+      description: BookStack 页面 ID
+  required:
+    - page_id
+
+output:
+  type: object
+  properties:
+    name:
+      type: string
+    content:
+      type: string
+    url:
+      type: string
+    tags:
+      type: array
+      items:
+        type: string
+    updated_at:
+      type: string
+  required:
+    - name
+    - content
+    - url
+    - tags
+    - updated_at
+
+backend:
+  kind: hook
+
+auth:
+  forward: false

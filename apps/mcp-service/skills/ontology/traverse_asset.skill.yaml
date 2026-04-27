@@ -1,0 +1,49 @@
+name: ontology.traverse_asset
+version: 1
+description: 从给定 Asset 出发 1-2 跳拿 Ontology Context
+category: ontology
+
+input:
+  type: object
+  properties:
+    asset_id:
+      type: string
+      description: 资产 ID
+    max_hop:
+      type: integer
+      description: 最大跳数，1-2，默认 2
+      minimum: 1
+      maximum: 2
+      default: 2
+  required:
+    - asset_id
+
+output:
+  type: object
+  properties:
+    entities:
+      type: array
+      items:
+        type: object
+    edges:
+      type: array
+      items:
+        type: object
+  required:
+    - entities
+    - edges
+
+backend:
+  kind: http
+  method: POST
+  path: /api/ontology/context
+  body:
+    chunks: "{{ [{asset_id: input.asset_id, score: 1}] }}"
+    maxHop: "{{ input.max_hop | default: 2 }}"
+  response:
+    map:
+      entities: "{{ response.entities }}"
+      edges: "{{ response.edges }}"
+
+auth:
+  forward: true

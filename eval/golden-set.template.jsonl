@@ -1,0 +1,36 @@
+// eval/golden-set.template.jsonl —— 资产级召回评测的 golden set 模板
+// 用法：cp eval/golden-set.template.jsonl eval/golden-set.jsonl，然后改下面 expected_asset_ids
+//
+// 一行一条 JSON。允许 // 和 # 开头的注释行（脚本会跳过）。
+// 必填字段：
+//   id (建议 Q01 / Q02 / ...)
+//   question (string)
+//   expected_asset_ids (number[])  —— 哪个 asset_id 应该被召回到（你 /ingest 后从 /assets 或 metadata_asset 表能看到）
+// 可选：
+//   comment (string) —— 给自己看的备注
+//
+// ──────────────────────────────────────────────────────────────────
+// 替换 PLACEHOLDER_ID 为你三个 PDF 入库后的真实 asset_id
+//   - Bumper_BP_id = ?    (Bumper Integration BP rev 11.pdf)
+//   - LFTGATE3_id  = ?    (LFTGATE-3 Liftgate_Liftglass gas strut guidelines 19Oct2018.pdf)
+//   - LFTGATE32_id = ?    (LFTGATE-32 Liftgate Swing and Tool Clearance Development.pdf)
+// 怎么查：psql 或者前端 /assets 列表，按文件名找
+// ──────────────────────────────────────────────────────────────────
+
+# ─── Bumper Integration BP（保险杠集成最佳实践） ──────────────────
+{"id":"Q01","question":"What are the key bumper integration design rules for crash performance?","expected_asset_ids":[1],"comment":"指向 Bumper_BP_id"}
+{"id":"Q02","question":"保险杠系统在低速碰撞下的设计要求是什么？","expected_asset_ids":[1],"comment":"中文问也应召回 Bumper_BP_id"}
+{"id":"Q03","question":"What clearance is required between bumper and body in white?","expected_asset_ids":[1],"comment":"细节问题"}
+
+# ─── LFTGATE-3 Gas Strut Sizing（举升门气压撑杆选型） ─────────────
+{"id":"Q04","question":"How is the gas strut size calculated for a liftgate?","expected_asset_ids":[2],"comment":"LFTGATE3_id"}
+{"id":"Q05","question":"举升门气压撑杆的温度补偿方案有哪些？","expected_asset_ids":[2],"comment":"对应 PDF 中的 Temperature Compensation 章节"}
+{"id":"Q06","question":"What are HLT, TCV and Federbein valves used for?","expected_asset_ids":[2],"comment":"具体阀门类型"}
+
+# ─── LFTGATE-32 Swing & Tool Clearance（摆动间隙开发） ────────────
+{"id":"Q07","question":"How do you develop liftgate swing and tool clearance envelopes?","expected_asset_ids":[3],"comment":"LFTGATE32_id"}
+{"id":"Q08","question":"举升门张开过程中工具间隙怎么校核？","expected_asset_ids":[3],"comment":"流程类"}
+
+# ─── 跨文档 / 边界场景 ─────────────────────────────────────────────
+{"id":"Q09","question":"liftgate 相关的所有设计指南","expected_asset_ids":[2,3],"comment":"两个 LFTGATE 都应召回；recall@5 = 2/2 = 1.0 才算满分"}
+{"id":"Q10","question":"How is body in white related to bumper integration tolerances?","expected_asset_ids":[1],"comment":"边界问题；bumper 文档应排第 1"}

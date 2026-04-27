@@ -1,0 +1,47 @@
+// GM 尾门多跳扩展题模板 · 22 条 stub · 2026-04-24（ADR-40 收尾后启动）
+//
+// 用途：解锁 OQ-AGENT-1（ReACT）与 ADR-39 D-003（OAG Phase 2 KG 三路召回）的判据数据。
+//       见 docs/superpowers/specs/eval-multihop-expansion-design.md 与
+//           docs/superpowers/plans/eval-multihop-expansion-impl-plan.md
+//
+// 数据源（DB metadata_asset 当前三个活 asset）：
+//   asset_id=1  LFTGATE-3 Liftgate_Liftglass gas strut guidelines 19Oct2018.pdf
+//   asset_id=2  Bumper Integration BP rev 11.pdf
+//   asset_id=5  LFTGATE-32_Liftgate Swing and Tool Clearance Development_Rev.pdf
+//
+// 填题步骤：
+//   1. cp gm-liftgate-multihop.template.jsonl gm-liftgate-multihop.jsonl
+//   2. 每条 stub 里 {BLANK_*} 占位替换成真实事实（自行查 PDF 对应段落）
+//   3. expected_answer 补上，供 LLM Judge 打 groundedness 分
+//   4. 若某 stub 的两文档组合在 PDF 里没有自然交集，直接删掉这一行（不要硬造事实）
+//   5. 保留 id / expected_asset_ids / comment 格式
+//
+// 多跳 flavor（comment 开头标注）：
+//   · COMPARE  跨文档对比两文档同类参数的差异 / 关系
+//   · LOOKUP   A 文档引用的标准/规范出现在 B 文档 → 需要解引用
+//   · SYNTHESIS 两文档各给一个约束，求同时满足的设计答案
+//
+// 期望：≥ 12 条有效多跳题（质量优先；凑不到 20 条没关系）。
+// 完成后：node scripts/eval-recall.mjs eval/gm-liftgate-multihop.jsonl
+{"id": "M01", "question": "LFTGATE-32 里规定的外摆尾门塑料对金属最小间隙是 8.0mm（§1.1.2.1）；保险杠外饰面对尾门下边缘的类似间隙是多少？{BLANK_DESCRIBE_BUMPER_REFERENCE}", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · §1.1.2.1（LFTGATE-32, p.8）× Bumper Integration §{BLANK_BUMPER_SECTION} · 两文档对同一关联面的间隙分别给值"}
+{"id": "M02", "question": "尾门静态锁闭力最大 300N（§3.4 p.11）；气弹簧在尾门关闭状态下是否提供反向辅助力？如果有，是多少？{BLANK_GAS_STRUT_CLOSING_FORCE}", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · LFTGATE-32 §3.4（力学上限）× LFTGATE-3 气弹簧力曲线 · 静态受力平衡"}
+{"id": "M03", "question": "可调腰线缓冲块推荐硬度 40 邵氏度（§3.4）；保险杠泡沫/EPP 材料的相关硬度规格是多少？两者区别的工程原因？{BLANK_CONTRAST_REASONING}", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 两文档对弹性体硬度各自推荐 · 机械 vs 碰撞吸能用途差异"}
+{"id": "M04", "question": "LFTGATE-32 §1.1.1 把 Zone 1/Zone 2 向顶盖方向偏移 1.0mm 拆为 0.3mm 油漆变差 + 0.7mm 铰链公差。气弹簧安装点公差（LFTGATE-3）是否也参与这 0.7mm 铰链公差？{BLANK_TOLERANCE_STACK}", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · LFTGATE-32 公差栈 → LFTGATE-3 气弹簧安装点贡献"}
+{"id": "M05", "question": "气弹簧初始力 F1 和终止力 F2 的典型值是多少（LFTGATE-3 §{BLANK_STRUT_SPEC})？这个力窗和尾门静态锁闭 300N（LFTGATE-32 §3.4）的关系是什么？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · 气弹簧力窗 × 锁闭系统力学平衡"}
+{"id": "M06", "question": "尾门摆动研究（LFTGATE-32）Zone 1/2 向顶盖方向偏移 1.0mm；尾门与后保险杠接合面（Bumper Integration §{BLANK_BUMPER_SECTION}）的几何容差是多少？两者会叠加吗？", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · LFTGATE-32 摆动 × Bumper 接合容差 · 公差叠加判断"}
+{"id": "M07", "question": "固定过行程缓冲块硬度 80 邵氏度（LFTGATE-32 §2.2）；气弹簧密封圈（LFTGATE-3）的材料硬度在什么范围？材料选型差异背后的载荷类型是什么？{BLANK_MATERIAL_RATIONALE}", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 弹性体硬度对比 · 缓冲 vs 密封"}
+{"id": "M08", "question": "尾门外饰(FASCIA)装配要求着陆垫下侧距车身钣金 6.0mm（LFTGATE-32 §2.2）；保险杠本体与 FASCIA 的接合线距离 A 柱/D 柱定位销多少？{BLANK_BUMPER_LOCATOR}", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · LFTGATE-32 引用 FASCIA 装配 → Bumper 文档 FASCIA 定位细节"}
+{"id": "M09", "question": "气弹簧安装点在车身 B 向（Y 方向）的定位公差是多少（LFTGATE-3 §{BLANK_STRUT_INSTALL})？和 LFTGATE-32 §5.1 可调缓冲块 4°~8° 角度容差是否共享同一坐标基准？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · 跨文档坐标基准统一性校验"}
+{"id": "M10", "question": "尾门静态锁闭 300N 由缓冲块力 + 密封力构成（LFTGATE-32 §3.4）。密封力 K 值在 Bumper Integration §{BLANK_BUMPER_SEAL_SECTION} 的密封条规格下是多少？", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · 300N 组成分解 → Bumper 密封条规格表"}
+{"id": "M11", "question": "LFTGATE-3 里气弹簧支撑尾门从开启到关闭的总行程是多少？与 LFTGATE-32 §{BLANK_SWING_STUDY_SECTION} 尾门摆动总弧长的关系？{BLANK_RELATION}", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 气弹簧行程 vs 摆动弧长 · 几何一致性"}
+{"id": "M12", "question": "固定缓冲块键槽朝下以防进水（LFTGATE-32 §2.3 p.7）；气弹簧活塞杆端部（LFTGATE-3 §{BLANK_STRUT_SEAL}）的防水设计要求是什么？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 跨文档防水设计规约"}
+{"id": "M13", "question": "单螺钉缓冲块扭矩 D6 ±1.0Nm / S 5.0-7.0 Nm（LFTGATE-32 §3.4 p.12）；保险杠本体-副车架紧固件的扭矩规格（Bumper Integration §{BLANK_BUMPER_FASTENER}）是多少？", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 紧固扭矩规格跨系统对比"}
+{"id": "M14", "question": "LFTGATE-32 §5.2 p.19 要求可调缓冲块侧视图相对摆动轴 ±15°；气弹簧安装轴线（LFTGATE-3 §{BLANK_STRUT_AXIS}）相对 BIW 的角度容差是多少？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 跨文档角度容差 · 摆动轴 vs 气弹簧轴"}
+{"id": "M15", "question": "LFTGATE-3 里气弹簧的低温（-30°C）性能衰减是多少？这对 LFTGATE-32 §3.4 300N 静态锁闭力的低温稳定性有什么影响？{BLANK_LOW_TEMP_SYNTHESIS}", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · 低温环境下两文档规格交互"}
+{"id": "M16", "question": "保险杠本体与尾门下缘的 Gap & Flush 规范（Bumper Integration §{BLANK_BUMPER_FLUSH}）是多少？与 LFTGATE-32 §1.1.2.1 塑料对金属 8.0mm 最小间隙的关系？", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · Bumper Flush 规范 → LFTGATE-32 间隙要求的几何兼容性"}
+{"id": "M17", "question": "LFTGATE-3 气弹簧预载 F_init 对应尾门开度 α_init（§{BLANK_STRUT_PRELOAD}）；气弹簧力在 LFTGATE-32 §{BLANK_LATCH_FORCE} 定义的关闭瞬间有多少剩余？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · 气弹簧开度-力曲线与锁闭瞬间受力"}
+{"id": "M18", "question": "PQ 缓冲块可接受面板厚度 3.0mm（LFTGATE-32 §3.1 p.8）；后保险杠 Outer Fascia 厚度（Bumper Integration §{BLANK_BUMPER_THICKNESS}）是多少？是否共用同一模具供应商？{BLANK_SUPPLIER}", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 面板厚度规格跨系统"}
+{"id": "M19", "question": "气弹簧润滑脂规格（LFTGATE-3 §{BLANK_STRUT_LUBE}）与尾门铰链润滑脂规格（LFTGATE-32 §{BLANK_HINGE_LUBE}）是否一致？若不一致，原因是？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "LOOKUP · 跨文档润滑脂规格对齐"}
+{"id": "M20", "question": "LFTGATE-32 §1.1.2 外摆式复合材料尾门摆动 1.5mm；气弹簧（LFTGATE-3 §{BLANK_MATERIAL}）在复合材料尾门 vs 钢制尾门的选型差异是什么？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · 材料选型与气弹簧力匹配"}
+{"id": "M21", "question": "保险杠碰撞吸能变形行程（Bumper Integration §{BLANK_BUMPER_CRASH}）是多少？这对尾门后部结构（LFTGATE-32 §{BLANK_LFTGATE_REAR}）的残余应力有什么影响？", "expected_asset_ids": [2, 5], "expected_answer": "{BLANK_FILL}", "comment": "SYNTHESIS · 碰撞载荷跨系统传递"}
+{"id": "M22", "question": "LFTGATE-3 气弹簧的疲劳寿命（循环次数）是多少？与 LFTGATE-32 §{BLANK_LATCH_CYCLE} 锁闭系统寿命指标的匹配关系？", "expected_asset_ids": [1, 5], "expected_answer": "{BLANK_FILL}", "comment": "COMPARE · 子系统寿命匹配"}

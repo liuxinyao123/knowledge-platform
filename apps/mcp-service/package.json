@@ -1,0 +1,28 @@
+{
+  "name": "mcp-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts",
+    "dev:http": "node --experimental-strip-types src/index.ts --http",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "schema:build": "node --experimental-strip-types scripts/build-schema.ts",
+    "schema:check": "node --experimental-strip-types scripts/build-schema.ts --check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "axios": "^1.15.0",
+    "express": "^5.2.1",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.12.2",
+    "typescript": "^6.0.3",
+    "vitest": "^3.0.0"
+  }
+}

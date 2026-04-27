@@ -1,0 +1,59 @@
+name: ontology.path_between
+version: 1
+description: 查询两个资产间的路径
+category: ontology
+
+input:
+  type: object
+  properties:
+    from_id:
+      type: string
+      description: 起点资产 ID
+    to_id:
+      type: string
+      description: 终点资产 ID
+    max_depth:
+      type: integer
+      description: 最大搜索深度，默认 4，最多 8
+      default: 4
+      minimum: 1
+      maximum: 8
+  required:
+    - from_id
+    - to_id
+
+output:
+  type: object
+  properties:
+    paths:
+      type: array
+      items:
+        type: object
+        properties:
+          nodes:
+            type: array
+            items:
+              type: object
+          edges:
+            type: array
+            items:
+              type: object
+          length:
+            type: integer
+  required:
+    - paths
+
+backend:
+  kind: http
+  method: POST
+  path: /api/ontology/path
+  body:
+    fromId: "{{ input.from_id }}"
+    toId: "{{ input.to_id }}"
+    maxDepth: "{{ input.max_depth | default: 4 }}"
+  response:
+    map:
+      paths: "{{ response.paths }}"
+
+auth:
+  forward: true

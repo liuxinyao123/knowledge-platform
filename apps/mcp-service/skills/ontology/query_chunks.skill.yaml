@@ -1,0 +1,52 @@
+name: ontology.query_chunks
+version: 1
+description: 语义召回——查询相关知识片段
+category: ontology
+
+input:
+  type: object
+  properties:
+    query:
+      type: string
+      description: 查询文本
+    top_k:
+      type: integer
+      description: 返回结果数，默认 10
+      default: 10
+    space_id:
+      type: string
+      description: 知识空间 ID（可选）
+  required:
+    - query
+
+output:
+  type: object
+  properties:
+    chunks:
+      type: array
+      items:
+        type: object
+        properties:
+          asset_id:
+            type: string
+          score:
+            type: number
+          preview:
+            type: string
+  required:
+    - chunks
+
+backend:
+  kind: http
+  method: POST
+  path: /api/qa/retrieve
+  body:
+    query: "{{ input.query }}"
+    topK: "{{ input.top_k | default: 10 }}"
+    spaceId: "{{ input.space_id }}"
+  response:
+    map:
+      chunks: "{{ response.chunks }}"
+
+auth:
+  forward: true

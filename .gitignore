@@ -1,0 +1,31 @@
+# dev background logs
+.dev-logs/
+node_modules/
+
+# OS / editor
+.DS_Store
+*.log
+
+# secrets — 全部 .env（.env.example 除外）一律不进仓库
+.env
+.env.local
+.env.*.local
+infra/.env
+apps/*/.env
+apps/*/.env.local
+
+# docker volumes (persisted state, not source)
+infra/bookstack_data/
+infra/mysql_data/
+infra/pg_data/
+infra/kg_data/
+infra/asset_images/
+infra/openviking_data/
+
+# uploads (runtime) + 工作脚本断点
+.claude/**/uploads/
+.backfill-l0.cursor
+
+# 视觉 QA 临时图片
+slide-*.jpg
+slide-*.png

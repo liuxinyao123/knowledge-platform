@@ -1,0 +1,5 @@
+_data/
+*.log
+README.md
+.env
+.env.example

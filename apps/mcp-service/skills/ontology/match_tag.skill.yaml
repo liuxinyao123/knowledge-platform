@@ -1,0 +1,48 @@
+name: ontology.match_tag
+version: 1
+description: 基于 semantic_embedding 进行自然语言标签匹配
+category: ontology
+
+input:
+  type: object
+  properties:
+    text:
+      type: string
+      description: 自然语言查询文本
+    top_k:
+      type: integer
+      description: 返回结果数，默认 10
+      default: 10
+  required:
+    - text
+
+output:
+  type: object
+  properties:
+    tags:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          score:
+            type: number
+  required:
+    - tags
+
+backend:
+  kind: http
+  method: POST
+  path: /api/ontology/match
+  body:
+    text: "{{ input.text }}"
+    topK: "{{ input.top_k | default: 10 }}"
+  response:
+    map:
+      tags: "{{ response.tags }}"
+
+auth:
+  forward: true

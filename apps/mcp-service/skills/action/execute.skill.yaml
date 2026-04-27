@@ -1,0 +1,57 @@
+name: action.execute
+version: 1
+description: 执行一个 Action
+category: action
+stability: beta
+
+input:
+  type: object
+  properties:
+    action_name:
+      type: string
+      description: Action 名称
+    args:
+      type: object
+      description: Action 参数
+    reason:
+      type: string
+      description: 执行原因
+  required:
+    - action_name
+    - args
+
+output:
+  type: object
+  properties:
+    run_id:
+      type: string
+      description: 运行 ID
+    state:
+      type: string
+      description: 运行状态（pending/executing/succeeded/failed）
+      enum:
+        - pending
+        - executing
+        - succeeded
+        - failed
+  required:
+    - run_id
+    - state
+
+backend:
+  kind: http
+  method: POST
+  path: /api/actions/{{ input.action_name }}/run
+  body:
+    args: "{{ input.args }}"
+    reason: "{{ input.reason }}"
+  response:
+    map:
+      run_id: "{{ response.run_id }}"
+      state: "{{ response.state }}"
+
+auth:
+  forward: true
+
+audit:
+  level: detail

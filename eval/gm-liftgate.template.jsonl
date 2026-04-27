@@ -1,0 +1,75 @@
+// GM 尾门工程评测集 · 70 题 · 资产级 recall@K
+// 用前先全文替换两处占位为真实 asset_id：
+//   12  → 你 /assets 看到的 LFTGATE-27 文档 id
+//   13  → 你 /assets 看到的 LFTGATE-32 文档 id
+// 期望页码（如 [3]）保留在 comment 字段供人工核对，不参与机器评分
+{"id": "Q01", "question": "下角固定缓冲块的设计间隙是多少？", "expected_asset_ids": [12], "comment": "§1.1 p.[3] · basic_fact/easy · 期望答案: 2.0mm"}
+{"id": "Q02", "question": "可调腰线缓冲块的设计干涉量是多少？", "expected_asset_ids": [12], "comment": "§1.2 p.[3] · basic_fact/easy · 期望答案: 1.5mm"}
+{"id": "Q03", "question": "固定过行程缓冲块的推荐硬度是多少？", "expected_asset_ids": [12], "comment": "§2.2 p.[5] · basic_fact/easy · 期望答案: 80 邵氏度（Durometer）"}
+{"id": "Q04", "question": "可调腰线缓冲块的推荐硬度是多少？为什么是这个值？", "expected_asset_ids": [12], "comment": "§3.4 p.[11] · basic_fact/medium · 期望答案: 40 邵氏度。因为更硬的缓冲块会导致车身腔体轰鸣(body cavity boom)"}
+{"id": "Q05", "question": "腰线缓冲块的调节范围要求是多少？", "expected_asset_ids": [12], "comment": "§3.4 p.[11] · basic_fact/easy · 期望答案: ±4mm"}
+{"id": "Q06", "question": "尾门静态锁闭力的最大值是多少？", "expected_asset_ids": [12], "comment": "§3.4 p.[11] · basic_fact/easy · 期望答案: 300N（缓冲块力和密封力之和）"}
+{"id": "Q07", "question": "固定缓冲块的键槽应朝向哪个方向？为什么？", "expected_asset_ids": [12], "comment": "§2.3 p.[7] · basic_fact/medium · 期望答案: 键槽应朝下，以避免进水（water intrusion）"}
+{"id": "Q08", "question": "着陆垫下侧距车身钣金的设计距离是多少？这样设计的目的是什么？", "expected_asset_ids": [12], "comment": "§2.2 p.[5] · basic_fact/medium · 期望答案: 6.0mm，以确保外饰（FASCIA）的装配不受着陆垫影响"}
+{"id": "Q09", "question": "固定缓冲块方向与摆动轴的对齐公差是多少？", "expected_asset_ids": [12], "comment": "§2.2 p.[5] · basic_fact/easy · 期望答案: ±5°（所有方向）"}
+{"id": "Q10", "question": "可调缓冲块在俯视图中相对摆动轴的角度要求是多少？", "expected_asset_ids": [12], "comment": "§5.1 p.[18] · basic_fact/medium · 期望答案: 最小 4°，最大 8°（内摆或外摆）"}
+{"id": "Q11", "question": "可调缓冲块在侧视图中相对摆动轴的允许偏差是多少？", "expected_asset_ids": [12], "comment": "§5.2 p.[19] · basic_fact/easy · 期望答案: ±15°"}
+{"id": "Q12", "question": "PQ 缓冲块可接受的面板厚度是多少？", "expected_asset_ids": [12], "comment": "§3.1 p.[8] · basic_fact/easy · 期望答案: 3.0mm"}
+{"id": "Q13", "question": "单螺钉缓冲块定位销的啮合孔尺寸是多少？", "expected_asset_ids": [12], "comment": "§3.4 p.[12] · basic_fact/medium · 期望答案: 6.5mm"}
+{"id": "Q14", "question": "单螺钉缓冲块的螺钉扭矩规格是多少？", "expected_asset_ids": [12], "comment": "§3.4 p.[12] · basic_fact/medium · 期望答案: D6 ±1.0Nm，S 5.0-7.0 Nm"}
+{"id": "Q15", "question": "尾门摆动研究中 Zone 1 和 Zone 2 向顶盖方向偏移多少？这个值由什么构成？", "expected_asset_ids": [13], "comment": "§1.1.1 p.[6] · basic_fact/medium · 期望答案: 1.0mm = 0.3mm油漆变差 + 0.7mm铰链公差和超差车辆"}
+{"id": "Q16", "question": "外摆式复合材料尾门的摆动偏移是多少？", "expected_asset_ids": [13], "comment": "§1.1.2 p.[7] · basic_fact/medium · 期望答案: 1.5mm（区别于普通外摆门的1.0mm）"}
+{"id": "Q17", "question": "外摆尾门在打开状态下，塑料对金属的最小间隙要求是多少？", "expected_asset_ids": [13], "comment": "§1.1.2.1 p.[8] · basic_fact/easy · 期望答案: 8.0mm"}
+{"id": "Q18", "question": "外摆尾门在打开状态下，塑料对橡胶的最小间隙要求是多少？", "expected_asset_ids": [13], "comment": "§1.1.2.1 p.[8] · basic_fact/easy · 期望答案: 3.0mm"}
+{"id": "Q19", "question": "钣金横梁到顶盖的低平齐度要求是多少？", "expected_asset_ids": [13], "comment": "§1.1.4 p.[11] · basic_fact/easy · 期望答案: 2.0mm under flush"}
+{"id": "Q20", "question": "不支撑在铰链之间的吹塑扰流板低平齐度要求是多少？", "expected_asset_ids": [13], "comment": "§1.1.4 p.[11] · basic_fact/medium · 期望答案: 4.5mm + DTS公差"}
+{"id": "Q21", "question": "LPA 长度小于 1400mm 时的热膨胀估算值是多少？", "expected_asset_ids": [13], "comment": "§1.3.1.1 p.[15] · basic_fact/easy · 期望答案: Y方向每侧2.0mm"}
+{"id": "Q22", "question": "LPA 长度大于 1400mm 时的热膨胀估算值是多少？", "expected_asset_ids": [13], "comment": "§1.3.1.1 p.[15] · basic_fact/easy · 期望答案: Y方向每侧2.5mm"}
+{"id": "Q23", "question": "尾门打开时距油漆密封胶的最小接近间隙是多少？", "expected_asset_ids": [13], "comment": "§1.6.1 p.[24, 25] · basic_fact/easy · 期望答案: >25mm（客户打开位置）"}
+{"id": "Q24", "question": "如无 CAE 过行程性能数据，X 和 Z 方向的起始值应使用多少？", "expected_asset_ids": [13], "comment": "§3.1 p.[32] · basic_fact/medium · 期望答案: X=4.5mm，Z=4.5mm"}
+{"id": "Q25", "question": "手动支柱系统的高速滥用关门速度是多少？", "expected_asset_ids": [13], "comment": "§3.1.4 p.[37] · basic_fact/medium · 期望答案: 1.85 rad/s"}
+{"id": "Q26", "question": "单电动支柱系统的高速关门速度是多少？", "expected_asset_ids": [13], "comment": "§3.1.4 p.[37] · basic_fact/medium · 期望答案: 1.7 rad/s"}
+{"id": "Q27", "question": "双电动支柱系统的高速关门速度是多少？", "expected_asset_ids": [13], "comment": "§3.1.4 p.[37] · basic_fact/medium · 期望答案: 1.2 rad/s"}
+{"id": "Q28", "question": "单侧电动执行器和手动系统所需的最小外饰拔模角是多少？", "expected_asset_ids": [13], "comment": "§3.2.1 p.[45] · basic_fact/medium · 期望答案: 7°"}
+{"id": "Q29", "question": "双电动执行器所需的最小外饰拔模角是多少？", "expected_asset_ids": [13], "comment": "§3.2.1 p.[45] · basic_fact/medium · 期望答案: 3°"}
+{"id": "Q30", "question": "尾门内板到外饰的推荐过行程最小间隙是多少？", "expected_asset_ids": [13], "comment": "§3.2.1 p.[45] · basic_fact/medium · 期望答案: 8.0mm"}
+{"id": "Q31", "question": "锁闭装载检查中，到外板需保持的最小间隙是多少？", "expected_asset_ids": [13], "comment": "§5.0 p.[53] · basic_fact/easy · 期望答案: 3.0mm"}
+{"id": "Q32", "question": "可调缓冲块摆动包络周围应添加多少间隙区？", "expected_asset_ids": [13], "comment": "§4.0 p.[51] · basic_fact/easy · 期望答案: 5mm"}
+{"id": "Q33", "question": "DTS 通常使用的变差范围是多少？", "expected_asset_ids": [13], "comment": "§3.1.1 p.[33] · basic_fact/easy · 期望答案: ±1.5mm（三个方向）"}
+{"id": "Q34", "question": "所有扫掠表面和旋转片体应额外增加多少间隙？为什么？", "expected_asset_ids": [13], "comment": "§3.1 p.[32] · basic_fact/medium · 期望答案: 0.25mm，用于考虑超差车辆"}
+{"id": "Q35", "question": "代理离合锁的第二个解锁点中，白色 tab 需要滑动多少距离？", "expected_asset_ids": [13], "comment": "§5.1 p.[54] · basic_fact/medium · 期望答案: 5.0mm"}
+{"id": "Q36", "question": "腰线缓冲块决策树中第一选择是哪个零件？用在什么位置？", "expected_asset_ids": [12], "comment": "§3.2 p.[9] · selection_decision/medium · 期望答案: C223，安装在尾门拉延壁(drawall)，有26°和36°两种壳体变体"}
+{"id": "Q37", "question": "什么情况下使用 BT1YL 缓冲块？", "expected_asset_ids": [12], "comment": "§3.2 p.[9] · selection_decision/medium · 期望答案: 主要用于铝尾门，因拉延壁高度减小无法容纳首选单螺钉缓冲块"}
+{"id": "Q38", "question": "什么情况下使用 L232 缓冲块？", "expected_asset_ids": [12], "comment": "§3.2 p.[9] · selection_decision/medium · 期望答案: 需要额外支柱长度、限制了缓冲块包装空间时使用，安装在支柱支架上，非PQ首选"}
+{"id": "Q39", "question": "L233 缓冲块适合什么应用场景？", "expected_asset_ids": [12], "comment": "§3.2 p.[9] · selection_decision/medium · 期望答案: 位置在尾门翼部时使用，也用于塑料尾门的下角"}
+{"id": "Q40", "question": "85608330 和 22904917 是什么关系？", "expected_asset_ids": [12], "comment": "§3.3 p.[10] · selection_decision/hard · 期望答案: 85608330替换22904917，使用更长螺钉，由新供应商重新开模，应用于R233、S233车型"}
+{"id": "Q41", "question": "42834451 的角度特征和应用是什么？", "expected_asset_ids": [12], "comment": "§3.3 p.[10] · selection_decision/hard · 期望答案: 壳体角度15°，带更长螺钉，用于L234复合材料尾门"}
+{"id": "Q42", "question": "100% 电动尾门的固定缓冲块处理方式是什么？", "expected_asset_ids": [12], "comment": "§2.2 p.[5] · selection_decision/medium · 期望答案: 可取消，或使用更低硬度的缓冲块作接触条件以兼顾耐久性和防止轰鸣"}
+{"id": "Q43", "question": "C1UB-S 项目出现了什么问题？", "expected_asset_ids": [12], "comment": "§2.3 p.[7] · lessons_learned/medium · 期望答案: 键槽方向倒置朝上，导致进水问题，参考PRTS 2109174"}
+{"id": "Q44", "question": "C234 项目暴露了什么摆动研究问题？", "expected_asset_ids": [13], "comment": "§3.1.5.1 p.[40] · lessons_learned/hard · 期望答案: 尾门内板未纳入摆动研究，设计间隙仅2.94mm，未能绕过车身侧，应允许8.0mm名义间隙"}
+{"id": "Q45", "question": "D2UG 的灯具接口存在什么问题？", "expected_asset_ids": [13], "comment": "§3.1.5.2 p.[41] · lessons_learned/hard · 期望答案: 切线形状和灯具构造减小了摆动过程中镜片间隙，理想应让Class A接口成为最近接触点且灯具背离摆动片体拔模"}
+{"id": "Q46", "question": "C1YB-2 项目发生了什么问题？", "expected_asset_ids": [13], "comment": "§3.1.5.3 p.[42] · lessons_learned/hard · 期望答案: 尾门安装玻璃在滥用关门时接触车身侧，摆动研究未包含尾门玻璃"}
+{"id": "Q47", "question": "C223 项目出现了什么问题？根本原因是什么？", "expected_asset_ids": [13], "comment": "§3.1.5.4 p.[43] · lessons_learned/hard · 期望答案: 扰流板密封条刮擦D柱饰板，根因是切线位于铰链枢轴前方导致打开时挖入(dig)"}
+{"id": "Q48", "question": "C1YG-2 项目的问题是什么？", "expected_asset_ids": [13], "comment": "§3.1.5.5 p.[44] · lessons_learned/hard · 期望答案: 扰流板打开时接触上排水槽，扰流板下内板未纳入摆动评估，考虑最坏DTS和热膨胀后干涉达2.8464mm"}
+{"id": "Q49", "question": "E2SC 后盖的螺旋缓冲块案例教训是什么？", "expected_asset_ids": [12], "comment": "§6.1 p.[20, 21] · lessons_learned/hard · 期望答案: 使用镜像螺旋工具方向导致凸包转角形成不明显，右侧内板永久变形大于左侧，造成后盖位置偏移和油漆剥落"}
+{"id": "Q50", "question": "D2UC-2 项目在外饰间隙方面暴露什么问题？", "expected_asset_ids": [13], "comment": "§3.2.1.1 p.[46] · lessons_learned/hard · 期望答案: 尾门内板未纳入过行程/摆动评估，设计间隙仅0.45mm，区域干涉6.67mm，应在CAE前目标设为8.0mm"}
+{"id": "Q51", "question": "为什么楔形块(Wedges)不推荐使用？", "expected_asset_ids": [12], "comment": "§1.3 p.[3] · concept_reasoning/medium · 期望答案: 难以正确调整，导致噪声、车身腔体轰鸣和高关门力，需GSSLT批准豁免"}
+{"id": "Q52", "question": "为什么 Mylar 补丁不被接受作为着陆垫？", "expected_asset_ids": [12], "comment": "§3.4 p.[11] · concept_reasoning/medium · 期望答案: 定位不稳健，随时间产生位移"}
+{"id": "Q53", "question": "为什么接触橡胶灯罩的橡胶缓冲块需要添加 Krytox 涂层？", "expected_asset_ids": [12], "comment": "§4.1 p.[13] · concept_reasoning/medium · 期望答案: 因为橡胶缓冲块接触橡胶灯罩会粘连，Krytox可防止粘连"}
+{"id": "Q54", "question": "为什么灯罩缓冲块接触区下方要使用软胶(Soft Shot)材料？", "expected_asset_ids": [12], "comment": "§4.3 p.[16, 17] · concept_reasoning/medium · 期望答案: 硬胶提供结构和接触点，软胶作为缓冲并使灯罩紧贴钣金"}
+{"id": "Q55", "question": "为什么首选将缓冲块着陆整合到灯罩中？", "expected_asset_ids": [12], "comment": "§4.3 p.[15, 16] · concept_reasoning/medium · 期望答案: 是首选PQ执行方案，表面光滑流畅无附加特征，无需单独着陆垫"}
+{"id": "Q56", "question": "过行程评估为什么必须分段进行？", "expected_asset_ids": [13], "comment": "§3.1.2 p.[34] · concept_reasoning/hard · 期望答案: 任何摆动接口三个方向变差需同时考虑；切线不同区域有不同DTS适用方向；分段可准确表示DTS且与GCA测量方式相当"}
+{"id": "Q57", "question": "理想的摆动接口应如何设计？", "expected_asset_ids": [13], "comment": "§3.1.5 p.[38] · concept_reasoning/hard · 期望答案: 允许摆动部件在过行程时绕过(bypass)固定部件，而非正面撞击，需同时考虑X和Z方向过行程及部件回弹"}
+{"id": "Q58", "question": "为什么 CAE 在设计阶段要进行三次热/太阳分析？", "expected_asset_ids": [13], "comment": "§1.3.2 p.[19] · concept_reasoning/hard · 期望答案: 第一次VVA VPI(DFP16)初评估，第二次DFP31更新，第三次VSVA(L1 IVER)确认，因尾门和车身钣金此"}
+{"id": "Q59", "question": "文档中为什么要在 1.0mm 偏移里同时包含 0.3mm 油漆变差和 0.7mm 铰链公差？", "expected_asset_ids": [13], "comment": "§1.1.1 p.[6, 61] · concept_reasoning/hard · 期望答案: +0.7mm主要针对工厂中的超差车辆，DTS虽考虑了铰链公差但不希望减少这个额外的1.0mm间隙区，以确保摆动时绝不接触"}
+{"id": "Q60", "question": "过行程检查为什么要超出切线范围？", "expected_asset_ids": [13], "comment": "§3.1 p.[39] · concept_reasoning/hard · 期望答案: 从主密封条向外的所有表面都可能在过行程中干涉，包括车身侧灯体、尾门内板、外板、车身侧灯和灯侧尾门灯"}
+{"id": "Q61", "question": "设计一个铝制尾门的腰线缓冲块时，应如何选择和布置？", "expected_asset_ids": [12], "comment": "§3.2/3.3/3.4/5.1/5.2 p.[9, 10, 11, 18, 19] · comprehensive_application/hard · 期望答案: 选BT1YL型，位置在灯与玻璃底部间，硬度40邵氏度，干涉1.5mm，调节±4mm，配87866274，需着陆垫，俯视内"}
+{"id": "Q62", "question": "针对一款带扰流板的双电动尾门 SUV，进行完整摆动研究需要哪些步骤和输入？", "expected_asset_ids": [13], "comment": "§1.1/1.1.4/1.3.1/1.3.2/3.1.4/3.2.1/3.4 p.[6, 11, 15, 16, 19, 37, 45, 49] · comprehensive_application/hard · 期望答案: 包含初始设置、热膨胀初始值、摆动、1.0mm偏移、过行程(1.2 rad/s)、三阶段CAE确认、绕过检查、外饰8.0m"}
+{"id": "Q63", "question": "对比内摆式和外摆式铰链的摆动设置差异。", "expected_asset_ids": [13], "comment": "§1.1.1/1.1.2/1.1.2.1 p.[6, 7, 8] · comprehensive_application/hard · 期望答案: 内摆有Zone 1/2分区从平齐开始；外摆按DTS平齐公差向下调整；偏移均1.0mm，复合材料外摆1.5mm；外摆开门时"}
+{"id": "Q64", "question": "文档中提到的 PQ 是什么缩写？", "expected_asset_ids": [12], "comment": "§3.2 p.[9] · entity_recognition/easy · 期望答案: Perceived Quality(感知质量)"}
+{"id": "Q65", "question": "GSSLT 是什么？", "expected_asset_ids": [12], "comment": "§1.3/3.3 p.[3, 10] · entity_recognition/medium · 期望答案: 全球子系统领导团队(Global Sub-System Leadership Team)，批准缓冲块偏差和设计决策的团队"}
+{"id": "Q66", "question": "CLD 代表什么？", "expected_asset_ids": [12], "comment": "§7.0 p.[22] · entity_recognition/medium · 期望答案: Load Deflection Curves(载荷-挠度曲线)"}
+{"id": "Q67", "question": "S/M 代表什么？", "expected_asset_ids": [12], "comment": "§2.2 p.[6] · entity_recognition/easy · 期望答案: Sheet Metal(钣金)"}
+{"id": "Q68", "question": "DTS 和 VSM 分别代表什么？", "expected_asset_ids": [13], "comment": "§3.1.1 p.[33] · entity_recognition/medium · 期望答案: DTS=Dimensional Technical Specifications(尺寸技术规范)；VSM=Variati"}
+{"id": "Q69", "question": "COF 代表什么？", "expected_asset_ids": [13], "comment": "§2.1 p.[27] · entity_recognition/medium · 期望答案: Crimp-On-Flange(翻边折边，B&R法兰折边工具)"}
+{"id": "Q70", "question": "SSTS 代表什么？", "expected_asset_ids": [13], "comment": "§3.0 p.[31] · entity_recognition/medium · 期望答案: Subsystem Technical Specification(子系统技术规范)"}

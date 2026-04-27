@@ -1,0 +1,89 @@
+flowchart TB
+  subgraph Client["浏览器 / 外部 Agent"]
+    UI["Web 控制台<br/>React 19 + Vite 8 + Tailwind 4"]
+    EXT["外部 Agent / IDE<br/>Cursor · Claude Desktop"]
+  end
+
+  subgraph Edge["边缘层"]
+    Vite["Vite 开发代理<br/>/api/* → :3001"]
+  end
+
+  subgraph Core["核心服务 (Node 22)"]
+    QA["qa-service :3001<br/>Express 5 · 20+ 路由"]
+    MCP["mcp-service :3002<br/>MCP SDK 1.12"]
+  end
+
+  subgraph Orchestrator["Agent 编排 (qa-service 内)"]
+    DISP["POST /api/agent/dispatch · SSE"]
+    INT["intentClassifier<br/>LLM + 关键字 fallback"]
+    A1["knowledge_qa<br/>Agentic RAG"]
+    A2["data_admin"]
+    A3["structured_query"]
+    A4["metadata_ops"]
+    DISP --> INT
+    INT --> A1
+    INT --> A2
+    INT --> A3
+    INT --> A4
+  end
+
+  subgraph RAG["Agentic RAG 管线（七层兜底）"]
+    R1["1 retrieveInitial<br/>pgvector + BM25 混合"]
+    R2["2 rerank<br/>cross-encoder"]
+    R3["3 gradeDocs<br/>function-call"]
+    R4["4 rewriteQuestion<br/>召回不足触发"]
+    R5["5 generateAnswer<br/>流式 + history"]
+    R6["D-007 short-circuit<br/>低相关跳 LLM"]
+    R1 --> R2 --> R3 --> R4 --> R5
+    R2 -. "top-1 < NO_LLM" .-> R6
+  end
+
+  subgraph Ingest["Ingest 统一管线"]
+    IGT["ingestDocument()<br/>按扩展名路由"]
+    PDF["PDF v2<br/>opendataloader + Java 17"]
+    VLM["Qwen2.5-VL-72B<br/>图片 caption"]
+    DOCX["mammoth"]
+    OFFICE["officeparser"]
+    CHUNK["chunk gate<br/>textHygiene 过滤"]
+    EMBED["embedding<br/>硅基 Qwen"]
+    IGT --> PDF --> VLM --> CHUNK
+    IGT --> DOCX --> CHUNK
+    IGT --> OFFICE --> CHUNK
+    CHUNK --> EMBED
+  end
+
+  subgraph Auth["统一鉴权"]
+    JWT["JWT 双栈<br/>JWKS / HS256"]
+    ACL["Permissions V2<br/>role/user/team × allow/deny × TTL"]
+    AUD["审计 acl_rule_audit<br/>+ audit_log"]
+  end
+
+  subgraph Data["数据层"]
+    BS[("BookStack :6875<br/>Wiki UI")]
+    MY[("MySQL 8 :3307<br/>BookStack + 治理表")]
+    PG[("pgvector pg16 :5432<br/>向量真相源")]
+    AGE[("Apache AGE :5433<br/>知识图谱 sidecar")]
+    FS["FileSourceAdapter<br/>SMB · S3 · WebDAV · SFTP"]
+  end
+
+  subgraph LLM["外部 LLM / Embedding"]
+    ANT["Anthropic Claude"]
+    OAI["OpenAI / 硅基流动"]
+  end
+
+  UI --> Vite --> QA
+  EXT --> MCP
+  MCP --> QA
+  QA --> DISP
+  A1 --> R1
+  QA --> IGT
+  QA --> JWT --> ACL --> AUD
+  QA --> BS
+  QA --> MY
+  QA --> PG
+  QA --> AGE
+  FS --> IGT
+  EMBED --> PG
+  R5 --> ANT
+  R5 --> OAI
+  EMBED --> OAI

@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1131" font-family="'Droid Sans Fallback','Noto Sans CJK SC','WenQuanYi Zen Hei','HarmonyOS Sans','PingFang SC','Microsoft YaHei','DejaVu Sans','Inter',sans-serif">
+  <defs>
+    <linearGradient id="bgHero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F1B3C"/>
+      <stop offset="100%" stop-color="#1E2761"/>
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C9A227"/>
+      <stop offset="100%" stop-color="#E8C866"/>
+    </linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1131" fill="#F5F7FB"/>
+
+  <!-- Top hero band -->
+  <rect x="0" y="0" width="1600" height="260" fill="url(#bgHero)"/>
+  <circle cx="1420" cy="130" r="180" fill="#C9A227" opacity="0.08"/>
+  <circle cx="1500" cy="60" r="90" fill="#CADCFC" opacity="0.06"/>
+
+  <!-- Brand -->
+  <text x="60" y="90" fill="#C9A227" font-size="28" font-weight="700" letter-spacing="6">知源 · ZHIYUAN</text>
+  <text x="60" y="170" fill="#FFFFFF" font-size="64" font-weight="800">企业知识，从此"一问即答"</text>
+  <text x="60" y="220" fill="#CADCFC" font-size="24" font-weight="400">私有化部署的 AI 知识大脑 · 数据零外传 · 国产大模型原生适配</text>
+
+  <!-- Top right stats -->
+  <g transform="translate(1140,60)">
+    <rect x="0" y="0" width="420" height="170" rx="8" fill="#FFFFFF" opacity="0.08" stroke="#C9A227" stroke-width="1"/>
+    <text x="210" y="50" text-anchor="middle" fill="#C9A227" font-size="18" font-weight="600" letter-spacing="3">产品状态</text>
+    <text x="70" y="110" text-anchor="middle" fill="#FFFFFF" font-size="44" font-weight="800">27</text>
+    <text x="70" y="140" text-anchor="middle" fill="#CADCFC" font-size="13">ADR 决策</text>
+    <text x="210" y="110" text-anchor="middle" fill="#FFFFFF" font-size="44" font-weight="800">20</text>
+    <text x="210" y="140" text-anchor="middle" fill="#CADCFC" font-size="13">冻结 Spec</text>
+    <text x="350" y="110" text-anchor="middle" fill="#FFFFFF" font-size="44" font-weight="800">30'</text>
+    <text x="350" y="140" text-anchor="middle" fill="#CADCFC" font-size="13">私有化上线</text>
+  </g>
+
+  <!-- ========== Left column: 3 value props ========== -->
+  <g transform="translate(60,300)">
+    <text x="0" y="0" fill="#0F1B3C" font-size="22" font-weight="700" letter-spacing="4">三大价值主张</text>
+    <line x1="0" y1="14" x2="60" y2="14" stroke="#C9A227" stroke-width="3"/>
+
+    <!-- Card 1 -->
+    <g transform="translate(0,40)">
+      <rect x="0" y="0" width="460" height="200" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <rect x="0" y="0" width="6" height="200" fill="#0F1B3C"/>
+      <text x="30" y="50" fill="#0F1B3C" font-size="56">🕐</text>
+      <text x="100" y="60" fill="#0F1B3C" font-size="24" font-weight="800">30 分钟私有化上线</text>
+      <text x="100" y="95" fill="#475569" font-size="15">Docker Compose 一键部署五容器栈</text>
+      <text x="100" y="120" fill="#475569" font-size="15">（BookStack · MySQL · pgvector · AGE · QA Service）</text>
+      <text x="100" y="155" fill="#1E293B" font-size="14" font-weight="600">当天导入存量文档，当天员工可用。</text>
+      <text x="100" y="180" fill="#C9A227" font-size="13" font-weight="600">▸ 替代 Confluence × Glean × Notion AI 工具链</text>
+    </g>
+
+    <!-- Card 2 -->
+    <g transform="translate(0,260)">
+      <rect x="0" y="0" width="460" height="200" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <rect x="0" y="0" width="6" height="200" fill="#C9A227"/>
+      <text x="30" y="50" fill="#C9A227" font-size="56">🎯</text>
+      <text x="100" y="60" fill="#0F1B3C" font-size="24" font-weight="800">答案带原文 + 置信度</text>
+      <text x="100" y="95" fill="#475569" font-size="15">七层推理管线：向量 + 关键词 + 重排</text>
+      <text x="100" y="120" fill="#475569" font-size="15">+ LLM 评分 + 问题改写 + 流式生成 + 兜底</text>
+      <text x="100" y="155" fill="#1E293B" font-size="14" font-weight="600">比全文搜索决策效率高 10 倍。</text>
+      <text x="100" y="180" fill="#C9A227" font-size="13" font-weight="600">▸ 多模态：扫描件、图表、图纸全部可问</text>
+    </g>
+
+    <!-- Card 3 -->
+    <g transform="translate(0,480)">
+      <rect x="0" y="0" width="460" height="200" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <rect x="0" y="0" width="6" height="200" fill="#1E2761"/>
+      <text x="30" y="50" fill="#1E2761" font-size="56">🛡️</text>
+      <text x="100" y="60" fill="#0F1B3C" font-size="24" font-weight="800">三层权限 + 全量审计</text>
+      <text x="100" y="95" fill="#475569" font-size="15">角色 / 用户 / 团队 × 允许/拒绝 × 时效 TTL</text>
+      <text x="100" y="120" fill="#475569" font-size="15">资源双维度（空间 + 资产），规则变更结构化落审计</text>
+      <text x="100" y="155" fill="#1E293B" font-size="14" font-weight="600">等保三级 / SOC2 / ISO 27001 天然友好。</text>
+      <text x="100" y="180" fill="#C9A227" font-size="13" font-weight="600">▸ Notebook 级别细粒度共享</text>
+    </g>
+  </g>
+
+  <!-- ========== Right column: differentiators grid + architecture ========== -->
+  <g transform="translate(580,300)">
+    <text x="0" y="0" fill="#0F1B3C" font-size="22" font-weight="700" letter-spacing="4">七大差异化壁垒</text>
+    <line x1="0" y1="14" x2="60" y2="14" stroke="#C9A227" stroke-width="3"/>
+
+    <!-- 2x4 grid (7 cards + 1 architecture) -->
+    <g transform="translate(0,40)">
+      <!-- Row 1 -->
+      <g>
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">01 · 数据主权</text>
+        <text x="15" y="55" fill="#475569" font-size="12">五容器私有栈，数据、向量、</text>
+        <text x="15" y="72" fill="#475569" font-size="12">对话、日志全部留在客户机房。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 金融 / 央企 / 政府合规刚需</text>
+      </g>
+      <g transform="translate(245,0)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">02 · 国产大模型原生</text>
+        <text x="15" y="55" fill="#475569" font-size="12">Qwen-VL-72B / 通义千问 /</text>
+        <text x="15" y="72" fill="#475569" font-size="12">DeepSeek / Claude / OpenAI 五选</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 国产化替代 + 国际化双栈</text>
+      </g>
+      <g transform="translate(490,0)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">03 · 多模态问答</text>
+        <text x="15" y="55" fill="#475569" font-size="12">PDF Pipeline v2 + VLM，扫描合同、</text>
+        <text x="15" y="72" fill="#475569" font-size="12">产品截图、架构图全部可索引。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 制造业 / 律所 / 设计业刚需</text>
+      </g>
+      <g transform="translate(735,0)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">04 · 知识图谱自生长</text>
+        <text x="15" y="55" fill="#475569" font-size="12">Apache AGE 实时记录引用关系，</text>
+        <text x="15" y="72" fill="#475569" font-size="12">自动识别权威 / 孤岛 / 重复文档。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 超越普通向量搜索</text>
+      </g>
+      <!-- Row 2 -->
+      <g transform="translate(0,115)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">05 · 一次接入存量</text>
+        <text x="15" y="55" fill="#475569" font-size="12">SMB / S3 / WebDAV / SFTP 适配器，</text>
+        <text x="15" y="72" fill="#475569" font-size="12">指到 NAS 即可增量扫描。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 20 万份老文档当天能问</text>
+      </g>
+      <g transform="translate(245,115)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">06 · MCP 开放协议</text>
+        <text x="15" y="55" fill="#475569" font-size="12">stdio + streamable HTTP 双通道，</text>
+        <text x="15" y="72" fill="#475569" font-size="12">Cursor / Claude Desktop 即插即用。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 新一代 Agent 入口生态位</text>
+      </g>
+      <g transform="translate(490,115)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+        <text x="15" y="30" fill="#C9A227" font-size="16" font-weight="800">07 · 工程执行力</text>
+        <text x="15" y="55" fill="#475569" font-size="12">27 ADR + 20 冻结 Spec + 四阶段</text>
+        <text x="15" y="72" fill="#475569" font-size="12">AI 协作流水线，交付可复盘。</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="700">→ 不依赖"人"的工程组织</text>
+      </g>
+      <g transform="translate(735,115)">
+        <rect x="0" y="0" width="230" height="100" rx="8" fill="url(#goldAccent)"/>
+        <text x="15" y="30" fill="#0F1B3C" font-size="16" font-weight="800">🚀 市场窗口</text>
+        <text x="15" y="55" fill="#0F1B3C" font-size="12">AI 重塑企业知识管理</text>
+        <text x="15" y="72" fill="#0F1B3C" font-size="12">3 年黄金窗口期</text>
+        <text x="15" y="90" fill="#0F1B3C" font-size="11" font-weight="800">→ 私有化 + 国产化双护城河</text>
+      </g>
+    </g>
+
+    <!-- Architecture strip -->
+    <g transform="translate(0,260)">
+      <text x="0" y="0" fill="#0F1B3C" font-size="22" font-weight="700" letter-spacing="4">技术架构一览</text>
+      <line x1="0" y1="14" x2="60" y2="14" stroke="#C9A227" stroke-width="3"/>
+
+      <g transform="translate(0,40)">
+        <rect x="0" y="0" width="965" height="320" rx="10" fill="#FFFFFF" stroke="#E2E8F0"/>
+
+        <!-- Layer 1: Client -->
+        <rect x="30" y="20" width="280" height="60" rx="6" fill="#0F1B3C"/>
+        <text x="170" y="50" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700">Web 控制台 · React 19</text>
+        <text x="170" y="70" text-anchor="middle" fill="#CADCFC" font-size="11">11 个业务模块 · 流式问答</text>
+
+        <rect x="330" y="20" width="280" height="60" rx="6" fill="#0F1B3C"/>
+        <text x="470" y="50" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700">MCP Service · 开放协议</text>
+        <text x="470" y="70" text-anchor="middle" fill="#CADCFC" font-size="11">stdio + HTTP · 给 Cursor / Claude</text>
+
+        <rect x="630" y="20" width="310" height="60" rx="6" fill="#0F1B3C"/>
+        <text x="785" y="50" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="700">外部 Agent / IDE / 第三方系统</text>
+        <text x="785" y="70" text-anchor="middle" fill="#CADCFC" font-size="11">企业 IM / OA / 客服机器人</text>
+
+        <!-- Arrow down -->
+        <line x1="482" y1="85" x2="482" y2="105" stroke="#C9A227" stroke-width="2"/>
+        <polygon points="482,110 477,100 487,100" fill="#C9A227"/>
+
+        <!-- Layer 2: Core -->
+        <rect x="30" y="115" width="910" height="80" rx="6" fill="url(#goldAccent)"/>
+        <text x="485" y="140" text-anchor="middle" fill="#0F1B3C" font-size="16" font-weight="800">QA Service · Node 22 + Express 5</text>
+        <text x="485" y="162" text-anchor="middle" fill="#0F1B3C" font-size="12">统一鉴权 · Agent 编排 · Agentic RAG 七层管线 · Ingest 统一入口 · Governance · 审计</text>
+        <text x="485" y="182" text-anchor="middle" fill="#1E2761" font-size="11">4 个 Agent：知识问答 / 数据治理 / 结构化查询 / 元数据运维</text>
+
+        <!-- Arrow down -->
+        <line x1="482" y1="200" x2="482" y2="220" stroke="#C9A227" stroke-width="2"/>
+        <polygon points="482,225 477,215 487,215" fill="#C9A227"/>
+
+        <!-- Layer 3: Data -->
+        <rect x="30" y="230" width="175" height="70" rx="6" fill="#1E2761"/>
+        <text x="117" y="255" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">BookStack</text>
+        <text x="117" y="275" text-anchor="middle" fill="#CADCFC" font-size="10">Wiki UI + Markdown</text>
+
+        <rect x="215" y="230" width="175" height="70" rx="6" fill="#1E2761"/>
+        <text x="302" y="255" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">MySQL 8</text>
+        <text x="302" y="275" text-anchor="middle" fill="#CADCFC" font-size="10">权限 · 治理 · 审计</text>
+
+        <rect x="400" y="230" width="175" height="70" rx="6" fill="#1E2761"/>
+        <text x="487" y="255" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">pgvector pg16</text>
+        <text x="487" y="275" text-anchor="middle" fill="#CADCFC" font-size="10">向量真相源 + 混合检索</text>
+
+        <rect x="585" y="230" width="175" height="70" rx="6" fill="#1E2761"/>
+        <text x="672" y="255" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">Apache AGE</text>
+        <text x="672" y="275" text-anchor="middle" fill="#CADCFC" font-size="10">知识图谱 · 引用关系</text>
+
+        <rect x="770" y="230" width="170" height="70" rx="6" fill="#C9A227"/>
+        <text x="855" y="255" text-anchor="middle" fill="#0F1B3C" font-size="13" font-weight="800">国产 LLM</text>
+        <text x="855" y="275" text-anchor="middle" fill="#0F1B3C" font-size="10">Qwen / DeepSeek / 硅基</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========== Bottom: CTA band ========== -->
+  <g transform="translate(0,1010)">
+    <rect x="0" y="0" width="1600" height="121" fill="#0F1B3C"/>
+    <rect x="0" y="0" width="1600" height="3" fill="#C9A227"/>
+
+    <text x="60" y="50" fill="#FFFFFF" font-size="28" font-weight="800">让员工少找 80% 的文件</text>
+    <text x="60" y="85" fill="#CADCFC" font-size="15">首批试点企业享：定制接入 · 专属 SA 支持 · 12 个月免费升级</text>
+
+    <!-- CTA buttons -->
+    <g transform="translate(950,35)">
+      <rect x="0" y="0" width="180" height="55" rx="6" fill="url(#goldAccent)"/>
+      <text x="90" y="35" text-anchor="middle" fill="#0F1B3C" font-size="16" font-weight="800">预约 30 分钟 Demo →</text>
+    </g>
+    <g transform="translate(1150,35)">
+      <rect x="0" y="0" width="160" height="55" rx="6" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <text x="80" y="35" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="600">下载白皮书</text>
+    </g>
+    <g transform="translate(1330,35)">
+      <rect x="0" y="0" width="210" height="55" rx="6" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <text x="105" y="35" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="600">加入试点计划</text>
+    </g>
+  </g>
+</svg>

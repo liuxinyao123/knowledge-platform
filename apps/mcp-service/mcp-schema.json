@@ -1,0 +1,167 @@
+{
+  "name": "knowledge-mcp",
+  "version": "1.0.0",
+  "description": "知识中台 MCP 服务",
+  "tools": [
+    {
+      "name": "search_knowledge",
+      "description": "在知识库中搜索相关内容",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "搜索关键词"
+          },
+          "shelf_id": {
+            "type": "number",
+            "description": "限定知识空间 ID（可选）"
+          },
+          "count": {
+            "type": "number",
+            "description": "返回数量，默认 10"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_page_content",
+      "description": "获取指定知识库页面的完整内容",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_id": {
+            "type": "number",
+            "description": "BookStack 页面 ID"
+          }
+        },
+        "required": ["page_id"]
+      }
+    },
+    {
+      "name": "ontology.query_chunks",
+      "description": "语义召回——查询相关知识片段",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "查询文本"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "返回结果数，默认 10",
+            "default": 10
+          },
+          "space_id": {
+            "type": "string",
+            "description": "知识空间 ID（可选）"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "ontology.traverse_asset",
+      "description": "从给定 Asset 出发 1-2 跳拿 Ontology Context",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "description": "资产 ID"
+          },
+          "max_hop": {
+            "type": "integer",
+            "description": "最大跳数，1-2，默认 2",
+            "minimum": 1,
+            "maximum": 2,
+            "default": 2
+          }
+        },
+        "required": ["asset_id"]
+      }
+    },
+    {
+      "name": "ontology.path_between",
+      "description": "查询两个资产间的路径",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from_id": {
+            "type": "string",
+            "description": "起点资产 ID"
+          },
+          "to_id": {
+            "type": "string",
+            "description": "终点资产 ID"
+          },
+          "max_depth": {
+            "type": "integer",
+            "description": "最大搜索深度，默认 4，最多 8",
+            "default": 4,
+            "minimum": 1,
+            "maximum": 8
+          }
+        },
+        "required": ["from_id", "to_id"]
+      }
+    },
+    {
+      "name": "ontology.match_tag",
+      "description": "基于 semantic_embedding 进行自然语言标签匹配",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "自然语言查询文本"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "返回结果数，默认 10",
+            "default": 10
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "name": "action.execute",
+      "description": "执行一个 Action",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action_name": {
+            "type": "string",
+            "description": "Action 名称"
+          },
+          "args": {
+            "type": "object",
+            "description": "Action 参数"
+          },
+          "reason": {
+            "type": "string",
+            "description": "执行原因"
+          }
+        },
+        "required": ["action_name", "args"]
+      }
+    },
+    {
+      "name": "action.status",
+      "description": "查询 Action 运行状态",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "description": "运行 ID"
+          }
+        },
+        "required": ["run_id"]
+      }
+    }
+  ]
+}
