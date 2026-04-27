@@ -114,11 +114,16 @@ else
   ok "Docker 装好"
 fi
 
-# 把当前用户加入 docker 组（如果不是 root sudo 调用）
+# 把当前用户加入 docker 组（仅便利，失败不致命）
+# Ubuntu 24.04 / snap docker 等场景下 docker 组可能不会自动建，先确保再加
 if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
-  if ! groups "$SUDO_USER" | grep -qw docker; then
-    usermod -aG docker "$SUDO_USER"
-    warn "已把 $SUDO_USER 加入 docker 组；下次登录后免 sudo 跑 docker"
+  groupadd -f docker 2>/dev/null || true
+  if getent group docker >/dev/null && ! groups "$SUDO_USER" 2>/dev/null | grep -qw docker; then
+    if usermod -aG docker "$SUDO_USER" 2>/dev/null; then
+      warn "已把 $SUDO_USER 加入 docker 组；下次登录后免 sudo 跑 docker"
+    else
+      warn "把 $SUDO_USER 加入 docker 组失败（不致命，继续）；以后用 sudo docker"
+    fi
   fi
 fi
 
