@@ -213,6 +213,110 @@ VIKING_ENABLED=1 docker compose -f infra/docker-compose.yml --profile viking up 
 
 ---
 
+## 🖥️ 服务器配置要求
+
+> **关键差异化**：LLM / Embedding / Reranker **全走外部 API**（硅基流动 / 通义 / Anthropic），**主机不需要 GPU**。这是本架构相比其它 RAG 平台最省钱的差异化点。
+> 如客户红线要求"完全私有 LLM"，参见下方 §国产化适配。
+
+### 配置矩阵
+
+| 维度 | 🟢 起步 / 演示 | 🟡 小型生产 | 🟠 中型生产 | 🔴 集团级 |
+|---|---|---|---|---|
+| **场景** | demo · POC · 1 部门 ≤10 用户 · ≤5k chunks | 单 BU · 50–100 用户 · 20–100k chunks | 跨 BU · 500–1000 用户 · 200–800k chunks | 全集团 · 5000+ 用户 · 5M+ chunks |
+| **CPU** | 4 核 | 8 核 | 16 核 | DB 32 核 / App 16 核 ×N |
+| **内存** | 8 GB | 16 GB | 32 GB | DB 128 GB / App 32 GB ×N |
+| **磁盘** | 50 GB SSD | 200 GB SSD | 500 GB NVMe | 1–2 TB NVMe + 备份盘 |
+| **网络** | 100 Mbps | 1 Gbps | 1 Gbps + 双链路 | 10 Gbps 内网 |
+| **架构** | 单机 5 容器 | 单机 5 容器 | 单机 5 容器 + 监控 | DB 专机 + App 集群 |
+| **并发问答** | 1–2 QPS | 5–10 QPS | 30–50 QPS | 100+ QPS（横向扩 qa-service） |
+| **首次 ingest** | 30 PDF/小时 | 200 PDF/小时 | 1000 PDF/小时 | 专用 ingest worker |
+| **典型客户** | 个人 / 团队试用 | 律所 / 1 个事业部 | 大型企业某条业务线 | 国央企 / 集团总部 |
+| **月成本估算** | 云主机 200–300 元 | 云主机 800–1500 元 | 云主机 3000–5000 元 | 自有机房 + 备份 |
+
+### 内存占用拆解（以小生产档 16 GB 为例）
+
+```
+组件                                    idle    ingest 峰值
+────────────────────────────────────────────────────────
+PostgreSQL + pgvector (pg_db)           1.5 GB  2.5 GB
+PostgreSQL + Apache AGE (kg_db)         0.8 GB  1.2 GB
+MySQL 8 (BookStack + governance)        1.5 GB  2.0 GB
+BookStack PHP-FPM + nginx               0.5 GB  0.7 GB
+qa-service (Node 22)                    0.6 GB  1.2 GB
+Java 17 (PDF Pipeline ODL)              空闲不起 1.5 GB
+Docker overhead + OS                    1.0 GB  1.0 GB
+────────────────────────────────────────────────────────
+合计                                     5.9 GB  10.1 GB
+余量（缓存 / 突发 / 监控）                  10 GB    6 GB
+```
+
+idle 状态 6 GB 就够，**ingest 含图 PDF 时峰值到 10 GB**——16 GB 这一档的余量正是为这个峰值留的。
+
+### 磁盘构成（以小生产档 200 GB 为例）
+
+```
+组件                                    估算
+────────────────────────────────────────
+Docker images（5 个容器）                4 GB
+PostgreSQL pg_data（vector + chunks）    30 GB（按 100k chunks 估）
+PostgreSQL kg_data（AGE 知识图谱）       5 GB
+MySQL bookstack_data + 治理表            10 GB
+BookStack uploads（附件、Wiki 图）       20 GB
+infra/asset_images（PDF 抽出的图）       50 GB（含图 PDF 大头）
+日志（qa-service / nginx / pg）          20 GB
+备份 / 快照预留                          50 GB
+余量                                     11 GB
+────────────────────────────────────────
+合计                                     200 GB
+```
+
+**真正占空间的是 `infra/asset_images/`**——含图 PDF 抽出的图字节落盘是大头。如果不上多模态（关闭 `INGEST_VLM_ENABLED`），削掉 30 GB 用 150 GB 配置即可。
+
+### 国产化适配（客户红线场景）
+
+**OS**：麒麟 V10 / 统信 UOS / openEuler 22 都已验证 Docker + Node 22 + PG 16
+
+**CPU 兼容**：x86_64（Intel / AMD / 海光）/ ARM64（鲲鹏 / 飞腾）都跑得通
+
+> ⚠️ pgvector 0.8.2 / Apache AGE 1.6 在 ARM64 上需自行编译（官方镜像 tag 不一定全）；Java 用 OpenJDK 17 而非 Oracle JDK（许可证）
+
+**LLM 私有部署 GPU 需求**（客户禁止外发 API 时另算服务器，**不算在主应用机**）：
+
+| 模型 | 推理 GPU | 备注 |
+|---|---|---|
+| Qwen2.5-7B-Instruct | 1× A10 / 4090 | 速度够，7B 答题质量略弱 |
+| Qwen2.5-32B-Instruct | 1× A100-80G 或 2× 4090 | 性价比甜区 |
+| Qwen2.5-72B-Instruct | 2× A100-80G 或 4× 4090 | 旗舰，对应默认配置 |
+| Qwen2.5-VL-72B-Instruct | 2× A100-80G | 多模态（PDF 图理解） |
+| 华为昇腾 910B | 等价 A100 | 国央企硬指标场景 |
+
+**Embedding 私部署**：Qwen3-Embedding-8B 单张 24G（A10 / 4090）即可，约 1500 QPS。
+
+### 起步推荐（报价用）
+
+客户说"先试一段时间，能跑就行"——直接报这套：
+
+```
+云主机：
+  CPU:    4 核（Intel Xeon Platinum 或鲲鹏 920 等价）
+  RAM:    8 GB
+  磁盘:   50 GB SSD
+  网络:   5 Mbps 公网（连硅基流动 API）
+  GPU:    无需
+
+OS:           Ubuntu 22.04 / 麒麟 V10
+Docker:       24+
+Compose:      v2
+
+参考价位（阿里云 / 华为云 / 腾讯云）：
+  按量:        1.5–2 元/小时
+  包月:        250–350 元/月
+```
+
+**这一档够跑 30 分钟私有化上线演示，未来涨到 20k chunks 都不用扩**——CPU 8 核 / 16 GB 才是真生产甜区。
+
+---
+
 ## 🔑 环境变量速查
 
 完整列表见 [`apps/qa-service/.env.example`](apps/qa-service/.env.example)。最关键的：
