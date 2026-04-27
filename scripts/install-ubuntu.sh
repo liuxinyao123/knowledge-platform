@@ -85,12 +85,19 @@ INSTALL_DIR="${INSTALL_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 ok "项目根：$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
+# compose 文件路径（早期声明，所有 docker compose 都用 -f 显式指）
+COMPOSE_FILE="$INSTALL_DIR/infra/docker-compose.yml"
+if [ ! -f "$COMPOSE_FILE" ]; then
+  err "找不到 $COMPOSE_FILE。可能 git pull 没成功、或 repo 不完整？"
+  err "请先在 $INSTALL_DIR 跑：git status / git pull"
+  exit 1
+fi
+
 # 升级模式短路：跳过装 Docker、跳过 .env 生成
 if [ "$UPGRADE_ONLY" = true ]; then
   log "=== --upgrade 模式：仅重建镜像 + 重启容器 ==="
-  cd infra
-  docker compose build
-  docker compose up -d
+  docker compose -f "$COMPOSE_FILE" build
+  docker compose -f "$COMPOSE_FILE" up -d
   ok "升级完成"
   exit 0
 fi
@@ -190,12 +197,11 @@ fi
 
 # ── 镜像 build + 起栈 ────────────────────────────────────────────────────
 log "=== Step 3 · Docker 镜像 build（首次约 5–10 分钟）==="
-cd "$INSTALL_DIR/infra"
-docker compose build 2>&1 | tail -20
+docker compose -f "$COMPOSE_FILE" build 2>&1 | tail -20
 ok "镜像 build 完成"
 
 log "=== Step 4 · 起栈 ==="
-docker compose up -d
+docker compose -f "$COMPOSE_FILE" up -d
 ok "5 容器已启动"
 
 # ── 健康检查 ──────────────────────────────────────────────────────────────
@@ -203,15 +209,14 @@ log "=== Step 5 · 健康检查（最多等 90s）==="
 ATTEMPTS=18
 SLEEP=5
 for i in $(seq 1 $ATTEMPTS); do
-  HEALTHY=$(docker compose ps --format json 2>/dev/null | grep -c '"Health":"healthy"' || true)
-  RUNNING=$(docker compose ps --format json 2>/dev/null | grep -c '"State":"running"' || true)
+  RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | grep -c '"State":"running"' || true)
   if curl -sf http://127.0.0.1:3001/api/health >/dev/null 2>&1; then
     ok "qa-service 健康检查通过（$RUNNING 容器在跑）"
     break
   fi
   if [ "$i" -eq "$ATTEMPTS" ]; then
     err "qa-service 90s 内未就绪。诊断："
-    err "  docker compose -f infra/docker-compose.yml logs qa-service --tail 50"
+    err "  docker compose -f $COMPOSE_FILE logs qa-service --tail 50"
     exit 3
   fi
   sleep "$SLEEP"
