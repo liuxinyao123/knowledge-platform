@@ -419,8 +419,23 @@ export async function generateAnswer(
   },
 ): Promise<void> {
   emit({ type: 'rag_step', icon: '💡', label: '正在生成回答...' })
+
+  // ADR-45：是否在答案正文里嵌入图片（默认 on；与 CITATION_IMAGE_URL_ENABLED 独立）
+  const inlineImageEnabled = isInlineImageInAnswerEnabled()
+
   const docContext = docs
-    .map((d, i) => `[${i + 1}] ${d.asset_name}\n${d.chunk_content}`)
+    .map((d, i) => {
+      const head = `[${i + 1}] ${d.asset_name}`
+      // ADR-45：image_caption chunk 多吐一行 IMAGE: 给 LLM 抄进 markdown
+      const imageLine =
+        inlineImageEnabled &&
+        d.kind === 'image_caption' &&
+        typeof d.image_id === 'number' &&
+        d.image_id > 0
+          ? `\nIMAGE: /api/assets/images/${d.image_id}`
+          : ''
+      return `${head}${imageLine}\n${d.chunk_content}`
+    })
     .join('\n\n---\n\n')
 
   // ADR-35：把联网检索结果也拼进 context（编号 [w1] [w2]，与文档 [N] 区分）
@@ -473,7 +488,15 @@ export async function generateAnswer(
 4. **每个事实陈述后加 [N] 引用**（N 是文档编号）。同一句多个来源用 [1][2]
 5. **复合答案不要漏组件**：如果原文是「X = A + B」，答案要包含 A 和 B 两部分，不能只说 X`
 
-  const defaultSystem = `${headerAndRules}
+  // ADR-45：当 inline image 开启且本批召回里至少有一张图时，给 prompt 加规则 6
+  const hasImageDocs = inlineImageEnabled && docs.some(
+    (d) => d.kind === 'image_caption' && typeof d.image_id === 'number' && d.image_id > 0,
+  )
+  const inlineImageRule = hasImageDocs
+    ? `\n6. **图片内嵌（可选）**：如果某个 [N] 文档片段紧跟有 \`IMAGE: /api/assets/images/<id>\` 行，且该图能直接说明你的答案，可以在引用 [N] 后**立刻**换行写一行 markdown \`![简短描述](/api/assets/images/<id>)\`。**严格规则**：(a) URL 必须照抄 IMAGE: 行的字面值，**禁止编造任何 image_id**；(b) 文档片段没有 IMAGE: 行就**不要**插图；(c) 图与文字相辅相成，不要为了插图而插图。`
+    : ''
+
+  const defaultSystem = `${headerAndRules}${inlineImageRule}
 
 【输出格式】
 - 简洁直接，不复述问题
@@ -535,6 +558,19 @@ ${context}`
  */
 function isCitationImageEnabled(): boolean {
   const v = (process.env.CITATION_IMAGE_URL_ENABLED ?? 'true').toLowerCase().trim()
+  return !(v === 'false' || v === '0' || v === 'off' || v === 'no')
+}
+
+/**
+ * ADR-45 · 是否在答案正文里内嵌图片（导出 IMAGE: 行给 LLM + system prompt 加规则 6）。
+ * 默认 on；env INLINE_IMAGE_IN_ANSWER_ENABLED=false 时关闭。与 CITATION_IMAGE_URL_ENABLED 独立。
+ *
+ * 关闭时：docContext 不出 IMAGE: 行，system prompt 也不加规则 6——LLM 不知道有图存在；
+ * 前端 AnswerContent 仍会 best-effort 解析 markdown ![alt](url)，但严格只放过
+ * `/api/assets/images/\\d+` 路径，且需要 LLM 自己生成那段 markdown（关闭后基本生成不出来）。
+ */
+export function isInlineImageInAnswerEnabled(): boolean {
+  const v = (process.env.INLINE_IMAGE_IN_ANSWER_ENABLED ?? 'true').toLowerCase().trim()
   return !(v === 'false' || v === '0' || v === 'off' || v === 'no')
 }
 

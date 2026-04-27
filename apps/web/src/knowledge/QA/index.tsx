@@ -1,6 +1,7 @@
 import { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react'
 import ConfidenceBadge from '@/components/ConfidenceBadge'
 import AssetDirectoryPanel from '@/knowledge/QA/AssetDirectoryPanel'
+import AnswerContent from '@/knowledge/QA/AnswerContent'
 import { tokenStorage } from '@/auth/tokenStorage'
 import { listSpaces, type SpaceSummary } from '@/api/spaces'
 
@@ -240,8 +241,10 @@ function AiBubble({ msg }: { msg: AiMessage }) {
       {(msg.bubbleState === 'streaming' || msg.bubbleState === 'done') && (
         <div>
           <style>{`@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
-          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.7 }}>
-            {msg.content}
+          {/* ADR-45：AnswerContent 解析 ![alt](/api/assets/images/N) 内嵌图；
+                     非图字段一路走纯文本；流式半截 markdown 不会误伤 */}
+          <div style={{ position: 'relative' }}>
+            <AnswerContent content={msg.content} />
             {msg.bubbleState === 'streaming' && (
               <span style={{ display: 'inline-block', width: 2, height: '1em', background: 'var(--p)', verticalAlign: 'text-bottom', animation: 'cursor-blink 1s step-end infinite', marginLeft: 2 }} />
             )}

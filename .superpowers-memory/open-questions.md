@@ -14,6 +14,7 @@
 | Q-003 审批队列复用 Mission Control | `decisions/2026-04-21-06-q003-approval-queue-deferred.md` | 暂缓立项；触发后走工作流 C |
 | OQ-INGEST-1 Ingest 同步→异步 | `decisions/2026-04-24-40-ingest-async-pipeline.md` | DB 状态机 + in-proc worker · Phase A/B/C 2026-04-24 完成 · 323/323 tests 绿 |
 | OQ-WEB-TEST-DEBT web 测试 18 失败 | `decisions/2026-04-25-43-web-test-debt-cleanup.md` | 全局 axios stub + 5 文件 mock/选择器修复 · 2026-04-25 完成 · 114/114 全绿 |
+| OQ-ANSWER-INLINE-IMAGE 答案气泡内嵌图 | `decisions/2026-04-27-45-answer-inline-image.md` | C 类工作流 · 后端 prompt 注入 IMAGE: 行 + 规则 6；前端新建 AnswerContent 严格 URL allow-list；INLINE_IMAGE_IN_ANSWER_ENABLED=true 默认；与 ADR-44 Citation 透图独立 · 2026-04-27 完成 |
 | llm_wiki 图谱洞察接入 | `decisions/2026-04-25-41-graph-insights.md` | 工作流 B · /insights 路由 · 四类洞察 + Deep Research 复用 runRagPipeline · Phase A–K 完成 |
 | llm_wiki 知识图谱视图接入 | `decisions/2026-04-25-42-knowledge-graph-view.md` | 工作流 B · /knowledge-graph 路由 · sigma.js + ForceAtlas2 + Asset.type 着色 + hover 高亮 · Phase A–G 完成 |
 
