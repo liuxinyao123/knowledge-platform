@@ -706,9 +706,111 @@ export async function runPgMigrations(): Promise<void> {
     GROUP BY ca.asset_id
   `)
 
+  // asset-vector-coloc · halfvec 列类型迁移（pgvector ≥ 0.7 解锁；4096-d 存储 −50%）
+  // 幂等：已是 halfvec 跳过；版本不足跳过；env PGVECTOR_HALF_PRECISION=false 跳过。
+  await migrateToHalfvec(pool)
+
   await ensureDefaultSource(pool)
   await ensureDefaultAdmin(pool)
   await ensureDefaultAclRules(pool)
+}
+
+/**
+ * asset-vector-coloc · halfvec 迁移
+ *
+ * 把 metadata_field.embedding 与 chunk_abstract.l0_embedding 从 vector(4096)
+ * 迁到 halfvec(4096)。索引同步从 vector_cosine_ops 重建到 halfvec_cosine_ops。
+ *
+ * 三层兜底跳过：
+ *   1. env `PGVECTOR_HALF_PRECISION` 显式关 → 跳过（兼容老 pgvector 容器）
+ *   2. pgvector < 0.7 → halfvec 不可用 → 跳过
+ *   3. 列已是 halfvec → 跳过（多次运行幂等）
+ *
+ * 失败兜底：索引重建失败只 warn，不抛——保证 runPgMigrations() 不被一条迁移卡住启动。
+ *
+ * 导出供单测断言（halfvecMigration.test.ts）。
+ */
+export async function migrateToHalfvec(pool: pg.Pool): Promise<void> {
+  // 2026-04-27 ADR-44 锁定：默认关。原因——halfvec 在 GM-LIFTGATE32 上实测推 5 题
+  // 跌出 top-5（recall@5 1.000 → 0.865，fp16 精度损失把 borderline 分数压下 MIN_SCORE）。
+  // 重启前必读 OQ-VEC-QUANT-V2 触发条件；显式 `PGVECTOR_HALF_PRECISION=true` 才生效。
+  const flagRaw = (process.env.PGVECTOR_HALF_PRECISION ?? 'false').toLowerCase().trim()
+  const flagOn = flagRaw === 'true' || flagRaw === '1' || flagRaw === 'on' || flagRaw === 'yes'
+  if (!flagOn) {
+    // 默认路径：不打印 warn，避免每次启动刷日志（这是默认期望行为，不是异常）
+    return
+  }
+
+  // 1. pgvector 版本探测
+  const { rows: vrows } = await pool.query(
+    `SELECT extversion FROM pg_extension WHERE extname='vector'`,
+  )
+  const ver = String(vrows[0]?.extversion ?? '0.0.0')
+  const [maj, min] = ver.split('.').map((n) => Number.parseInt(n, 10) || 0)
+  const okVersion = maj > 0 || (maj === 0 && min >= 7)
+  if (!okVersion) {
+    // eslint-disable-next-line no-console
+    console.warn(`[pgDb] pgvector ${ver} < 0.7 → halfvec 不可用，跳过迁移`)
+    return
+  }
+
+  // 2. 列类型探测（format_type 返回 'vector(4096)' / 'halfvec(4096)' 这类字面量）
+  type ColInfo = { table: string; column: string; current: string }
+  const { rows: probe } = await pool.query(
+    `SELECT c.relname AS table_name,
+            a.attname AS column_name,
+            format_type(a.atttypid, a.atttypmod) AS type_text
+     FROM pg_attribute a
+     JOIN pg_class c ON c.oid = a.attrelid
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = current_schema()
+       AND ((c.relname = 'metadata_field' AND a.attname = 'embedding')
+         OR (c.relname = 'chunk_abstract' AND a.attname = 'l0_embedding'))
+       AND a.attnum > 0`,
+  )
+  const targets: ColInfo[] = probe.map((r) => ({
+    table: String(r.table_name),
+    column: String(r.column_name),
+    current: String(r.type_text),
+  }))
+
+  // 3. 逐列迁移（仅 vector → halfvec；其它类型一律跳过 + warn）
+  for (const t of targets) {
+    if (t.current.startsWith('halfvec')) continue
+    if (!t.current.startsWith('vector')) {
+      // eslint-disable-next-line no-console
+      console.warn(`[pgDb] ${t.table}.${t.column} 类型 ${t.current} 非预期，跳过`)
+      continue
+    }
+    // eslint-disable-next-line no-console
+    console.log(`[pgDb] 迁移 ${t.table}.${t.column}: ${t.current} → halfvec(4096)`)
+    await pool.query(
+      `ALTER TABLE ${t.table}
+         ALTER COLUMN ${t.column} TYPE halfvec(4096)
+         USING ${t.column}::halfvec(4096)`,
+    )
+  }
+
+  // 4. 索引重建：旧索引在 ALTER COLUMN 后 operator class 不匹配，必须 DROP 重建
+  await pool.query(`DROP INDEX IF EXISTS idx_field_embedding`).catch(() => {})
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_field_embedding
+      ON metadata_field USING ivfflat (embedding halfvec_cosine_ops)
+      WITH (lists = 100)
+  `).catch((e) => {
+    // eslint-disable-next-line no-console
+    console.warn(`[pgDb] idx_field_embedding 重建失败：${(e as Error).message}`)
+  })
+
+  await pool.query(`DROP INDEX IF EXISTS idx_chunk_abstract_l0_embedding`).catch(() => {})
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_chunk_abstract_l0_embedding
+      ON chunk_abstract USING ivfflat (l0_embedding halfvec_cosine_ops)
+      WITH (lists = 100)
+  `).catch((e) => {
+    // eslint-disable-next-line no-console
+    console.warn(`[pgDb] idx_chunk_abstract_l0_embedding 重建失败：${(e as Error).message}`)
+  })
 }
 
 async function ensureDefaultAdmin(pool: pg.Pool): Promise<void> {

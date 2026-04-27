@@ -361,6 +361,15 @@ function CiteSup({ n, citation, onClick }: {
           whiteSpace: 'normal',
         }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>{citation.asset_name}</div>
+          {citation.image_url && (
+            <img
+              src={citation.image_url}
+              alt={citation.chunk_content.slice(0, 40)}
+              data-testid="notebook-citation-thumbnail"
+              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 4, marginBottom: 6, display: 'block' }}
+              loading="lazy"
+            />
+          )}
           <div style={{ color: '#d1d5db', fontStyle: 'italic' }}>
             {citation.chunk_content.slice(0, 200)}{citation.chunk_content.length > 200 ? '…' : ''}
           </div>

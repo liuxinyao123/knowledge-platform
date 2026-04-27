@@ -27,7 +27,22 @@
 
 - 容器：`infra/pg_data/`
 - 用途：资产元数据目录向量检索
-- 相关 change：`openspec/changes/metadata-catalog-pgvector/`
+- 实际版本：**pgvector 0.8.2**（2026-04-27 实测）→ halfvec / binary quantization 双双就绪
+- 向量列：
+  - `metadata_field.embedding vector(4096)` — Qwen3-Embedding-8B 默认（生产路径）
+  - `chunk_abstract.l0_embedding vector(4096)` — L0 abstract（同维）
+- **可选 halfvec 迁移**（ADR-44 锁定 · 默认 OFF）：env `PGVECTOR_HALF_PRECISION=true` → `runPgMigrations` 内部 `migrateToHalfvec()` 把上述两列改 halfvec(4096) 并重建 IVFFlat 索引为 `halfvec_cosine_ops`；幂等。回滚走 `node --experimental-strip-types scripts/rollback-halfvec.mjs --commit`
+- 相关 change：`openspec/changes/metadata-catalog-pgvector/`、`openspec/changes/asset-vector-coloc/`
+
+## Citation 透图（asset-vector-coloc · 2026-04-27 上线）
+
+- 入口：`apps/qa-service/src/services/ragPipeline.ts#toCitation()`
+- 字段：`Citation` 接口新增可选 `image_id?: number` / `image_url?: string`（向后兼容；老客户端忽略未知字段）
+- 触发：来源 chunk `kind='image_caption'` 且 `image_id > 0` 时回填 `image_url = /api/assets/images/${image_id}`
+- 后端依赖：`metadata_field.image_id → metadata_asset_image.file_path → infra/asset_images/{assetId}/`，路由 `/api/assets/images/:imageId`（assetDirectory.ts，已有）
+- Feature Flag：`CITATION_IMAGE_URL_ENABLED=true` 默认；关 → 不回填，前端自动退回纯文本
+- 前端消费方：`apps/web/src/knowledge/QA/index.tsx` / `Agent/index.tsx` / `Notebooks/ChatPanel.tsx`，三处独立 Citation 接口已同步加字段，渲染 64×64（hover 卡片 96×96）缩略图
+- 相关 ADR：`decisions/2026-04-27-44-lance-borrowing-asset-vector-coloc.md`
 
 ## Unified Auth Gateway
 
@@ -187,6 +202,26 @@
 - 数据目录：`infra/kg_data/`
 - Graph 名：`knowledge`（`KG_GRAPH` 可改；⚠ 必须 ≥ 3 字符，AGE 约束）
 - Schema：见 ADR-27 §D-005；节点 Asset / Source / Space / Tag / Question；边 CONTAINS / SCOPES / HAS_TAG / CITED / CO_CITED
+
+## Web Search 联网检索（ADR-35 · 2026-04-26）
+
+- 状态：Accepted（默认 provider=none，私有内网零外发）
+- 用途：QA composer 🌐 toggle 触发，结果作 [w1..wN] 拼进 LLM context
+- Provider：Tavily（默认推荐 · 1000/月免费 · agent-friendly）/ Bing v7（备选）/ none
+- 关键 env：`WEB_SEARCH_PROVIDER` + `TAVILY_API_KEY` 或 `BING_API_KEY` + `WEB_SEARCH_TIMEOUT_MS=5000` + `WEB_SEARCH_DEFAULT_TOP_K=5`
+- 入口：`apps/qa-service/src/services/webSearch.ts`，`webSearch(query, opts) → WebSearchHit[]`，永不抛
+- 集成位：`ragPipeline.runRagPipeline` 在 `generateAnswer` 之前，软超时 5s
+- 降级：未配置 / 超时 / 限流时返 [] + emit `rag_step ⚠️`，主链路不阻塞
+- SSE 新事件 `web_step`（旧客户端忽略）
+
+## QA 多模态附件（ADR-35 · 2026-04-26）
+
+- 状态：Accepted
+- 用途：QA composer 🖼 file picker，图片 base64 经 dispatch 喂 Qwen2.5-VL-72B
+- 复用：`INGEST_VLM_MODEL`（默认 `Qwen/Qwen2.5-VL-72B-Instruct`），与 PDF v2 caption 同模型
+- 上限：前端 6MB / 后端 8MB base64
+- 集成位：`generateAnswer.extras.image` → 用户消息走 `ContentBlock[]` + 模型切换到 VL
+- 凭据：复用 `EMBEDDING_API_KEY`（硅基），零新 secret
 
 ## Ingest L0/L1 Abstract（ADR-32 · 2026-04-26 · **Accepted**）
 

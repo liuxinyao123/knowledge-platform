@@ -529,14 +529,35 @@ ${context}`
 
 // ── 辅助：AssetChunk → Citation ──────────────────────────────────────────────
 
-function toCitation(doc: AssetChunk, index: number): Citation {
-  return {
+/**
+ * asset-vector-coloc · 是否在 Citation 中回填 image_id / image_url。
+ * 默认 on；env CITATION_IMAGE_URL_ENABLED=false 时关闭，前端自动退回纯文本。
+ */
+function isCitationImageEnabled(): boolean {
+  const v = (process.env.CITATION_IMAGE_URL_ENABLED ?? 'true').toLowerCase().trim()
+  return !(v === 'false' || v === '0' || v === 'off' || v === 'no')
+}
+
+/** asset-vector-coloc：导出供单测断言；其它内部调用方仍走同一份。 */
+export function toCitation(doc: AssetChunk, index: number): Citation {
+  const cite: Citation = {
     index,
     asset_id: doc.asset_id,
     asset_name: doc.asset_name,
     chunk_content: String(doc.chunk_content).slice(0, 500),
     score: doc.score,
   }
+  // asset-vector-coloc：来源 chunk 是 image_caption 行 → 透出图字节回查链接
+  if (
+    isCitationImageEnabled() &&
+    doc.kind === 'image_caption' &&
+    typeof doc.image_id === 'number' &&
+    doc.image_id > 0
+  ) {
+    cite.image_id = doc.image_id
+    cite.image_url = `/api/assets/images/${doc.image_id}`
+  }
+  return cite
 }
 
 // ── 入口 ────────────────────────────────────────────────────────────────────

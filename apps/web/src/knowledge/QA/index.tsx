@@ -11,6 +11,9 @@ interface Citation {
   asset_name: string
   chunk_content: string
   score: number
+  /** asset-vector-coloc：来源 chunk 是 image_caption 时回填 */
+  image_id?: number
+  image_url?: string
 }
 interface RagTrace {
   initial_count: number
@@ -917,6 +920,20 @@ export default function QA() {
                       }}>{c.index}</span>
                       {c.asset_name}
                     </div>
+                    {c.image_url && (
+                      <div style={{ margin: '6px 0' }}>
+                        <img
+                          src={c.image_url}
+                          alt={c.chunk_content.slice(0, 40)}
+                          data-testid="citation-thumbnail"
+                          style={{
+                            width: 64, height: 64, objectFit: 'cover',
+                            borderRadius: 4, border: '1px solid var(--border)',
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <div className="result-snippet">
                       {c.chunk_content.slice(0, 100)}{c.chunk_content.length > 100 ? '…' : ''}
                     </div>

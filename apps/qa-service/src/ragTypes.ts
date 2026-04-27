@@ -13,6 +13,16 @@ export interface Citation {
   asset_name: string
   chunk_content: string
   score: number
+  /**
+   * asset-vector-coloc：来源 chunk 是 kind='image_caption' 时回填的图片 id。
+   * 老客户端忽略未知字段即可（v1.x 反序列化兼容）。
+   */
+  image_id?: number
+  /**
+   * asset-vector-coloc：后端拼装的图片预览 URL（默认 `/api/assets/images/${image_id}`）。
+   * 由后端集中收口，前端无需自行推导。env CITATION_IMAGE_URL_ENABLED=false 时不回填。
+   */
+  image_url?: string
 }
 
 export interface RagTrace {

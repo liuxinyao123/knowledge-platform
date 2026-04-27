@@ -20,6 +20,10 @@ export interface AssetChunk {
   metadata: Record<string, unknown> | null
   /** ingest-l0-abstract（ADR-32 候选）：可选 chunk 主键，给 lazy backfill 用 */
   chunk_id?: number
+  /** asset-vector-coloc：chunk 类别（'paragraph'|'heading'|'table'|'image_caption'|...） */
+  kind?: string | null
+  /** asset-vector-coloc：当 kind='image_caption' 时指向 metadata_asset_image.id */
+  image_id?: number | null
 }
 
 export interface KnowledgeSearchInput {
@@ -85,7 +89,9 @@ export async function searchKnowledgeChunks(
        ma.name        AS asset_name,
        mf.content     AS chunk_content,
        1 - (mf.embedding <=> $1::vector) AS score,
-       mf.metadata
+       mf.metadata,
+       mf.kind        AS kind,
+       mf.image_id    AS image_id
      FROM metadata_field mf
      JOIN metadata_asset ma ON ma.id = mf.asset_id
      WHERE mf.embedding IS NOT NULL

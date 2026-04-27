@@ -128,6 +128,38 @@
 - **设计阶段必做**：在 `structured_query` 的 `proposal.md` 里把上述方案写进 Scope 而不是 Future Work。
 - **来源**：ADR-39 D-001 / D-004
 
+### OQ-VEC-QUANT-V2 — pgvector 高维向量量化的真正甜区
+- **来源**：ADR-44 D-003 / D-004（2026-04-27 LanceDB 借鉴落地实测发现）
+- **Owner**：RAG owner + 基础设施 owner
+- **等待事件（任一触发）**：① `metadata_field` 行数 > 50,000；② `metadata_field` 总大小 > 200 MB；③ P95 检索 latency > 100 ms（任意一道 RAG 用户被吐槽慢）
+- **影响工作流**：未来工作流 B（重启 `asset-vector-coloc` Phase 1.5 / Phase 2）
+- **现状**：halfvec 迁移代码、单测、回滚脚本全部 ready；env `PGVECTOR_HALF_PRECISION=true` 可一键启。但本次实测在 30 MB / 2k 行 corpus 上：(a) halfvec 把 Q26/Q32 类 borderline 题候选从 5 切到 0（MIN_SCORE=0.5 阈值 + fp16 累积误差），(b) 收益（~14 MB 节省）不足以抵消任何风险。
+- **建议解决路径（重启前必须先做）**：
+  1. **MIN_SCORE adaptive 或 reranker 兜底**——retrieveInitial 在 < MIN_SCORE 时不直接丢弃，而是 fallback 到 top-K（譬如 K=5 强制保留），再让 reranker 决定相关性；
+  2. **启 halfvec** + 跑 eval-recall 实测 borderline 题不再退化；
+  3. **可选 Phase 1.5** 引入 `bit(4096)` Hamming HNSW 粗筛 + halfvec 精排（pgvector 0.8 已支持）；
+  4. **可选 Phase 2** 引入 pgvectorscale DiskANN（需先核国产 PG 发行版的 .so 兼容性）
+
+### OQ-CAPTION-DUAL-EMBED — caption 独立向量列（异构模型驱动）
+- **来源**：ADR-44 D-004（2026-04-27 LanceDB 借鉴评估）
+- **Owner**：Ingest owner + RAG owner
+- **等待事件**：引入与正文不同的 caption embedding 模型（如 BGE-M3 caption-tuned / Cohere `embed-multilingual-v3`），或上线"用户上传图片做 query"的多模态检索场景
+- **影响工作流**：工作流 B（在 `metadata_field` 加 `caption_embedding halfvec(N)` 列 + `hybridSearch` 加第三路）
+- **现状**：当前 caption 与正文共用 Qwen3-Embedding-8B 同一模型；过滤 `WHERE kind='image_caption'` 已等价"图问图"过滤，单独存列零增量价值。
+- **建议解决路径**：触发后 (a) 选定异构模型评估在 GM-LIFTGATE32 上的 image-related 题召回提升幅度；(b) 加列 + 回填脚本（仿 `backfill-l0.mjs`）；(c) `hybridSearch` 加第三路 RRF k=90，权重低于 vector / keyword
+
+### OQ-EVAL-RECALL-DRIFT — `recall@5=1.000 → 0.865` 基线漂移追查
+- **来源**：ADR-44 D-003 / D-005 / D-006（2026-04-27 跨 4 配置实测均得 0.865，PROGRESS-SNAPSHOT-2026-04-26-l0-abstract.md 的 1.000 不可复现）
+- **Owner**：Eval owner + RAG owner
+- **等待事件**：可立即启动（已是当前真痛点；与 LanceDB 借鉴评估完全独立）
+- **影响工作流**：工作流 B 或 C（视范围而定）—— 至少需要先跑诊断，再决定是修复 corpus / eval set / chunk_abstract 覆盖率，还是修复 retrievalInitial 的 MIN_SCORE/topK 策略
+- **现状**：5 道题（Q26/Q27/Q32/Q62/Q70）跨"halfvec ON · vector ON · L0 ON · L0 OFF"四种配置一律 top-5 = 19,19,19,19,19 或类似单 asset 占满。L0 filter 在这 5 道题上零效果，疑似 chunk_abstract 表对 asset_5 相关 chunk 的覆盖不全。
+- **建议解决路径（按顺序）**：
+  1. **先做"基线条件锚定"**——给 PROGRESS-SNAPSHOT 指标块加固定字段：测量时间 / corpus rows / eval-set commit hash / 关键 env flag 状态；
+  2. **诊断步骤**：(a) 查 `chunk_abstract WHERE asset_id IN (期望 asset 列表)` 的覆盖率；(b) diff 当前 corpus vs 上次 1.000 测量时的 corpus 行数 / 时间戳；(c) eval-recall 加 `--preflight`（与 OQ-EVAL-1 合并）；
+  3. **判定**：若漂移源于 corpus / 评测集，重测一次锁定 0.865 为新基线；若源于 chunk_abstract 缺漏，跑 `backfill-l0.mjs --commit` 补；若源于 retrievalInitial 策略，进 OQ-VEC-QUANT-V2 §1 那条 MIN_SCORE adaptive
+- **关联**：OQ-EVAL-1（PG preflight）—— 本 OQ 应作为 OQ-EVAL-1 的超集启动，二者合并解决
+
 ### OQ-SKILL-BRIDGE — qa-service Agent 消费 mcp-service 的声明式 Skill
 - **MVP 已交付**（2026-04-25 · ADR-41 `skill-bridge-mvp`）：
   - `apps/qa-service/src/services/skillBridge.ts` 新建（282 行），登记 4/8 skill：`search_knowledge` / `get_page_content` / `ontology.query_chunks` / `ontology.traverse_asset`

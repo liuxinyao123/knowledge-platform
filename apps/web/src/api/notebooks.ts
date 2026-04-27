@@ -46,6 +46,9 @@ export interface Citation {
   asset_name: string
   chunk_content: string
   score: number
+  /** asset-vector-coloc：来源 chunk 是 image_caption 时回填 */
+  image_id?: number
+  image_url?: string
 }
 
 export interface NotebookMessage {

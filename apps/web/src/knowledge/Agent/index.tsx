@@ -23,6 +23,8 @@ interface AgentSelected {
 }
 interface Citation {
   index: number; asset_id: number; asset_name: string; chunk_content: string; score: number
+  /** asset-vector-coloc：来源 chunk 是 image_caption 时回填 */
+  image_id?: number; image_url?: string
 }
 
 type BubbleState = 'thinking' | 'active' | 'streaming' | 'done' | 'error'
@@ -474,6 +476,17 @@ export default function Agent() {
                           <span style={{ fontWeight: 700 }}>{c.asset_name}</span>
                           <span style={{ marginLeft: 'auto' }}><ConfidenceBadge score={c.score} /></span>
                         </div>
+                        {c.image_url && (
+                          <div style={{ marginTop: 6 }}>
+                            <img
+                              src={c.image_url}
+                              alt={c.chunk_content.slice(0, 40)}
+                              data-testid="agent-citation-thumbnail"
+                              style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--border)' }}
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
                         <div style={{ marginTop: 4, color: 'var(--muted)' }}>
                           {c.chunk_content.slice(0, 100)}{c.chunk_content.length > 100 ? '…' : ''}
                         </div>
