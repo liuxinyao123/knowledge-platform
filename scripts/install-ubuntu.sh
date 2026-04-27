@@ -106,6 +106,48 @@ fi
 log "=== Step 1 · Docker ==="
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  DOCKER_PATH=$(command -v docker)
+  IS_SNAP_DOCKER=false
+  if echo "$DOCKER_PATH" | grep -q '^/snap/' || (command -v snap >/dev/null 2>&1 && snap list 2>/dev/null | grep -qi '^docker '); then
+    IS_SNAP_DOCKER=true
+  fi
+
+  if [ "$IS_SNAP_DOCKER" = true ]; then
+    # snap docker 沙箱默认只读 /home/$USER/、/tmp、/media 等白名单路径
+    # 项目必须在 home 目录里，否则 docker compose 会报：
+    #   open ${COMPOSE_FILE}: no such file or directory
+    case "$INSTALL_DIR" in
+      /home/*)
+        warn "检测到 snap Docker（$DOCKER_PATH），项目在 home 目录可正常工作"
+        # 顺手验证 home 接口连着
+        if command -v snap >/dev/null 2>&1; then
+          if ! snap connections docker 2>/dev/null | grep -q '^home '; then
+            warn "snap docker:home 接口未连，可能后续 build 失败"
+            warn "如遇问题：sudo snap connect docker:home"
+          fi
+        fi
+        ;;
+      *)
+        err "检测到 snap Docker（$DOCKER_PATH），但项目在 $INSTALL_DIR"
+        err ""
+        err "snap docker 沙箱仅能访问 /home/\$USER/、/tmp、/media 等路径，"
+        err "$INSTALL_DIR 不在白名单内，docker compose 会找不到 docker-compose.yml。"
+        err ""
+        err "两条修复路径任选："
+        err "  A) 把项目搬到 home 目录（推荐，最快）："
+        err "       sudo mv $INSTALL_DIR /home/\$USER/zhiyuan"
+        err "       sudo chown -R \$USER:\$USER /home/\$USER/zhiyuan"
+        err "       cd /home/\$USER/zhiyuan && sudo bash scripts/install-ubuntu.sh"
+        err ""
+        err "  B) 换成 apt 官方 docker-ce（生产推荐，但需要 docker 不被其它应用绑死）："
+        err "       sudo snap remove docker"
+        err "       curl -fsSL https://get.docker.com | sudo sh"
+        err "       sudo bash $0"
+        exit 1
+        ;;
+    esac
+  fi
+
   ok "Docker $(docker --version | awk '{print $3}' | tr -d ',') + Compose $(docker compose version --short) 已就绪"
 else
   log "装 Docker（来自 docker 官方源，国内机器可能很慢）..."
@@ -173,13 +215,22 @@ else
 
   cp "$ENV_EXAMPLE" "$ENV_FILE"
   # 用 sed 替换关键变量；变量名前后加 = 防误伤
+  # 注意：DB/PG/KG 的 host 与 port 也要改成 docker 服务名+内部端口，
+  # 否则 .env 被打进镜像（缺 .dockerignore 时）会用 127.0.0.1 把 compose 的
+  # environment: 压掉，导致容器内连不上数据库。
   sed -i \
     -e "s|^EMBEDDING_API_KEY=.*|EMBEDDING_API_KEY=$EMBEDDING_API_KEY|" \
     -e "s|^EMBEDDING_BASE_URL=.*|EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1|" \
     -e "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$LLM_API_KEY|" \
     -e "s|^AUTH_HS256_SECRET=.*|AUTH_HS256_SECRET=$AUTH_HS256_SECRET|" \
-    -e "s|^PG_PASS=.*|PG_PASS=$PG_PASS|" \
+    -e "s|^DB_HOST=.*|DB_HOST=bookstack_db|" \
+    -e "s|^DB_PORT=.*|DB_PORT=3306|" \
     -e "s|^DB_PASS=.*|DB_PASS=$MYSQL_PASS|" \
+    -e "s|^PG_HOST=.*|PG_HOST=pg_db|" \
+    -e "s|^PG_PORT=.*|PG_PORT=5432|" \
+    -e "s|^PG_PASS=.*|PG_PASS=$PG_PASS|" \
+    -e "s|^KG_HOST=.*|KG_HOST=kg_db|" \
+    -e "s|^KG_PORT=.*|KG_PORT=5432|" \
     "$ENV_FILE" || true
 
   # 把 admin 凭据写到一个 unmanaged 文件（不进 git，方便首次登录后改）

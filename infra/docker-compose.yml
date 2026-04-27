@@ -24,8 +24,9 @@ services:
       #- REGISTRATION_ENABLED=true
     volumes:
       - ./bookstack_data:/config
+    # UI 暴露给公网（浏览器访问）；端口避让常见 6875 冲突
     ports:
-      - "6875:80"
+      - "16875:80"
     depends_on:
       bookstack_db:
         condition: service_healthy
@@ -37,8 +38,13 @@ services:
       dockerfile: apps/qa-service/Dockerfile
     container_name: qa_service
     restart: unless-stopped
+    # 把宿主 .env 挂进容器（覆盖镜像 build 时烤进去的旧值，避免每次 recreate 又回滚）
+    # 这是 ADR-44 系列上线后发现的"宿主 .env vs 镜像 .env"漂移防御
+    volumes:
+      - ../apps/qa-service/.env:/app/apps/qa-service/.env:ro
+    # API 暴露给公网（前端 / 客户调用）；端口避让常见 3001 冲突
     ports:
-      - "3001:3001"
+      - "13001:3001"
     environment:
       PORT: "3001"
       # 容器内访问 BookStack（与 bookstack 服务同网络）
@@ -57,6 +63,9 @@ services:
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      # ADR-44 系列上线后补：auth secret 透传给 qa-service（不在 environment 块内
+      # qa-service 走 dev bypass 模式，生产部署裸放）
+      AUTH_HS256_SECRET: ${AUTH_HS256_SECRET:-}
       # 未设置时由 qa-service 按 Base URL 解析（硅基流动默认 Qwen 嵌入）
       OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-}
       INGEST_MAX_FILE_MB: ${INGEST_MAX_FILE_MB:-50}
@@ -129,8 +138,10 @@ services:
       - MYSQL_PASSWORD=bookstack_secret
     volumes:
       - ./mysql_data:/var/lib/mysql
+    # MySQL 锁到 127.0.0.1 + 高端口；公网摸不到，仅本机调试用
+    # 容器内部 qa_service 走 docker 网络（DB_HOST=bookstack_db, DB_PORT=3306）
     ports:
-      - "3307:3306"
+      - "127.0.0.1:13307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_secret"]
       interval: 5s
@@ -148,8 +159,11 @@ services:
       - POSTGRES_PASSWORD=knowledge_secret
     volumes:
       - ./pg_data:/var/lib/postgresql/data
+    # 宿主端口锁到 15432 + 127.0.0.1：避开常见 5432 冲突（许多服务器另有 PG）
+    # 容器内部仍是 5432，qa_service 走 docker 网络（PG_HOST=pg_db, PG_PORT=5432）不受影响
+    # 外网访问不到本端口，仅本机调试用：psql -h 127.0.0.1 -p 15432 -U knowledge -d knowledge
     ports:
-      - "5432:5432"
+      - "127.0.0.1:15432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
       interval: 5s
@@ -173,8 +187,9 @@ services:
       - POSTGRES_PASSWORD=kg_secret
     volumes:
       - ./kg_data:/var/lib/postgresql/data
+    # AGE 锁到 127.0.0.1 + 高端口避让常见 5433 冲突；容器内部走 docker 网络（KG_HOST=kg_db）
     ports:
-      - "5433:5432"
+      - "127.0.0.1:15433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kg -d kg"]
       interval: 5s
@@ -210,8 +225,9 @@ services:
       VIKING_DATA_DIR:    /data
     volumes:
       - ./openviking_data:/data
+    # OpenViking sidecar 锁到 127.0.0.1（默认不暴露公网）
     ports:
-      - "1933:1933"
+      - "127.0.0.1:11933:1933"
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:1933/healthz"]
       interval: 15s

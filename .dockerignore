@@ -1,0 +1,51 @@
+# 仓库根 .dockerignore —— 控制 docker compose build 时哪些文件**不**进镜像
+# 关键作用：防止本机 dev 用的 .env / node_modules / 数据卷被 COPY 进镜像，
+#         覆盖 compose 的 environment: 真相源，导致容器内连本机地址 ECONNREFUSED。
+
+# Secrets / 本机 dev 配置（永不打入镜像）
+**/.env
+**/.env.local
+**/.env.*.local
+.first-admin-credentials.txt
+
+# 依赖（容器内用 pnpm install 重装，不要复用宿主的）
+**/node_modules
+**/pnpm-store
+
+# 构建产物 / 缓存（容器内重新生成）
+**/dist
+**/build
+**/.next
+**/.cache
+**/.turbo
+**/coverage
+
+# 数据卷（绝对不能进镜像，否则镜像体积爆炸 + 数据漂移）
+infra/bookstack_data
+infra/mysql_data
+infra/pg_data
+infra/kg_data
+infra/asset_images
+infra/openviking_data
+
+# git / IDE / 系统垃圾
+.git
+.gitignore
+**/.DS_Store
+**/.vscode
+**/.idea
+**/*.swp
+**/*.log
+**/*.tsbuildinfo
+
+# 测试 / docs / 不影响运行的目录
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+docs/
+eval/
+.dev-logs/
+.backfill-l0.cursor
+
+# 沙箱 / 一次性辅助脚本
+scripts/_*.sh

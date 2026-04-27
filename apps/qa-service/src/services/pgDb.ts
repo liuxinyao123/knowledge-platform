@@ -97,21 +97,11 @@ export async function runPgMigrations(): Promise<void> {
   await pool.query(
     `ALTER TABLE metadata_field ADD COLUMN IF NOT EXISTS image_id INT`,
   )
-  // image_id FK 分开加，避免重复运行报错
-  await pool.query(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'metadata_field_image_fk'
-      ) THEN
-        ALTER TABLE metadata_field
-          ADD CONSTRAINT metadata_field_image_fk
-          FOREIGN KEY (image_id) REFERENCES metadata_asset_image(id) ON DELETE SET NULL;
-      END IF;
-    END $$;
-  `)
 
   // PDF Pipeline v2 — 图片落档元数据
+  // 注意顺序：本表必须在 metadata_field.image_id FK 约束**之前**建好，
+  // 否则全新 PG 第一次跑 runPgMigrations 会因为 ALTER ... REFERENCES metadata_asset_image
+  // 报 "relation does not exist"（开发机已有此表所以踩不到，全新部署必踩）。
   await pool.query(`
     CREATE TABLE IF NOT EXISTS metadata_asset_image (
       id          SERIAL PRIMARY KEY,
@@ -129,6 +119,20 @@ export async function runPgMigrations(): Promise<void> {
     `CREATE INDEX IF NOT EXISTS idx_metadata_asset_image_asset
      ON metadata_asset_image(asset_id)`,
   )
+
+  // image_id FK 分开加，避免重复运行报错
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'metadata_field_image_fk'
+      ) THEN
+        ALTER TABLE metadata_field
+          ADD CONSTRAINT metadata_field_image_fk
+          FOREIGN KEY (image_id) REFERENCES metadata_asset_image(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+  `)
   // 知识治理 —— 审计 / 重复忽略表 / asset 软删除标
   await pool.query(`
     CREATE TABLE IF NOT EXISTS audit_log (
