@@ -5,7 +5,12 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - APP_URL=http://localhost:6875
+      # BookStack 用 APP_URL 拼所有静态资源绝对 URL（CSS/JS/图标/manifest）。
+      # 必须是用户浏览器能访问到的 URL：local 测 = http://localhost:16875；
+      # 局域网 / 服务器部署 = http://<服务器 IP>:16875；公网 = https://your-domain.com
+      # install-ubuntu.sh 部署时会问一次然后写到 infra/.env（BOOKSTACK_APP_URL=）
+      # 不设默认走 localhost:16875，方便本机 dev
+      - APP_URL=${BOOKSTACK_APP_URL:-http://localhost:16875}
       # ✅ 你生成的 APP_KEY 已加上（解决启动失败）
       - APP_KEY=base64:0kwUdNlcBIUGGVsJ8Yy9udMR9YcUDIHSDf5aGbEssWU=
       - DB_HOST=bookstack_db
@@ -31,6 +36,28 @@ services:
       bookstack_db:
         condition: service_healthy
     restart: unless-stopped
+
+  # apps/web 的 React + Vite 控制台 —— nginx 静态托管 + /api 反代到 qa_service
+  # ADR 2026-04-27（同日 web-static-deploy）：把"知识中台"前端从 host pnpm dev
+  # 升级为容器化静态部署，浏览器一开就是登录页
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: zhiyuan_web
+    restart: unless-stopped
+    # 端口 15173 = 沿用 vite dev 的 5173 + 高端口避让常见冲突
+    ports:
+      - "15173:80"
+    depends_on:
+      qa_service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   qa_service:
     build:
