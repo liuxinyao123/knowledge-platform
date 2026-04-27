@@ -176,9 +176,88 @@ pnpm dev:logs qa-service      # tail 单个服务日志
 
 ---
 
-## 🐳 完整部署（docker-compose）
+## 🟢 Ubuntu 一键部署（推荐）
 
-生产 / 演示环境推荐全容器化：
+**新装服务器 → 5 分钟拿到能用的栈**。脚本帮你装 Docker、加 swap、生成 .env、build 镜像、起 5 容器、跑健康检查、打印登录凭据全套。
+
+### 前置条件
+
+- Ubuntu **22.04 LTS** 或 **24.04 LTS**（其它发行版见下方"完整部署"段手动走）
+- 有 sudo 权限的用户
+- 至少一份 LLM key（**硅基流动**最便宜国内最快）+ 一份 Embedding key（同一份硅基 key 即可）
+- 服务器具体配置参考下方 [§服务器配置要求](#️-服务器配置要求)
+
+### 三条命令搞定
+
+```bash
+# 1. 克隆仓库（任意目录，譬如 /opt）
+git clone https://github.com/liuxinyao123/knowledge-platform.git /opt/zhiyuan
+cd /opt/zhiyuan
+
+# 2. 跑一键脚本（交互式提示输入两个 API key）
+sudo bash scripts/install-ubuntu.sh
+
+# 3. 看输出末尾的登录地址 + 首次凭据，浏览器打开就行
+```
+
+### 脚本干了什么
+
+| Step | 动作 | 跳过条件 |
+|---|---|---|
+| 0 | 检查 OS / CPU / RAM / 磁盘 | — |
+| 1 | 装 Docker CE + Compose v2（官方源） | Docker 已就绪 |
+| 1.5 | 加 8 GB swap 兜底 ingest 峰值 OOM | RAM ≥ 16 GB 或已有 swap |
+| 2 | 交互式问 `EMBEDDING_API_KEY` / `LLM_API_KEY` → 生成 `apps/qa-service/.env`，自动随机出 `AUTH_HS256_SECRET` / DB 密码 | `.env` 已存在 |
+| 3 | `docker compose build`（首次 5–10 分钟，含 Java 17 装机） | — |
+| 4 | `docker compose up -d`（5 容器 + 可选 viking） | — |
+| 5 | curl 探活 `http://127.0.0.1:3001/api/health`，最多等 90s | — |
+
+### 非交互式 / CI 部署
+
+```bash
+sudo EMBEDDING_API_KEY=sk-xxx \
+     LLM_API_KEY=sk-yyy \
+     ADMIN_EMAIL=ops@your-org.com \
+     ADMIN_PASSWORD='YourStrongPwd!' \
+     bash scripts/install-ubuntu.sh --non-interactive
+```
+
+### 升级（已部署机器）
+
+```bash
+cd /opt/zhiyuan && git pull
+sudo bash scripts/install-ubuntu.sh --upgrade
+```
+
+仅重 build 镜像 + 重启容器，不动 .env、不动数据卷。
+
+### 部署后下一步
+
+1. **改默认密码**：浏览器开 `http://<服务器 IP>:5173` 用脚本输出的凭据登录 → 立即改密码 → 删除 `.first-admin-credentials.txt`
+2. **配 BookStack token**：开 `http://<服务器 IP>:6875` → Settings → Users → My Account → API Tokens → 创建一个 → 把 `Token ID` / `Token Secret` 填进 `apps/qa-service/.env` 的 `BOOKSTACK_TOKEN_ID` / `BOOKSTACK_TOKEN_SECRET` → `docker compose -f infra/docker-compose.yml restart qa_service`
+3. **首次 ingest**：在 Web 控制台「数据 / 知识接入」上传一份 PDF，等 ingest_done 日志出现，然后回「问一问」提问验证
+
+### 常用运维一行命令
+
+```bash
+# 查全栈日志（Ctrl+C 退出）
+docker compose -f /opt/zhiyuan/infra/docker-compose.yml logs -f
+
+# 重启全部
+docker compose -f /opt/zhiyuan/infra/docker-compose.yml restart
+
+# 停（保留数据卷）
+docker compose -f /opt/zhiyuan/infra/docker-compose.yml down
+
+# 完全销毁（含数据卷，**不可恢复**，演示后清场用）
+docker compose -f /opt/zhiyuan/infra/docker-compose.yml down -v
+```
+
+---
+
+## 🐳 完整部署（docker-compose · 手动）
+
+如果 Ubuntu 一键脚本不适用（譬如**国产化 OS** 麒麟 / 统信 / openEuler，或想精细控制每一步），走手动路径：
 
 ```bash
 # 构建镜像（首次约 5 分钟，含 PDF v2 的 Java 17 装机）
