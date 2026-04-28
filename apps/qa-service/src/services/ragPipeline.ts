@@ -18,6 +18,9 @@ import { formatRelevanceScore } from './relevanceFormat.ts'
 import { searchHybrid } from './hybridSearch.ts'
 import { recordCitations } from './knowledgeGraph.ts'
 import { expandOntologyContext } from './ontologyContext.ts'
+import { condenseQuestion } from './condenseQuestion.ts'
+import { classifyAnswerIntent, isHandlerRoutingEnabled } from './answerIntent.ts'
+import { buildSystemPromptByIntent } from './answerPrompts.ts'
 
 export type { Citation, RagTrace, SseEvent, EmitFn, HistoryMessage } from '../ragTypes.ts'
 export type { AssetChunk } from './knowledgeSearch.ts'
@@ -60,19 +63,32 @@ function isHybridSearchEnabled(): boolean {
 
 /**
  * 根据问题特征自适应选 top-K：
- *   - 短查询（≤ 6 字符 / 缩写题）→ 5（少噪声）
- *   - 复合查询（含「和」「与」「分别」「对比」「区别」「步骤」「构成」「分类」） → 15（多素材给 LLM 综合）
+ *   - 英文缩写题（"API" / "COF" / "B2B" 等大写缩写）→ 5（噪声大，少召回更准）
+ *   - 中文短查询（≤ 6 字符）→ 8（之前 5 太窄，把"什么是道？" / "缓冲块"
+ *     这种已经包含 3-4 个语义单元的短中文问题召回降太狠，反而扑空）
+ *   - 复合查询（含「和」「与」「分别」「对比」「区别」「步骤」「构成」「分类」） → 15
  *   - 默认 → 10
  *
- * 理由：固定 10 chunks 对短题噪声大、对长题素材不够。
+ * 理由：固定 10 chunks 对短题噪声大、对长题素材不够；但中文/英文短题语义
+ * 密度差异大，不能用同一个 K。
+ *
+ * 注意：adaptiveTopK 看到的是 `retrievalQuestion`（A condense 改写后），
+ * 所以 history 非空 + 短指代型问题会先被改写成长问句，绕过本函数的"短"
+ * 分支。本函数只在 condense 不触发时（history 空 / 不命中触发条件）生效。
+ *
+ * 导出供单测断言；运行时仍是模块内部调用。
  */
-function adaptiveTopK(question: string): number {
+export function adaptiveTopK(question: string): number {
   const q = question.trim()
-  // 短查询/缩写题：≤ 6 字符 或 全英文大写 ≤ 6 字符
-  if (q.length <= 6 || /^[A-Z][A-Z0-9\-_]{1,5}\??$/.test(q)) {
+  // 1. 英文大写缩写题（≤6 字符，且形如 "API" / "COF" / "B2B"）：噪声大，K=5
+  if (/^[A-Z][A-Z0-9\-_]{1,5}\??$/.test(q)) {
     return 5
   }
-  // 复合查询：含明显的"多个对象/步骤/对比"信号词
+  // 2. 中文短查询（≤6 字符）：K=8
+  if (q.length <= 6) {
+    return 8
+  }
+  // 3. 复合查询：含明显的"多个对象/步骤/对比"信号词 → K=15
   const compositeMarkers = [
     '和', '与', '及', '分别', '对比', '区别', '差异', '比较',
     '步骤', '流程', '哪些', '构成', '组成', '分类', '所有',
@@ -81,6 +97,7 @@ function adaptiveTopK(question: string): number {
   if (compositeMarkers.some((m) => q.includes(m))) {
     return 15
   }
+  // 4. 默认 → K=10
   return 10
 }
 
@@ -463,12 +480,55 @@ export async function generateAnswer(
     { role: 'user' as const, content: userContent },
   ]
 
-  // ADR-35：根据是否有 web hits 切换 prompt 严格度
-  //   无 web hits（默认 RAG）：严格只用文档 [N]，找不到说"知识库中没有"
-  //   有 web hits（用户开了 🌐）：文档 [N] 优先，网络 [wN] 作补充，标明来源
+  // ADR-45：当 inline image 开启且本批召回里至少有一张图时，给 prompt 加规则 6
+  const hasImageDocs = inlineImageEnabled && docs.some(
+    (d) => d.kind === 'image_caption' && typeof d.image_id === 'number' && d.image_id > 0,
+  )
+  const inlineImageRule = hasImageDocs
+    ? `\n6. **图片内嵌（可选）**：如果某个 [N] 文档片段紧跟有 \`IMAGE: /api/assets/images/<id>\` 行，且该图能直接说明你的答案，可以在引用 [N] 后**立刻**换行写一行 markdown \`![简短描述](/api/assets/images/<id>)\`。**严格规则**：(a) URL 必须照抄 IMAGE: 行的字面值，**禁止编造任何 image_id**；(b) 文档片段没有 IMAGE: 行就**不要**插图；(c) 图与文字相辅相成，不要为了插图而插图。`
+    : ''
+
+  // ADR-46 D-002 · 意图分类 + Handler 分流
+  //
+  // 旧实现是 monolithic system prompt：一份 prompt 同时扛事实查询/翻译解释/对比/
+  // 元查询/超范围声明 5 类场景，对每种"任意上传的文档"都用同一套规则——结果是
+  // 工业 SOP 案例污染古文翻译、加了"语言层例外"又污染严格事实查询、永远写不完。
+  //
+  // 现在拆成 5 个专用 prompt 模板（services/answerPrompts.ts），用 fast LLM 先
+  // 判断意图（services/answerIntent.ts），按意图选模板：
+  //
+  //   factual_lookup    → 严格 verbatim，不做语言转换
+  //   language_op       → 必须对召回原文做翻译/释义/总结，不能拒答
+  //   multi_doc_compare → 强制分项，不漏组件
+  //   kb_meta           → 只列 asset_name，不进文档内容
+  //   out_of_scope      → 直接说找不到 + 列沾边资产
+  //
+  // 任何分类失败 → factual_lookup（最安全默认）。env B_HANDLER_ROUTING_ENABLED
+  // 关闭时同样回落到 factual_lookup（=老 monolithic 严格 RAG 行为）。
+  //
+  // **web 模式（hasWeb）走另一条 prompt**：当用户开了 🌐，需要明确"两类来源
+  // 优先级"，跟意图分类正交，保留原有 prompt 结构不动。
   const hasWeb = (extras?.webHits?.length ?? 0) > 0
-  const headerAndRules = hasWeb
-    ? `你是知识库 + 联网检索助手。可用两类来源：
+
+  let intent: 'factual_lookup' | 'language_op' | 'multi_doc_compare' | 'kb_meta' | 'out_of_scope' = 'factual_lookup'
+  let intentReason = ''
+  let intentFallback = false
+  if (!hasWeb) {
+    const cls = await classifyAnswerIntent(question, docs)
+    intent = cls.intent
+    intentReason = cls.reason
+    intentFallback = cls.fallback
+    if (!intentFallback) {
+      emit({
+        type: 'rag_step', icon: '🎭',
+        label: `答案意图分类 → ${intent}（${intentReason || '已分类'}）`,
+      })
+    }
+  }
+
+  const defaultSystem = hasWeb
+    ? // ADR-35：web 模式 prompt 不变（联网检索特有的"两类来源优先级"语义跟意图正交）
+      `你是知识库 + 联网检索助手。可用两类来源：
 
   · [N] 知识库内部文档（权威，优先采用）
   · [wN] 联网检索结果（公开网络信息，知识库无答案时使用）
@@ -478,58 +538,17 @@ export async function generateAnswer(
 2. **每个事实陈述都要加引用**：内部用 [N]，网络用 [wN]，混合用 [1][w2]
 3. **明确标注来源类型**：用网络信息时在答案里说明"根据公开网络信息..."
 4. **数值/规格 verbatim**：原文「7 degrees」就写「7°」，禁止近似
-5. **两类都没相关**才说「知识库 + 公开网络都没找到该信息」`
-    : `你是知识库助手。严格按以下规则回答：
-
-【硬性规则】
-1. **只使用提供的文档作答**，不引入外部知识。找不到信息就明确说「知识库中没有相关内容」，不要猜
-2. **禁止使用模糊措辞**：不要「可能」「似乎」「大约」「应该是」「左右」「估计」。要么给确定答案，要么明说找不到
-3. **数值/规格题必须 verbatim 提取原文**：如果原文写「7 degrees」，答案就用「7 degrees」或「7°」，不要近似为「约 7 度」
-4. **每个事实陈述后加 [N] 引用**（N 是文档编号）。同一句多个来源用 [1][2]
-5. **复合答案不要漏组件**：如果原文是「X = A + B」，答案要包含 A 和 B 两部分，不能只说 X`
-
-  // ADR-45：当 inline image 开启且本批召回里至少有一张图时，给 prompt 加规则 6
-  const hasImageDocs = inlineImageEnabled && docs.some(
-    (d) => d.kind === 'image_caption' && typeof d.image_id === 'number' && d.image_id > 0,
-  )
-  const inlineImageRule = hasImageDocs
-    ? `\n6. **图片内嵌（可选）**：如果某个 [N] 文档片段紧跟有 \`IMAGE: /api/assets/images/<id>\` 行，且该图能直接说明你的答案，可以在引用 [N] 后**立刻**换行写一行 markdown \`![简短描述](/api/assets/images/<id>)\`。**严格规则**：(a) URL 必须照抄 IMAGE: 行的字面值，**禁止编造任何 image_id**；(b) 文档片段没有 IMAGE: 行就**不要**插图；(c) 图与文字相辅相成，不要为了插图而插图。`
-    : ''
-
-  const defaultSystem = `${headerAndRules}${inlineImageRule}
+5. **两类都没相关**才说「知识库 + 公开网络都没找到该信息」${inlineImageRule}
 
 【输出格式】
 - 简洁直接，不复述问题
 - 数字 + 单位写在一起：「1.5mm」「7°」
 - 答案末尾**不**写"以上信息来源于…"这种总结句
 
-【3 个示例】
-
-示例 1（事实题）：
-Q: 缓冲块的设计间隙是多少？
-文档片段 [1]: ... 下角固定缓冲块设计间隙 2.0mm，键槽朝下。
-✓ 正确答案: 2.0mm [1]
-✗ 错误答案: 大约 2mm 左右 / 根据文档，间隙似乎是 2.0mm
-
-示例 2（复合题）：
-Q: 偏移 1.0mm 由什么构成？
-文档片段 [1]: ... offset 1.0 mm towards the roof. (0.3 for Swing is allowed to touch, Paint variation + 0.7 for hinge tolerance...
-✓ 正确答案: 1.0mm = 0.3mm（油漆变差）+ 0.7mm（铰链公差和超差车辆）[1]
-✗ 错误答案: 1.0mm，由 0.3mm 的某个因素构成 / 主要是油漆和公差
-
-示例 3（找不到）：
-Q: COF 代表什么？
-文档片段 [1]: ... B&R Flange COF tool clearance zone ... （文档只用了 COF 这个缩写但没解释）
-✓ 正确答案: 知识库中没有 COF 的明确定义。文档只在 §2.1 标题里使用了该缩写，未给出全称。
-✗ 错误答案: COF 可能是 Coefficient of Friction / 根据上下文推测...
-
-【作答步骤】
-1. 先扫一遍文档片段，找到直接相关的句子
-2. 如果题目是复合的（含"由什么构成"/"分别是什么"/"和...区别"），逐项列出
-3. 数字、规格、缩写：必须在文档里找到原文，否则承认找不到
-
 文档内容：
 ${context}`
+    : // 默认 RAG · 按意图选 prompt 模板
+      buildSystemPromptByIntent(intent, context, inlineImageRule)
 
   // 有图时优先 VLM；没图沿用默认 LLM
   const visionModel = process.env.INGEST_VLM_MODEL?.trim()
@@ -650,12 +669,25 @@ export async function runRagPipeline(
 
   if (signal.aborted) return
 
-  // Step 1 —— adaptive top-K
-  const dynK = adaptiveTopK(question)
+  // Step 0 —— follow-up condensation（指代/短问题用历史改写成自洽问句）
+  // 改写后的 query 只用于 retrieval / grade / step_back-hyde rewrite；
+  // generateAnswer 仍喂原 question + 完整 history，让 LLM 看到用户原话。
+  // 失败 / 触发条件不满足时返回原 question，不阻塞主流程。
+  const retrievalQuestion = await condenseQuestion(question, history, emit)
+
+  if (signal.aborted) return
+
+  // Step 1 —— adaptive top-K（按改写后的 query 决定 K，更贴近真实检索意图）
+  const dynK = adaptiveTopK(retrievalQuestion)
   if (dynK !== TOP_K) {
+    const dynKReason =
+      dynK === 5 ? '英文缩写题'
+      : dynK === 8 ? '中文短查询'
+      : dynK === 15 ? '复合查询'
+      : `K=${dynK}`
     emit({
       type: 'rag_step', icon: '⚙️',
-      label: `自适应 top-K = ${dynK}（${dynK === 5 ? '短查询' : '复合查询'}）`,
+      label: `自适应 top-K = ${dynK}（${dynKReason}）`,
     })
   }
   // ingest-l0-abstract（ADR-32 候选 · 2026-04-26）
@@ -666,7 +698,7 @@ export async function runRagPipeline(
   if (!opts.assetIds?.length) {
     try {
       const { coarseFilterByL0 } = await import('./l0Filter.ts')
-      const cf = await coarseFilterByL0(question, emit, {})
+      const cf = await coarseFilterByL0(retrievalQuestion, emit, {})
       if (Array.isArray(cf) && cf.length > 0) l0FilteredAssetIds = cf
     } catch {
       // coarseFilterByL0 自身永不抛；这里再保险一道
@@ -681,7 +713,7 @@ export async function runRagPipeline(
 
   let initialDocs: AssetChunk[]
   try {
-    initialDocs = await retrieveInitial(question, emit, {
+    initialDocs = await retrieveInitial(retrievalQuestion, emit, {
       assetIds: effectiveAssetIds,
       spaceId: opts.spaceId,
       topK: dynK,
@@ -754,7 +786,7 @@ export async function runRagPipeline(
     // rewrite 触发条件改为：rerank 后还是不到 REWRITE_NEED_THRESHOLD 个候选
     rewriteNeeded = initialDocs.length < REWRITE_NEED_THRESHOLD
   } else {
-    const r = await gradeDocs(question, initialDocs, emit, { ontology })
+    const r = await gradeDocs(retrievalQuestion, initialDocs, emit, { ontology })
     gradedDocs = r.gradedDocs
     rewriteNeeded = r.rewriteNeeded
   }
@@ -764,7 +796,7 @@ export async function runRagPipeline(
 
   // Step 3
   if (rewriteNeeded && !signal.aborted) {
-    const { strategy, rewrittenQuery } = await rewriteQuestion(question, emit)
+    const { strategy, rewrittenQuery } = await rewriteQuestion(retrievalQuestion, emit)
     trace.rewrite_triggered = true
     trace.rewrite_strategy = strategy
     trace.rewritten_query = rewrittenQuery
@@ -817,7 +849,8 @@ export async function runRagPipeline(
           await import('./webSearch.ts')
         if (isWebSearchConfigured()) {
           emit({ type: 'rag_step', icon: '🌐', label: `联网检索（${getProvider()}）...` })
-          const hits = await webSearch(question, { topK: 5 })
+          // 用 condensed query 走联网检索；原 question（如"把原文发我"）web 上等同噪声
+          const hits = await webSearch(retrievalQuestion, { topK: 5 })
           webHits = hits.map((h) => ({ title: h.title, url: h.url, snippet: h.snippet }))
           emit({
             type: 'web_step',
