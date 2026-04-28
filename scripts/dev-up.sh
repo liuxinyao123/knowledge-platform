@@ -14,7 +14,7 @@ mkdir -p "${PID_DIR}"
 export NO_PROXY="localhost,127.0.0.1,::1,${NO_PROXY:-}"
 export no_proxy="${NO_PROXY}"
 # 显式干掉本机 HTTP/SOCKS 代理（ClashX/Surge 等会让 qa-service 出站
-# 127.0.0.1:16875 / 25432 反弹回代理 → ECONNREFUSED → 502 bookstack_proxy_error）
+# 127.0.0.1:16875 / 15432 反弹回代理 → ECONNREFUSED → 502 bookstack_proxy_error）
 # 仅作用于本脚本及其 fork 出去的子进程，不影响调用者 shell
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy 2>/dev/null || true
 
@@ -69,12 +69,12 @@ docker compose -f infra/docker-compose.yml ps --format 'table {{.Name}}\t{{.Stat
 # ── 2) 等数据库 healthy ─────────────────────────────────────────────
 # 端口取自 docker-compose.yml 实际宿主映射：
 #   bookstack_db  127.0.0.1:13307 -> 3306 (MySQL)
-#   pg_db         127.0.0.1:25432 -> 5432 (Postgres + pgvector)
+#   pg_db         127.0.0.1:15432 -> 5432 (Postgres + pgvector)
 #   kg_db         127.0.0.1:15433 -> 5432 (Apache AGE)
-cyan "[2/3] 等待 MySQL:13307 / Postgres:25432 / AGE:15433 就绪"
+cyan "[2/3] 等待 MySQL:13307 / Postgres:15432 / AGE:15433 就绪"
 # 首次拉 apache/age 镜像需要时间，超时给 90s
 for i in $(seq 1 90); do
-  if nc -z 127.0.0.1 13307 && nc -z 127.0.0.1 25432 && nc -z 127.0.0.1 15433; then
+  if nc -z 127.0.0.1 13307 && nc -z 127.0.0.1 15432 && nc -z 127.0.0.1 15433; then
     green "        ok"
     break
   fi
@@ -99,7 +99,7 @@ printf "  BookStack  -> http://localhost:16875\n"
 printf "  qa-service -> http://localhost:3001\n"
 printf "  web        -> http://localhost:5173\n"
 printf "  MySQL      -> 127.0.0.1:13307 (user=bookstack)\n"
-printf "  Postgres   -> 127.0.0.1:25432 (user=knowledge)\n"
+printf "  Postgres   -> 127.0.0.1:15432 (user=knowledge)\n"
 printf "  AGE/KG     -> 127.0.0.1:15433 (user=kg)\n"
 printf "  logs       -> %s/\n" "${LOG_DIR}"
 printf "  stop all   -> pnpm dev:down\n"

@@ -170,7 +170,7 @@ pnpm dev:logs     # tail -f 全部日志
 ```bash
 pnpm dev:down                 # 停 qa-service / web，保留 docker
 pnpm dev:down --all           # 连 docker 一起停
-pnpm dev:restart              # 等价 dev:down && dev:up
+pnpm dev:down && pnpm dev:up  # 重启（root package.json 暂未提供 dev:restart 别名）
 pnpm dev:logs qa-service      # tail 单个服务日志
 ```
 
