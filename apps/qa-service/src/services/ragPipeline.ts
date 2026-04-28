@@ -18,6 +18,7 @@ import { formatRelevanceScore } from './relevanceFormat.ts'
 import { searchHybrid } from './hybridSearch.ts'
 import { recordCitations } from './knowledgeGraph.ts'
 import { expandOntologyContext } from './ontologyContext.ts'
+import { condenseQuestion } from './condenseQuestion.ts'
 
 export type { Citation, RagTrace, SseEvent, EmitFn, HistoryMessage } from '../ragTypes.ts'
 export type { AssetChunk } from './knowledgeSearch.ts'
@@ -482,11 +483,11 @@ export async function generateAnswer(
     : `你是知识库助手。严格按以下规则回答：
 
 【硬性规则】
-1. **只使用提供的文档作答**，不引入外部知识。找不到信息就明确说「知识库中没有相关内容」，不要猜
+1. **只使用提供的文档作答**，不引入文档外的事实、背景、注疏、作者意图、原因、评价、推断。找不到就明确说「知识库中没有相关内容」，不要猜
 2. **禁止使用模糊措辞**：不要「可能」「似乎」「大约」「应该是」「左右」「估计」。要么给确定答案，要么明说找不到
-3. **数值/规格题必须 verbatim 提取原文**：如果原文写「7 degrees」，答案就用「7 degrees」或「7°」，不要近似为「约 7 度」
+3. **数值、规格、单位、缩写、专有名词、代码、URL、人名、日期必须 verbatim 从原文提取**：原文「7 degrees」就用「7 degrees」或「7°」，不近似为「约 7 度」；不省略不简写
 4. **每个事实陈述后加 [N] 引用**（N 是文档编号）。同一句多个来源用 [1][2]
-5. **复合答案不要漏组件**：如果原文是「X = A + B」，答案要包含 A 和 B 两部分，不能只说 X`
+5. **复合答案不要漏组件**：原文是「X = A + B + C」就把 A、B、C 三项都写出来，不能只说 X；原文是步骤序列就保留步骤顺序与编号`
 
   // ADR-45：当 inline image 开启且本批召回里至少有一张图时，给 prompt 加规则 6
   const hasImageDocs = inlineImageEnabled && docs.some(
@@ -496,37 +497,19 @@ export async function generateAnswer(
     ? `\n6. **图片内嵌（可选）**：如果某个 [N] 文档片段紧跟有 \`IMAGE: /api/assets/images/<id>\` 行，且该图能直接说明你的答案，可以在引用 [N] 后**立刻**换行写一行 markdown \`![简短描述](/api/assets/images/<id>)\`。**严格规则**：(a) URL 必须照抄 IMAGE: 行的字面值，**禁止编造任何 image_id**；(b) 文档片段没有 IMAGE: 行就**不要**插图；(c) 图与文字相辅相成，不要为了插图而插图。`
     : ''
 
+  // ADR-46（候选 · 2026-04-28）：移除全部硬编码示例
+  // 历史上这里有示例 1-4（mm 公差 / 0.3+0.7 偏移 / COF 缩写 / 道德经白话）。
+  // 它们都绑定到具体文档形态（工业制造 + 古典文献），对其他领域文档（合同 /
+  // 财报 / 医疗 / 英文 paper）反而成为偏置锚点。改为 0 示例的纯抽象规则版本，
+  // 让 LLM 凭召回内容自由判断。代价：去掉 few-shot 后弱模型可能弱化某些
+  // verbatim 行为，需要 eval 集回归验证（多文档类型）。
+  // 长期方案：意图分类 + 专用 handler（详见 .superpowers-memory/adr-rag-intent-routing.md）。
   const defaultSystem = `${headerAndRules}${inlineImageRule}
 
 【输出格式】
 - 简洁直接，不复述问题
 - 数字 + 单位写在一起：「1.5mm」「7°」
 - 答案末尾**不**写"以上信息来源于…"这种总结句
-
-【3 个示例】
-
-示例 1（事实题）：
-Q: 缓冲块的设计间隙是多少？
-文档片段 [1]: ... 下角固定缓冲块设计间隙 2.0mm，键槽朝下。
-✓ 正确答案: 2.0mm [1]
-✗ 错误答案: 大约 2mm 左右 / 根据文档，间隙似乎是 2.0mm
-
-示例 2（复合题）：
-Q: 偏移 1.0mm 由什么构成？
-文档片段 [1]: ... offset 1.0 mm towards the roof. (0.3 for Swing is allowed to touch, Paint variation + 0.7 for hinge tolerance...
-✓ 正确答案: 1.0mm = 0.3mm（油漆变差）+ 0.7mm（铰链公差和超差车辆）[1]
-✗ 错误答案: 1.0mm，由 0.3mm 的某个因素构成 / 主要是油漆和公差
-
-示例 3（找不到）：
-Q: COF 代表什么？
-文档片段 [1]: ... B&R Flange COF tool clearance zone ... （文档只用了 COF 这个缩写但没解释）
-✓ 正确答案: 知识库中没有 COF 的明确定义。文档只在 §2.1 标题里使用了该缩写，未给出全称。
-✗ 错误答案: COF 可能是 Coefficient of Friction / 根据上下文推测...
-
-【作答步骤】
-1. 先扫一遍文档片段，找到直接相关的句子
-2. 如果题目是复合的（含"由什么构成"/"分别是什么"/"和...区别"），逐项列出
-3. 数字、规格、缩写：必须在文档里找到原文，否则承认找不到
 
 文档内容：
 ${context}`
@@ -650,8 +633,16 @@ export async function runRagPipeline(
 
   if (signal.aborted) return
 
-  // Step 1 —— adaptive top-K
-  const dynK = adaptiveTopK(question)
+  // Step 0 —— follow-up condensation（指代/短问题用历史改写成自洽问句）
+  // 改写后的 query 只用于 retrieval / grade / step_back-hyde rewrite；
+  // generateAnswer 仍喂原 question + 完整 history，让 LLM 看到用户原话。
+  // 失败 / 触发条件不满足时返回原 question，不阻塞主流程。
+  const retrievalQuestion = await condenseQuestion(question, history, emit)
+
+  if (signal.aborted) return
+
+  // Step 1 —— adaptive top-K（按改写后的 query 决定 K，更贴近真实检索意图）
+  const dynK = adaptiveTopK(retrievalQuestion)
   if (dynK !== TOP_K) {
     emit({
       type: 'rag_step', icon: '⚙️',
@@ -666,7 +657,7 @@ export async function runRagPipeline(
   if (!opts.assetIds?.length) {
     try {
       const { coarseFilterByL0 } = await import('./l0Filter.ts')
-      const cf = await coarseFilterByL0(question, emit, {})
+      const cf = await coarseFilterByL0(retrievalQuestion, emit, {})
       if (Array.isArray(cf) && cf.length > 0) l0FilteredAssetIds = cf
     } catch {
       // coarseFilterByL0 自身永不抛；这里再保险一道
@@ -681,7 +672,7 @@ export async function runRagPipeline(
 
   let initialDocs: AssetChunk[]
   try {
-    initialDocs = await retrieveInitial(question, emit, {
+    initialDocs = await retrieveInitial(retrievalQuestion, emit, {
       assetIds: effectiveAssetIds,
       spaceId: opts.spaceId,
       topK: dynK,
@@ -754,7 +745,7 @@ export async function runRagPipeline(
     // rewrite 触发条件改为：rerank 后还是不到 REWRITE_NEED_THRESHOLD 个候选
     rewriteNeeded = initialDocs.length < REWRITE_NEED_THRESHOLD
   } else {
-    const r = await gradeDocs(question, initialDocs, emit, { ontology })
+    const r = await gradeDocs(retrievalQuestion, initialDocs, emit, { ontology })
     gradedDocs = r.gradedDocs
     rewriteNeeded = r.rewriteNeeded
   }
@@ -764,7 +755,7 @@ export async function runRagPipeline(
 
   // Step 3
   if (rewriteNeeded && !signal.aborted) {
-    const { strategy, rewrittenQuery } = await rewriteQuestion(question, emit)
+    const { strategy, rewrittenQuery } = await rewriteQuestion(retrievalQuestion, emit)
     trace.rewrite_triggered = true
     trace.rewrite_strategy = strategy
     trace.rewritten_query = rewrittenQuery
@@ -817,7 +808,8 @@ export async function runRagPipeline(
           await import('./webSearch.ts')
         if (isWebSearchConfigured()) {
           emit({ type: 'rag_step', icon: '🌐', label: `联网检索（${getProvider()}）...` })
-          const hits = await webSearch(question, { topK: 5 })
+          // 用 condensed query 走联网检索；原 question（如"把原文发我"）web 上等同噪声
+          const hits = await webSearch(retrievalQuestion, { topK: 5 })
           webHits = hits.map((h) => ({ title: h.title, url: h.url, snippet: h.snippet }))
           emit({
             type: 'web_step',
