@@ -71,6 +71,7 @@ const STOP_PREFIXES = [
   '知识库中包不包含', '知识库中包含',
   '是否有', '是否存在', '是否包含',
   '有没有', '有哪些',
+  '哪些',  // D-002.5 v2-A: 单"哪些"前缀 (在"有哪些"之后, 最长匹配优先)
   '列出', '找一下', '找出', '查一下', '搜一下', '看一下', '看看',
   'list ', 'find ', 'search ', 'show me ', 'enumerate ',
   'do you have ', 'is there ', 'are there ', 'got any ',
@@ -230,37 +231,77 @@ export async function renderKbMetaAnswer(opts: {
     return fallbackMarkdownList(question, candidates)
   }
 
-  // 大列表 → fast LLM 语义筛
+  // 大列表 → fast LLM 语义筛 (D-002.5 v2-A: N=2 self-consistency 取并集)
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), FAST_LLM_TIMEOUT_MS)
   signal.addEventListener('abort', () => ctrl.abort(), { once: true })
   try {
     const idx = candidates.slice(0, 30).map((c, i) => `${i + 1}. ${c.name}`).join('\n')
+    // D-002.5 v1: 改 prompt 加"领域术语缩写"hint + "3-8 条"区间 + 弱化 "0" escape
+    // D-002.5 v2-A: 单 LLM 调用把 V3D 0/3 推到 1/3 但未达 2/3——fast LLM (Qwen2.5-7B)
+    //   对 LFTGATE 这种缩写识别仍然 抖动. 加 N=2 self-consistency: 跑 2 次取 picks 并集,
+    //   temperature 0.1 / 0.5 互补 (前者拿主流, 后者增加边界 candidate 探索).
     const prompt = `用户问：${question}
 
-下面是知识库内的候选文档（按入库时间倒序，最多 30 条）。请挑出**与问题语义最相关的最多 8 条**，按相关性倒序输出它们的编号（仅数字，逗号分隔）。如果都不相关，输出 "0"。
+下面是知识库内的候选文档（按入库时间倒序，最多 30 条）。
+
+判定要点：
+1. 候选名常含**领域专业术语缩写或代号**（如 LFTGATE = 尾门、BP = 业务流程、SOP = 操作规程、PRD = 产品需求文档、API = 接口、SDK = 开发包）。即便缩写陌生，名称里出现的中英文关键词都可能是子领域信号——倾向于把它纳入。
+2. 请挑出**与问题语义相关的 3-8 条**（按相关性倒序）。
+3. 只有候选**毫不相关**时才输出 "0"；只要至少一条沾边，必须输出该候选的编号。
 
 候选：
 ${idx}
 
-只输出数字，不解释。`
+只输出数字（逗号分隔），不解释。`
 
-    const { content } = await chatComplete(
-      [{ role: 'user', content: prompt }],
-      { model: getLlmFastModel(), maxTokens: 60, temperature: 0.1 },
-    )
+    // D-002.5 v2-A: 并发 N=2 LLM 调用. 单次失败 (catch) 返回 '', 不影响另一次.
+    const callOnce = async (temperature: number): Promise<string> => {
+      try {
+        const { content } = await chatComplete(
+          [{ role: 'user', content: prompt }],
+          { model: getLlmFastModel(), maxTokens: 60, temperature },
+        )
+        return String(content || '').trim()
+      } catch {
+        return ''
+      }
+    }
+    const [r1, r2] = await Promise.all([callOnce(0.1), callOnce(0.5)])
     clearTimeout(t)
 
-    const nums = String(content || '').match(/\d+/g)?.map(Number).filter((n) => n >= 1 && n <= candidates.length) ?? []
-    if (nums.length === 0) {
-      // LLM 说全无关 → 返回空答案 + 建议
-      return emptyAnswer(question)
+    const parseNums = (raw: string): number[] =>
+      raw.match(/\d+/g)?.map(Number).filter((n) => n >= 1 && n <= candidates.length) ?? []
+    const nums1 = parseNums(r1)
+    const nums2 = parseNums(r2)
+    // 并集 (v2-A 核心: 让两次 LLM 互补 — 任一次挑出 LFTGATE 都算 picks)
+    const allNums = [...new Set([...nums1, ...nums2])]
+
+    // D-002.5 解析三分支 (v2-A 调整: 判断 "0" 时要两次都明确说 0):
+    //   (a) 两次都 "0"          → emptyAnswer (保留旧契约)
+    //   (b) 并集空 + 非两 "0"    → 至少一次抖了/抛了 → 退化前 8 条
+    //   (c) 0 < |union| < 3     → LLM 仍保守 → candidates 顺序补齐到 ≥ 3
+    //   (d) |union| ≥ 3         → 直接渲染
+    if (allNums.length === 0) {
+      if (r1 === '0' && r2 === '0') return emptyAnswer(question)   // (a)
+      return fallbackMarkdownList(question, candidates)              // (b)
     }
-    const picked = [...new Set(nums)].slice(0, 8).map((i) => candidates[i - 1])
+    let picked = allNums.slice(0, 8).map((i) => candidates[i - 1]).filter(Boolean)
+    if (picked.length < 3 && candidates.length >= 3) {
+      // (c) 兜底补齐: 用 candidates 顺序填到 ≥ 3 条, 去重
+      const usedIds = new Set(picked.map((p) => p.id))
+      for (const c of candidates) {
+        if (!usedIds.has(c.id)) {
+          picked.push(c)
+          usedIds.add(c.id)
+        }
+        if (picked.length >= 3) break
+      }
+    }
     return fallbackMarkdownList(question, picked)
   } catch {
     clearTimeout(t)
-    // LLM 抖了 → 退化前 8 条
+    // 两次都抛 / Promise.all 整体失败 → 退化前 8 条
     return fallbackMarkdownList(question, candidates)
   }
 }

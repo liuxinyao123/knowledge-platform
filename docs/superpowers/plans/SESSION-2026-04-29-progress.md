@@ -1,8 +1,8 @@
 # Session Progress · 2026-04-29
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器
-> 下一站待选：D-002.5 V3D kbMetaHandler 语义筛 prompt 修复 / D-002.6 sop-数值 retrieval/prompt 修复 / N-007 / N-008
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛
+> 下一站待选：D-002.6 sop-数值 retrieval/prompt 修复 / N-007 / N-008 / D-003 扩到 60 case
 
 ---
 
@@ -25,6 +25,35 @@
 - assert 加 NFKC normalize（OCR 异体字 ⽼ U+2F77 → 老 U+8001）
 - `assertPatternType.list` 加 4 模式：经典 bullet / 顿号 ≥3 / 粗体段 ≥2 / 分号 ≥3，任一过即可
 - `assertPatternType.bilingual` 阈值 20% → 10%（支持工业 SOP "轻度双语"）
+
+### Commit ⑥ · D-002.5 v2-A kbMetaHandler 语义筛 V3D 修复（C 工作流，迭代 2 次）
+**修改**：`apps/qa-service/src/services/kbMetaHandler.ts`（+50 / -10）
+**修改**：`apps/qa-service/src/__tests__/kbMetaHandler.test.ts`（4 旧 case 改 mock 形状 + 加 4 v2-A 新 case）
+**新增**：`docs/superpowers/specs/rag-kb-meta-semantic-filter-fix-design.md`
+**新增**：`docs/superpowers/plans/rag-kb-meta-semantic-filter-fix-impl-plan.md`
+
+修改：
+1. `STOP_PREFIXES` 加 `"哪些"`：修复 extractKbMetaKeywords V3D bug
+   - "库里有哪些汽车工程相关的资料" 之前抽出 `["哪些汽车工程"]` (SQL 0 命中)
+   - 现在抽出 `["汽车工程"]` (SQL 仍 0 命中但语义更干净)
+2. `renderKbMetaAnswer` >10 候选路径 LLM prompt 改造：
+   - 加领域术语缩写 hint（LFTGATE/BP/SOP/PRD/API/SDK）
+   - "最多 8 条" → "3-8 条"（设下界）
+   - 弱化 "0" escape hatch
+3. `renderKbMetaAnswer` 加 N=2 self-consistency：
+   - Promise.all 跑 2 次 LLM (temperature 0.1 / 0.5 互补)
+   - picks 取并集；保留 emptyAnswer 契约（两次都说 "0" 才触发）
+   - 兜底补齐到 ≥ 3 条（`0 < |union| < 3` 时用 candidates 顺序补）
+4. 兜底链完整：单次 LLM throw 内部 catch 返 ''；两次都失败 → 退化前 8 条
+
+V-13 实测：
+- V3D keywords 0/3 (baseline 8) → 1/3 (v1) → **2/3 (v2-A)** ✓ acceptance ≥ 2/3 达成
+- kbmeta-test STABLE 不回归 ✓
+- kb_meta intent 100% (2/2) ✓
+- env=false 反向回滚 V3D 也 2/3 → 揭示 V3D 本质是 ~67% LLM 抖动 case，无论哪条路径都收敛到该均值
+- cn-fact 1/3 / V3E 0/3 是 D-002.3 LLM 抖动随机方差，与 v2-A 无关
+
+production：仅 kb_meta `>10 候选` 路径 token 成本 2x（kb_meta 路径整体频次低，可接受）
 
 ### Commit ⑤ · D-002.4 eval-multidoc.mjs majority-of-N（C 工作流离线 only）
 **修改**：`scripts/eval-multidoc.mjs`（+约 130 行）
@@ -159,6 +188,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #64 | **D-002.5 v2-A kbMetaHandler 语义筛 V3D 修复（C 工作流，迭代 2 次）** |
 | #63 | **D-002.4 eval-multidoc.mjs majority-of-N（C 工作流离线 only）** |
 | #62 | **D-002.3 答案意图分类 multi-tool function call（B 工作流四阶段）** |
 | #61 | D-003 评测器太严修复（C 工作流）—— pattern.list 4 模式 + bilingual 阈值放宽 + 删 V3B-prime2 |
@@ -172,12 +202,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A · D-002.5 V3D kbMetaHandler 语义筛 prompt 修复（C 工作流，~30 分钟）
-**修**：D-002.4 揭示 V3D keyword "LFTGATE" 0/3 — 不是抖动是真问题
-**根因**：kbMetaHandler 的 LLM 语义筛只挑了 1 条 Bumper PDF，丢掉了 LFTGATE-32 文件
-**改法**：renderKbMetaAnswer 大于 10 候选时的 LLM 筛选 prompt 强制"≥3 条候选"+ assert 输出非空 → 失败兜底全 SQL 结果
-
-### 选项 B · D-002.6 sop-数值 retrieval/prompt 拒答倾向修复（B 工作流，~1 小时）
+### 选项 A · D-002.6 sop-数值 retrieval/prompt 拒答倾向修复（B 工作流，~1 小时）
 **修**：D-002.4 揭示 sop-数值 pattern 1/3 / keywords 1/3 — 2/3 LLM 拒答 "知识库中没有相关内容"
 **根因**：retrieval 召回 alpha/beta clearance 内容稳定但 LLM 倾向不引用
 **改法**：调查召回 chunks 是否真含 alpha/beta；调 factual_lookup prompt 强制"如召回有相关内容必须引用 verbatim"

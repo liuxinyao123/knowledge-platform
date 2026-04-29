@@ -182,20 +182,24 @@ describe('renderKbMetaAnswer', () => {
     expect(out).toContain('LFTGATE-32.pdf')
     expect(mockChatComplete).not.toHaveBeenCalled()
   })
-  it('> 10 候选且 LLM 配置 OK → 调 LLM 语义筛', async () => {
-    mockChatComplete.mockResolvedValueOnce({ content: '1, 3, 5', toolCalls: [] })
+  it('> 10 候选且 LLM 配置 OK → 调 LLM 语义筛 (v2-A: 2 次并发)', async () => {
+    // v2-A: N=2 LLM 调用. 两次都返 "1, 3, 5" → 并集仍 [1,3,5]
+    mockChatComplete.mockResolvedValue({ content: '1, 3, 5', toolCalls: [] })
     const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
     const out = await renderKbMetaAnswer({
       question: 'X 相关', candidates: cands, signal: new AbortController().signal,
     })
-    expect(mockChatComplete).toHaveBeenCalledTimes(1)
+    expect(mockChatComplete).toHaveBeenCalledTimes(2)   // v2-A: 2 次
     expect(out).toContain('doc1.pdf')
     expect(out).toContain('doc3.pdf')
     expect(out).toContain('doc5.pdf')
     expect(out).not.toContain('doc7.pdf')
   })
-  it('> 10 候选 + LLM 抛 → 退化前 8 条', async () => {
-    mockChatComplete.mockRejectedValueOnce(new Error('llm timeout'))
+  it('> 10 候选 + 两次 LLM 都抛 → 退化前 8 条', async () => {
+    // v2-A: callOnce 内 catch 单次失败返 '' 不抛; Promise.all 整体不会被单次 reject
+    // 但用 mockRejectedValue 测试两次都抛 → 内部 callOnce 都返 '' → allNums=[] + 两次都非 '0'
+    // → fallbackMarkdownList(candidates)
+    mockChatComplete.mockRejectedValue(new Error('llm timeout'))
     const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
     const out = await renderKbMetaAnswer({
       question: 'X', candidates: cands, signal: new AbortController().signal,
@@ -203,8 +207,9 @@ describe('renderKbMetaAnswer', () => {
     expect(out).toMatch(/找到以下/)
     expect(out).toContain('doc1.pdf')
   })
-  it('> 10 候选 + LLM 说全无关 (输出 "0") → 拒答', async () => {
-    mockChatComplete.mockResolvedValueOnce({ content: '0', toolCalls: [] })
+  it('> 10 候选 + 两次 LLM 都说全无关 (输出 "0") → 拒答', async () => {
+    // v2-A: 两次都返 "0" 才走 emptyAnswer (单次 "0" 不算)
+    mockChatComplete.mockResolvedValue({ content: '0', toolCalls: [] })
     const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
     const out = await renderKbMetaAnswer({
       question: '完全不沾边的问题', candidates: cands, signal: new AbortController().signal,
@@ -218,6 +223,76 @@ describe('renderKbMetaAnswer', () => {
       question: 'X', candidates: cands, signal: new AbortController().signal,
     })
     expect(mockChatComplete).not.toHaveBeenCalled()
+    expect(out).toContain('doc1.pdf')
+  })
+
+  // D-002.5 · V3D 修复 · 0 < picks < 3 时代码兜底补齐到 ≥ 3 条
+  it('> 10 候选 + 两次 LLM 都只挑 1 条 → 代码兜底补齐到 ≥ 3 条（V3D 修复）', async () => {
+    mockChatComplete.mockResolvedValue({ content: '4', toolCalls: [] })
+    const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
+    const out = await renderKbMetaAnswer({
+      question: '汽车工程相关的资料',
+      candidates: cands,
+      signal: new AbortController().signal,
+    })
+    // 两次都返 "4" → 并集 [4] → picked=[doc4] → 补 doc1, doc2 → 共 3 条
+    expect(out).toContain('doc4.pdf')
+    expect(out).toContain('doc1.pdf')
+    expect(out).toContain('doc2.pdf')
+    expect(out).not.toContain('doc5.pdf')
+    expect(out).not.toContain('似乎没有')
+  })
+  // D-002.5 v2-A · self-consistency 核心 case: 两次 LLM 互补
+  it('v2-A: 两次 LLM 互补 → picks 并集扩 (run1 选 [1], run2 选 [5])', async () => {
+    // 第一次 temperature=0.1 选 [1], 第二次 temperature=0.5 选 [5] (LFTGATE-32 类边界 candidate)
+    mockChatComplete
+      .mockResolvedValueOnce({ content: '1', toolCalls: [] })
+      .mockResolvedValueOnce({ content: '5', toolCalls: [] })
+    const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
+    const out = await renderKbMetaAnswer({
+      question: 'X 相关', candidates: cands, signal: new AbortController().signal,
+    })
+    // 并集 [1, 5] → picked=[doc1, doc5] → 补 doc2 (1 已用) → [1, 5, 2]
+    expect(out).toContain('doc1.pdf')
+    expect(out).toContain('doc5.pdf')
+    expect(out).toContain('doc2.pdf')
+    expect((out.match(/doc1\.pdf/g) || []).length).toBe(1)   // 去重
+  })
+  it('v2-A: 一次 LLM 抛 + 一次返结果 → 仍接受未抛的 picks', async () => {
+    // 模拟单次失败: 第一次抛, 第二次成功
+    mockChatComplete
+      .mockRejectedValueOnce(new Error('llm timeout'))
+      .mockResolvedValueOnce({ content: '7', toolCalls: [] })
+    const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
+    const out = await renderKbMetaAnswer({
+      question: 'X', candidates: cands, signal: new AbortController().signal,
+    })
+    // 第一次内部 catch 返 '' → nums1=[]; 第二次 nums2=[7] → 并集 [7] → 补 doc1, doc2 → [7, 1, 2]
+    expect(out).toContain('doc7.pdf')
+    expect(out).toContain('doc1.pdf')
+    expect(out).toContain('doc2.pdf')
+  })
+  it('v2-A: 两次都说 "0" 才 emptyAnswer (单次 "0" 不触发)', async () => {
+    // 边界: 一次 "0" + 一次 "5" → 不应 emptyAnswer
+    mockChatComplete
+      .mockResolvedValueOnce({ content: '0', toolCalls: [] })
+      .mockResolvedValueOnce({ content: '5', toolCalls: [] })
+    const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
+    const out = await renderKbMetaAnswer({
+      question: 'X', candidates: cands, signal: new AbortController().signal,
+    })
+    // nums1=[] (0 滤掉) + nums2=[5] → 并集 [5] → picked=[doc5] → 补 doc1, doc2
+    expect(out).not.toContain('似乎没有')
+    expect(out).toContain('doc5.pdf')
+    expect(out).toContain('doc1.pdf')
+  })
+  it('> 10 候选 + 两次 LLM 都输出乱码 → 退化前 8 条（不走 emptyAnswer）', async () => {
+    mockChatComplete.mockResolvedValue({ content: 'asdjkl 不是数字', toolCalls: [] })
+    const cands = Array.from({ length: 15 }, (_, i) => fakeRow(i + 1, `doc${i + 1}.pdf`))
+    const out = await renderKbMetaAnswer({
+      question: 'X', candidates: cands, signal: new AbortController().signal,
+    })
+    expect(out).not.toContain('似乎没有')
     expect(out).toContain('doc1.pdf')
   })
 })
@@ -283,13 +358,13 @@ describe('runKbMetaHandler', () => {
   })
 
   it('V3D 修复：keywords 非空但 SQL 0 命中 → 退化全库再查（emit 🔄）', async () => {
-    // 第一次 query 用 keywords ['汽车工程'] → 返回 0 行
+    // 第一次 query 用 keywords → 返回 0 行
     mockQuery.mockResolvedValueOnce({ rows: [] })
     // 第二次 query 退化（无 keywords） → 返回 12 行模拟全库
     const fullList = Array.from({ length: 12 }, (_, i) => fakeRow(100 + i, `LFTGATE-${i}.pdf`))
     mockQuery.mockResolvedValueOnce({ rows: fullList })
-    // 因为 12 > 10 会触发 LLM 语义筛
-    mockChatComplete.mockResolvedValueOnce({ content: '1, 2, 3', toolCalls: [] })
+    // v2-A: 12 > 10 触发 LLM 语义筛 N=2 self-consistency, 两次都返同样 picks
+    mockChatComplete.mockResolvedValue({ content: '1, 2, 3', toolCalls: [] })
 
     const events: SseEvent[] = []
     await runKbMetaHandler(
