@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react
 import ConfidenceBadge from '@/components/ConfidenceBadge'
 import AssetDirectoryPanel from '@/knowledge/QA/AssetDirectoryPanel'
 import AnswerContent from '@/knowledge/QA/AnswerContent'
+import RewriteBadge, { extractCondenseRewrite } from '@/components/RewriteBadge'
 import { tokenStorage } from '@/auth/tokenStorage'
 import { listSpaces, type SpaceSummary } from '@/api/spaces'
 
@@ -215,6 +216,12 @@ function AiBubble({ msg }: { msg: AiMessage }) {
         boxSizing: 'border-box',
       }}
     >
+      {/* N-004：condense 改写徽标——任何状态只要 ragSteps 含 🪄 就显示在头部 */}
+      {(() => {
+        const rewrite = extractCondenseRewrite(msg.ragSteps)
+        return rewrite ? <RewriteBadge from={rewrite.from} to={rewrite.to} /> : null
+      })()}
+
       {msg.bubbleState === 'thinking' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ThinkingDots />

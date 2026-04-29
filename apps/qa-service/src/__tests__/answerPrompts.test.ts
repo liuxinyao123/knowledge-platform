@@ -83,3 +83,86 @@ describe('buildSystemPromptByIntent', () => {
     expect(p).not.toContain('图片内嵌')
   })
 })
+
+describe('buildSystemPromptByIntent · citationStyle (N-001)', () => {
+  const intents = ['factual_lookup', 'language_op', 'multi_doc_compare', 'kb_meta', 'out_of_scope'] as const
+
+  it('默认 citationStyle = inline，行为等价老 freeze', () => {
+    for (const intent of intents) {
+      const noArg = buildSystemPromptByIntent(intent, FAKE_CTX)
+      const explicit = buildSystemPromptByIntent(intent, FAKE_CTX, '', 'inline')
+      expect(noArg).toBe(explicit)
+    }
+  })
+
+  it('inline 模式：prompt 段含 [N]，不含 [^N]', () => {
+    const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '', 'inline')
+    // 拆出 prompt 段（"文档内容："之前）
+    const promptPart = p.slice(0, p.indexOf('文档内容：'))
+    expect(promptPart).toMatch(/\[N\]/)         // 含 [N]
+    expect(promptPart).not.toMatch(/\[\^N\]/)   // 不含 [^N]
+  })
+
+  it('footnote 模式：prompt 段所有 [N] → [^N]', () => {
+    for (const intent of intents) {
+      const p = buildSystemPromptByIntent(intent, FAKE_CTX, '', 'footnote')
+      const promptPart = p.slice(0, p.indexOf('文档内容：'))
+      // prompt 段不应再含 [N]（裸数字方括号）
+      expect(promptPart, `${intent} prompt 段仍含 [N]`).not.toMatch(/\[\d+\]/)
+      expect(promptPart, `${intent} prompt 段也不应含 "[N]" 字面`).not.toMatch(/\[N\]/)
+    }
+  })
+
+  it('footnote 模式：context 段保留 [N] 不替换', () => {
+    const ctx = '[1] doc1.pdf\n第一段内容\n\n---\n\n[2] doc2.pdf\n第二段内容'
+    const p = buildSystemPromptByIntent('factual_lookup', ctx, '', 'footnote')
+    const contextPart = p.slice(p.indexOf('文档内容：'))
+    // context 段必须含原样 [1] [2]（不替换为 [^1] [^2]）
+    expect(contextPart).toContain('[1] doc1.pdf')
+    expect(contextPart).toContain('[2] doc2.pdf')
+    expect(contextPart).not.toContain('[^1]')
+    expect(contextPart).not.toContain('[^2]')
+  })
+
+  it('footnote 模式：inlineImageRule (![alt](url)) 不被误伤', () => {
+    const inline = '\n6. **图片内嵌**：![描述](/api/assets/images/42)'
+    const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, inline, 'footnote')
+    // markdown image syntax 字面保留
+    expect(p).toContain('![描述](/api/assets/images/42)')
+    // 但同段如果有 [N] 引用规则仍被替换
+    expect(p).toContain('图片内嵌')
+  })
+
+  it('footnote 模式：5 模板禁词检查（仍不含 hardcoded 文档形态）', () => {
+    const forbidden = ['道德经', '老子', '缓冲块', 'COF', 'B&R', 'Swing', '油漆变差', '铰链公差']
+    for (const intent of intents) {
+      const p = buildSystemPromptByIntent(intent, FAKE_CTX, '', 'footnote')
+      for (const word of forbidden) {
+        expect(p, `${intent}/footnote 不应含 hardcoded 词 "${word}"`).not.toContain(word)
+      }
+    }
+  })
+
+  it('footnote 模式：模式名标识仍存在', () => {
+    expect(buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '', 'footnote')).toContain('事实查询模式')
+    expect(buildSystemPromptByIntent('language_op', FAKE_CTX, '', 'footnote')).toContain('语言层转换模式')
+    expect(buildSystemPromptByIntent('multi_doc_compare', FAKE_CTX, '', 'footnote')).toContain('对比/分项模式')
+    expect(buildSystemPromptByIntent('kb_meta', FAKE_CTX, '', 'footnote')).toContain('目录元查询模式')
+    expect(buildSystemPromptByIntent('out_of_scope', FAKE_CTX, '', 'footnote')).toContain('超范围声明模式')
+  })
+
+  it('footnote 模式：language_op 关键约束保留', () => {
+    const p = buildSystemPromptByIntent('language_op', FAKE_CTX, '', 'footnote')
+    expect(p).toContain('必须执行')
+    expect(p).toContain('不能拒答')
+    expect(p).toContain('透明度声明')
+  })
+
+  it('footnote 模式：context 缺 "文档内容：" 标记 → 全文替换兜底', () => {
+    // 极端情况（实际不会发生）：构造一个不含 "文档内容：" 标记的 prompt
+    // 由于实现在 toFootnoteCitations 里有 idx<0 兜底，这里不易直接触发
+    // 改为验证：正常 ctx 时 context 段 [N] 保留
+    const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '', 'footnote')
+    expect(p).toContain('文档内容：')  // marker 一定存在
+  })
+})

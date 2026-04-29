@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Fragment } from 'react'
 import { tokenStorage } from '@/auth/tokenStorage'
 import type { NotebookMessage, Citation, NotebookSource } from '@/api/notebooks'
+import RewriteBadge, { extractCondenseRewrite } from '@/components/RewriteBadge'
 
 type StreamingState = 'idle' | 'thinking' | 'streaming' | 'done' | 'error'
 
@@ -29,12 +30,26 @@ interface Props {
   onPersisted: () => void
   /** 用户点引用 [^N] 时，通知父组件 highlight Sources 列表里的对应 asset */
   onCitationClick?: (assetId: number) => void
+  /** N-006：父组件预填 input（如 TemplateHintCard 推荐起手问题）；变化时覆盖 input */
+  prefillInput?: string | null
+  /** N-006：input 已消费 prefill 的回调，让父组件 reset prefill state */
+  onPrefillConsumed?: () => void
 }
 
 export default function ChatPanel({
   notebookId, messages, sources, onPersisted, onCitationClick,
+  prefillInput, onPrefillConsumed,
 }: Props) {
   const [input, setInput] = useState('')
+
+  // N-006：父组件传入 prefill 时，覆盖 input + 通知父组件清空 prefill state
+  useEffect(() => {
+    if (prefillInput) {
+      setInput(prefillInput)
+      onPrefillConsumed?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillInput])
   const [inflight, setInflight] = useState<InflightAi | null>(null)
   // optimistic：发送瞬间就把用户气泡显示出来；reload 把后端持久化的 message 拉回来后再清掉
   const [pendingUser, setPendingUser] = useState<string | null>(null)
@@ -229,26 +244,38 @@ function InflightBubble({ inflight, onCitationClick }: {
   inflight: InflightAi
   onCitationClick?: (assetId: number) => void
 }) {
+  // N-004：condense 改写徽标（thinking → streaming → done 三态都显示）
+  const rewrite = extractCondenseRewrite(inflight.ragSteps)
+
   if (inflight.state === 'thinking') {
     return (
-      <Bubble role="assistant"
-              content={inflight.ragSteps.map((s) => `${s.icon} ${s.label}`).join('\n') || '思考中…'}
-              citations={[]} onCitationClick={onCitationClick} live />
+      <div>
+        {rewrite && <RewriteBadge from={rewrite.from} to={rewrite.to} />}
+        <Bubble role="assistant"
+                content={inflight.ragSteps.map((s) => `${s.icon} ${s.label}`).join('\n') || '思考中…'}
+                citations={[]} onCitationClick={onCitationClick} live />
+      </div>
     )
   }
   if (inflight.state === 'error') {
     return (
-      <Bubble role="assistant"
-              content={`❌ ${inflight.error ?? '失败'}`}
-              citations={[]} onCitationClick={onCitationClick} />
+      <div>
+        {rewrite && <RewriteBadge from={rewrite.from} to={rewrite.to} />}
+        <Bubble role="assistant"
+                content={`❌ ${inflight.error ?? '失败'}`}
+                citations={[]} onCitationClick={onCitationClick} />
+      </div>
     )
   }
   return (
-    <Bubble role="assistant"
-            content={inflight.content}
-            citations={inflight.citations}
-            onCitationClick={onCitationClick}
-            live={inflight.state === 'streaming'} />
+    <div>
+      {rewrite && <RewriteBadge from={rewrite.from} to={rewrite.to} />}
+      <Bubble role="assistant"
+              content={inflight.content}
+              citations={inflight.citations}
+              onCitationClick={onCitationClick}
+              live={inflight.state === 'streaming'} />
+    </div>
   )
 }
 
