@@ -90,15 +90,17 @@ export function isObviousLanguageOp(question: string): boolean {
   const q = question.trim().toLowerCase()
   if (q.length === 0) return false
 
-  // 1. 排除查询型起手（即便含 meta 词也是查询不是指令）
-  //    例："我想了解机器翻译这门技术..." / "什么是翻译" / "请问 X 是什么"
+  // 1. 排除查询型起手（仅检查**句首**，不再无差别 includes 整句）
+  //    Why 句首：D-003 baseline 发现 "用白话解释一下知识中台是什么" 含句尾 "是什么"
+  //    被旧 includes 模式无差别排除——但"用白话解释一下"是明确的语言层指令。
+  //    句首匹配避免这种误排除，仅排除真正的查询型起手（"什么是 X" / "我想了解 X"）。
   const QUERY_STARTERS = [
     '我想', '我要', '我希望', '想了解', '想知道', '想问', '想搞清楚',
-    '请问', '什么是', '什么叫', '是什么', '是啥', '何为', '怎么理解',
+    '请问', '什么是', '什么叫', '何为', '怎么理解',
     'i want', 'i would', 'i\'d like', 'tell me what', 'what is',
     'what are', 'how do', 'how does', 'can you tell me',
   ]
-  if (QUERY_STARTERS.some((s) => q.startsWith(s) || q.includes(s))) return false
+  if (QUERY_STARTERS.some((s) => q.startsWith(s))) return false
 
   // 2. 必须含明显的 meta 动词（不分大小写，中英都覆盖）
   const META_VERBS = [
@@ -127,6 +129,95 @@ export function isObviousLanguageOp(question: string): boolean {
   return false
 }
 
+/**
+ * D-002.3 env 守卫：multi-tool function call 路径开关。
+ *
+ * 默认 on（true）。`false / 0 / off / no`（大小写不敏感）→ 走旧 single-tool 路径（回滚）。
+ *
+ * 改造背景：OAI 兼容服务（含硅基 Qwen2.5-7B）的 function calling 优化重点在"调哪个 tool"
+ * （tool selection），对 enum 字段值的稳定性投入相对弱。multi-tool 路径下 5 个独立 tool
+ * 对应 5 类意图，让 LLM 在 tool selection 阶段决断 → P(correct) 通常更高。
+ *
+ * 与 `B_HANDLER_ROUTING_ENABLED` 正交：后者控制是否走档 B 路由（不走则跳过 LLM 直接 factual_lookup）；
+ * 本 env 控制档 B 内部用 single-tool 还是 multi-tool。
+ */
+export function isIntentMultiToolEnabled(): boolean {
+  const v = (process.env.INTENT_MULTI_TOOL_ENABLED ?? 'true').toLowerCase().trim()
+  return !(v === 'false' || v === '0' || v === 'off' || v === 'no')
+}
+
+/**
+ * D-002.3 multi-tool function call · 5 个独立 tool，对应 5 类意图。
+ *
+ * 设计要点：
+ *   - 共享相同 `reason: string` 单字段（不暴露 intent-specific 字段；任何额外字段都会
+ *     让模型注意力分散到字段填写、降低 tool selection 稳定性）
+ *   - 动词前缀 `select_*` 在 tool name 里更明确表达"选择某分类"语义
+ *   - description ≤ 120 字 + 至少 1 个示例 + 与最易混淆相邻 intent 的边界提示
+ */
+const INTENT_TOOL_PARAMS: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    reason: { type: 'string', description: '≤30 字简短原因' },
+  },
+  required: ['reason'],
+}
+
+export const INTENT_TOOLS: readonly OAITool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'select_factual_lookup',
+      description: '问"X 是什么/在哪/谁/多少"——在召回文档里找具体事实（数值/规格/定义/位置/时间/人物）。例：「缓冲块设计间隙是多少」「道德经的作者是谁」。注：问"X 的核心模块有哪些"也是 factual_lookup（问对象属性，不是问目录）',
+      parameters: INTENT_TOOL_PARAMS,
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'select_language_op',
+      description: '指令型，要求**对召回文档原文做语言层转换**（翻译/释义/总结/改写/列表化/白话/提炼）。例：「把上面这段翻译成英文」「给道德经第一章做白话解释」「总结一下这份合同」。区别于 factual_lookup：language_op 是动作动词起手 + meta 词、输出文本转换；factual_lookup 是查询起手、输出事实',
+      parameters: INTENT_TOOL_PARAMS,
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'select_multi_doc_compare',
+      description: '对比/罗列**多个**对象、概念、文档之间的差异或分别情况。含「和/与/区别/分别/对比」等比较型信号，且语义上确实在比较多个东西。例：「CORS 和 CSRF 的区别」「分别说明 A B C 三种方案」「列出所有 ≥5mm 的件」',
+      parameters: INTENT_TOOL_PARAMS,
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'select_kb_meta',
+      description: '问知识库**目录**——库里有什么资料 / 找某类文档（不是问内容；产出资产名清单）。例：「我这库里有道德经吗」「列出所有 PDF」「找一下汽车制造的文档」「有没有讲 X 的资料」。区别于 factual_lookup："X 的核心模块有哪些" 是 factual_lookup（问 X 这个对象的属性）；"库里有哪些 X 文档"才是 kb_meta',
+      parameters: INTENT_TOOL_PARAMS,
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'select_out_of_scope',
+      description: '问文档**外**的背景/原因/朝代/作者意图/历史源流——文档里通常找不到的信息。例：「为什么 GM 要写这份文档」「老子是哪个朝代的人」「道德经诞生的历史背景」「为什么这个公差是 0.3mm」。判定窍门：问"为什么 X 这么 Y"=out_of_scope；问"X 的 Y 是什么"=factual_lookup',
+      parameters: INTENT_TOOL_PARAMS,
+    },
+  },
+]
+
+export const TOOL_NAME_TO_INTENT: Readonly<Record<string, AnswerIntent>> = {
+  select_factual_lookup: 'factual_lookup',
+  select_language_op: 'language_op',
+  select_multi_doc_compare: 'multi_doc_compare',
+  select_kb_meta: 'kb_meta',
+  select_out_of_scope: 'out_of_scope',
+}
+
+/**
+ * 旧 single-tool 路径（D-002.3 改造前）。env `INTENT_MULTI_TOOL_ENABLED=false` 时使用。
+ * 完整保留作回滚路径，待 D-003 baseline 8 + N 周生产观测稳定后另开 change 物理删除。
+ */
 const CLASSIFY_TOOL: OAITool = {
   type: 'function',
   function: {
@@ -177,16 +268,36 @@ function buildClassifyPrompt(question: string, docs: AssetChunk[]): string {
 - "道德经第一章原文" → factual_lookup（"原文"作名词，找具体内容）
 - "给上面这段做白话解释" → language_op（"给+做"指令 + meta 词"白话解释"）
 - "给他的原文的解释" → language_op（指代"他的原文" + 指令"给...的解释"）
-- "给X的原文的解释" / "做X的释义" → language_op（同上模式）
 - "把这份合同翻译成英文" → language_op
 - "翻译一下这段" / "解释一下" / "总结一下这章" / "白话解释下" → language_op
 - "提炼一下这份文档的关键点" / "改写成步骤列表" → language_op
 - "缓冲块设计间隙是多少" → factual_lookup（具体数值查询）
 - "道德经的作者是谁" → factual_lookup（人物查询）
 - "X 和 Y 的区别" / "分别说明" → multi_doc_compare
-- "库里有道德经吗" / "找一下汽车制造的文档" → kb_meta
-- "为什么作者这么写" → out_of_scope（问意图，文档不会有）
-- "老子的生平" → 看文档是否有；有 → factual_lookup；没有 → out_of_scope
+
+【kb_meta vs factual_lookup 关键区分】
+**kb_meta**：问知识库**目录**，"我这库里有 X 吗"/"找一下 X 类文档"/"列出所有 PDF"。
+   产出是**资产名清单**，不进文档内容。
+**factual_lookup**：问"X **的** Y" / "X 是谁/什么/在哪"。即便含"有哪些"也是问对象的属性，
+   不是问目录。产出是文档**内容**。
+- "我这库里有道德经吗" → kb_meta（问目录）
+- "库里有哪些汽车制造的文档" → kb_meta
+- "知识中台**的核心模块有哪些**" → factual_lookup（问"中台"这个具体对象的模块清单，是内容）
+- "道德经**的作者**是谁" → factual_lookup
+- "**有没有**讲道德经的资料" → kb_meta（问目录）
+
+【out_of_scope vs factual_lookup 关键区分】
+**out_of_scope**：问文档**外**的背景/原因/朝代/作者意图/历史源流。
+**factual_lookup**：问文档**里能找到**的事实。
+- "为什么 GM 要写这份文档" → out_of_scope（问作者写作意图，文档不会有）
+- "为什么作者这么主张" → out_of_scope（问作者意图）
+- "老子是哪个朝代的人" → out_of_scope（问朝代背景；除非文档明确含序言写朝代）
+- "道德经诞生的历史背景" → out_of_scope（问历史源流）
+- "道德经的作者是谁" → factual_lookup（"作者"是文档元数据/原文常见信息）
+- "缓冲块的设计参数" → factual_lookup（文档明确事实）
+
+判定窍门：**问 "为什么 X 这么 Y"**（追问原因/意图）= out_of_scope；
+        **问 "X 是 Y 吗 / X 的 Y 是什么"**（追问对象属性）= factual_lookup。
 
 【用户问题】
 ${question}
@@ -195,6 +306,25 @@ ${question}
 ${previews || '(无召回)'}
 
 调用 classify_answer_intent 工具返回结构化结果。reason 字段简短说明你为什么分到这个意图（≤ 30 字）。`
+}
+
+/**
+ * D-002.3 multi-tool 路径下的瘦身 prompt。判定准则下沉到每个 tool 的 description，
+ * 这里只保留"用户问题 + 召回 preview + 一句调用指引"，不重复 5 类 intent 规则。
+ */
+function buildClassifyPromptMultiTool(question: string, docs: AssetChunk[]): string {
+  const previews = docs.slice(0, DOC_PREVIEW_COUNT).map((d, i) => {
+    const text = String(d.chunk_content ?? '').replace(/\s+/g, ' ').slice(0, DOC_PREVIEW_CHARS)
+    return `[${i + 1}] ${d.asset_name}: ${text}`
+  }).join('\n')
+
+  return `根据用户问题与召回文档预览，调用 5 个 select_* 工具中最匹配的一个。reason 字段填一句简短原因（≤30 字）。
+
+【用户问题】
+${question}
+
+【召回文档预览（前 ${DOC_PREVIEW_COUNT} 段，每段 ≤ ${DOC_PREVIEW_CHARS} 字）】
+${previews || '(无召回)'}`
 }
 
 export interface IntentClassification {
@@ -206,9 +336,16 @@ export interface IntentClassification {
 
 /**
  * 把用户问题 + 召回 docs 分类到 5 类意图之一。
- * - 任何异常都返回 factual_lookup + fallback=true，不阻塞主流程
- * - 未启用 / 未配置 LLM 时同样返回 factual_lookup + fallback=true
- * - 1.5s 硬超时
+ *
+ * 控制流：
+ *   1. env `B_HANDLER_ROUTING_ENABLED=false` → factual_lookup + fallback
+ *   2. LLM 未配置 → factual_lookup + fallback
+ *   3. 空问题 → factual_lookup + fallback
+ *   4. isObviousLanguageOp 命中 → language_op + 不调 LLM
+ *   5. env `INTENT_MULTI_TOOL_ENABLED=true`（默认）→ multi-tool 路径
+ *   6. 否则 → 旧 single-tool 路径（回滚用）
+ *
+ * 共同保证：1.5s 硬超时；任何异常都返回 factual_lookup + fallback=true，不阻塞主流程。
  */
 export async function classifyAnswerIntent(
   question: string,
@@ -229,6 +366,86 @@ export async function classifyAnswerIntent(
     return { intent: 'language_op', reason: 'rule:meta+imperative', fallback: false }
   }
 
+  // D-002.3 路径分流
+  if (isIntentMultiToolEnabled()) {
+    return classifyAnswerIntentMultiTool(question, docs)
+  }
+  return classifyAnswerIntentLegacy(question, docs)
+}
+
+/**
+ * D-002.3 multi-tool 路径：5 个独立 tool + tool_choice='required'，从 `toolCalls[0].function.name`
+ * 反查 intent。args 仅作 reason 调试字段——name 决断成功的话即便 args 解析失败也接受 intent。
+ *
+ * 兜底链：
+ *   - toolCalls 为空            → factual_lookup + fallback
+ *   - tool name 不在 5 个里      → factual_lookup + fallback，reason 含 'unknown tool'
+ *   - 多 tool calls              → 取首个，reason 追加 'multi-tool, took first'
+ *   - args 解析失败但 name 合法   → 仍接受 intent（fallback=false），reason='args parse failed'
+ */
+async function classifyAnswerIntentMultiTool(
+  question: string,
+  docs: AssetChunk[],
+): Promise<IntentClassification> {
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), CLASSIFY_TIMEOUT_MS)
+  try {
+    const { toolCalls } = await chatComplete(
+      [{ role: 'user', content: buildClassifyPromptMultiTool(question, docs) }],
+      {
+        model: getLlmFastModel(),
+        maxTokens: 80,
+        temperature: 0.1,
+        tools: [...INTENT_TOOLS],
+        toolChoice: 'required',
+      },
+    )
+    clearTimeout(t)
+    if (!toolCalls || toolCalls.length === 0) {
+      return { intent: DEFAULT_INTENT, reason: 'no tool call returned', fallback: true }
+    }
+    const first = toolCalls[0]
+    const toolName = first?.function?.name ?? ''
+    const intent = TOOL_NAME_TO_INTENT[toolName]
+    if (!intent) {
+      return {
+        intent: DEFAULT_INTENT,
+        reason: `unknown tool: ${toolName.slice(0, 40)}`,
+        fallback: true,
+      }
+    }
+    // tool name 决断成功：args 仅为 reason 调试字段，解析失败不降级
+    let reason = ''
+    let parseFailed = false
+    try {
+      const parsed = JSON.parse(first.function?.arguments ?? '{}') as { reason?: string }
+      if (typeof parsed.reason === 'string') reason = parsed.reason.slice(0, 60)
+    } catch {
+      parseFailed = true
+    }
+    if (parseFailed) reason = `${toolName} args parse failed`
+    if (toolCalls.length > 1) {
+      reason = reason ? `${reason}; multi-tool, took first` : 'multi-tool, took first'
+    }
+    return { intent, reason, fallback: false }
+  } catch (err) {
+    clearTimeout(t)
+    return {
+      intent: DEFAULT_INTENT,
+      reason: err instanceof Error ? `classify failed: ${err.message.slice(0, 40)}` : 'classify failed',
+      fallback: true,
+    }
+  }
+}
+
+/**
+ * 旧 single-tool 路径（D-002.3 改造前）。env `INTENT_MULTI_TOOL_ENABLED=false` 时使用。
+ * 行为完全等同 baseline 7。
+ */
+async function classifyAnswerIntentLegacy(
+  question: string,
+  docs: AssetChunk[],
+): Promise<IntentClassification> {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), CLASSIFY_TIMEOUT_MS)
   try {
