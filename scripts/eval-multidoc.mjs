@@ -12,6 +12,8 @@
  *   node scripts/eval-multidoc.mjs --sample 5                # 随机抽 5 条 debug
  *   node scripts/eval-multidoc.mjs --doc-type classical_chinese
  *   node scripts/eval-multidoc.mjs --intent language_op
+ *   node scripts/eval-multidoc.mjs --case D003-V3E           # 按 case.id 精确过滤单 case
+ *   node scripts/eval-multidoc.mjs --repeat 3                # D-002.4: 每 case 跑 N 次取多数
  *   node scripts/eval-multidoc.mjs --strict                  # must_pass 任一 fail 退 1
  *   node scripts/eval-multidoc.mjs --verbose                 # 每 case 打印详细 SSE 摘要
  *   node scripts/eval-multidoc.mjs eval/some-other.jsonl     # 自定数据集
@@ -44,6 +46,9 @@ const JSONL_PATH = (() => {
 const SAMPLE = Number(getFlag('--sample') || 0) || 0
 const DOC_TYPE_FILTER = getFlag('--doc-type')
 const INTENT_FILTER = getFlag('--intent')
+const CASE_FILTER = getFlag('--case')                                  // D-002.4: 单 case 精确过滤
+const REPEAT = Math.max(1, Number(getFlag('--repeat') || 1) || 1)      // D-002.4: 每 case 跑 N 次
+const MAJORITY_THRESHOLD = Math.ceil(REPEAT / 2)                       // D-002.4: 多数门槛 ⌈N/2⌉
 const STRICT = hasFlag('--strict')
 const VERBOSE = hasFlag('--verbose')
 
@@ -340,6 +345,45 @@ const ASSERTIONS = [
   ['non_refusal_lop', assertNonRefusalForLangOp],
 ]
 
+// ── D-002.4 majority-of-N 多数决定 ──────────────────────────────────────────
+
+/**
+ * 把 N 跑同一维度的结果合成"多数 pass"判定。
+ *   - 若任一跑次返回 `skipped:` reason → 整维度视作 skipped（不参与统计）
+ *   - 否则统计 pass 计数；≥ ceil(N/2) 即 majority pass
+ *   - stable: N/N 全过；非 stable 但 majority pass = flaky
+ *
+ * 入参 perRun 长度 == REPEAT；每项 { pass: bool, reason: str }（含可能的 skipped）。
+ * 返回 { pass, stable, passCount, total, skipped, reason }。
+ */
+export function majorityVote(perRun, N) {
+  const skipped = perRun.every((r) => r && typeof r.reason === 'string' && r.reason.startsWith('skipped'))
+  if (skipped) {
+    return { pass: true, stable: true, passCount: N, total: N, skipped: true, reason: 'skipped' }
+  }
+  let passCount = 0
+  const failReasons = []
+  for (let i = 0; i < perRun.length; i++) {
+    const r = perRun[i]
+    if (r && r.pass) passCount++
+    else if (r && r.reason) failReasons.push(`run${i + 1}: ${r.reason}`)
+  }
+  const threshold = Math.ceil(N / 2)
+  const stable = passCount === N
+  const majorityPass = passCount >= threshold
+  // 把 fail reasons 去重（很多次同一原因时不重复打印），保留前 2 条避免 log 太长
+  const uniqueReasons = [...new Set(failReasons)].slice(0, 2)
+  let reason
+  if (stable) {
+    reason = `stable ${N}/${N} pass`
+  } else if (majorityPass) {
+    reason = `majority ${passCount}/${N} pass; ${uniqueReasons.join(' | ')}`
+  } else {
+    reason = `only ${passCount}/${N} pass; ${uniqueReasons.join(' | ')}`
+  }
+  return { pass: majorityPass, stable, passCount, total: N, skipped: false, reason }
+}
+
 // ── 主流程 ───────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -351,6 +395,8 @@ async function main() {
   if (SAMPLE) console.log(`${dim('Sample:')} ${SAMPLE}`)
   if (DOC_TYPE_FILTER) console.log(`${dim('Filter doc_type:')} ${DOC_TYPE_FILTER}`)
   if (INTENT_FILTER) console.log(`${dim('Filter intent:')} ${INTENT_FILTER}`)
+  if (CASE_FILTER) console.log(`${dim('Filter case:')} ${CASE_FILTER}`)
+  if (REPEAT > 1) console.log(`${dim('Repeat:')} ${REPEAT} ${dim(`(majority threshold: ${MAJORITY_THRESHOLD})`)}`)
   if (STRICT) console.log(`${warn('Strict mode')}`)
   console.log()
 
@@ -375,8 +421,13 @@ async function main() {
   let cases = allCases
   if (DOC_TYPE_FILTER) cases = cases.filter((c) => c.doc_type === DOC_TYPE_FILTER)
   if (INTENT_FILTER) cases = cases.filter((c) => c.expected_intent === INTENT_FILTER)
+  if (CASE_FILTER) cases = cases.filter((c) => c.id === CASE_FILTER)   // D-002.4
   if (SAMPLE && SAMPLE > 0) {
     cases = cases.sort(() => Math.random() - 0.5).slice(0, SAMPLE)
+  }
+  if (cases.length === 0) {
+    console.error(bad('❌ filter 后无 case 可跑（检查 --case / --doc-type / --intent 拼写）'))
+    process.exit(1)
   }
   console.log(`${dim('Running')} ${cases.length} ${dim('cases after filter')}`)
   console.log()
@@ -390,10 +441,9 @@ async function main() {
   }
 
   // Phase 2-3: per case
-  const results = []
-  for (let i = 0; i < cases.length; i++) {
-    const c = cases[i]
-    process.stdout.write(`[${i + 1}/${cases.length}] ${C.cyan}${c.id}${C.reset} ${dim(`(${c.doc_type})`)} ... `)
+  // D-002.4 · 每 case 跑 REPEAT 次（默认 1），按多数决定汇总。
+  // 单跑函数抽出来供 N 跑共用；assertResults 形状不变，便于聚合段统一处理。
+  async function runOnce(c) {
     let observed, error = null
     try {
       observed = await dispatchSse(c.question, c.history || [], token)
@@ -403,40 +453,88 @@ async function main() {
     const assertResults = {}
     if (error) {
       for (const [name] of ASSERTIONS) assertResults[name] = { pass: false, reason: `error: ${error}` }
-      console.log(bad('ERROR'))
-      if (VERBOSE) console.log(`    ${dim(error)}`)
     } else {
-      let passCount = 0
-      for (const [name, fn] of ASSERTIONS) {
-        const r = fn(c, observed)
-        assertResults[name] = r
-        if (r.pass) passCount++
-      }
-      const totalAss = ASSERTIONS.length
-      const status = passCount === totalAss ? ok('PASS') : passCount >= totalAss - 1 ? warn(`${passCount}/${totalAss}`) : bad(`${passCount}/${totalAss}`)
-      console.log(`${status} ${dim(`(top=${observed.topIntent || '?'}/answer=${observed.answerIntent || 'fallback'})`)}`)
-      if (VERBOSE) {
-        for (const [name, r] of Object.entries(assertResults)) {
-          if (!r.pass) console.log(`    ${bad('✗')} ${name}: ${r.reason}`)
+      for (const [name, fn] of ASSERTIONS) assertResults[name] = fn(c, observed)
+    }
+    return { observed, error, assertResults }
+  }
+
+  const results = []
+  for (let i = 0; i < cases.length; i++) {
+    const c = cases[i]
+    process.stdout.write(`[${i + 1}/${cases.length}] ${C.cyan}${c.id}${C.reset} ${dim(`(${c.doc_type})`)} ... `)
+
+    const runs = []
+    for (let r = 0; r < REPEAT; r++) {
+      runs.push(await runOnce(c))
+    }
+
+    // 多数决定 per-dim
+    const majorityResults = {}
+    for (const [name] of ASSERTIONS) {
+      const perRun = runs.map((rn) => rn.assertResults[name])
+      majorityResults[name] = majorityVote(perRun, REPEAT)
+    }
+
+    // 显示行：N=1 时维持原 PASS/N-of-7 标签；N>1 时引入 STABLE/MAJORITY/FAIL 三档
+    const allError = runs.every((r) => r.error)
+    const totalAss = ASSERTIONS.length
+    let status
+    if (allError) {
+      status = bad('ERROR')
+    } else if (REPEAT > 1) {
+      const allMajPass = Object.values(majorityResults).every((m) => m.pass)
+      const allStable = Object.values(majorityResults).every((m) => m.stable || m.skipped)
+      status = allStable ? ok('STABLE') : allMajPass ? warn('MAJORITY') : bad('FAIL')
+    } else {
+      const passCount = Object.values(majorityResults).filter((m) => m.pass).length
+      status = passCount === totalAss
+        ? ok('PASS')
+        : passCount >= totalAss - 1 ? warn(`${passCount}/${totalAss}`) : bad(`${passCount}/${totalAss}`)
+    }
+
+    // 末尾摘要：N=1 沿用旧 (top=.../answer=...)；N>1 显示成功跑次比
+    const okRuns = runs.filter((r) => !r.error).length
+    let trailing
+    if (REPEAT > 1) {
+      trailing = dim(`(${okRuns}/${REPEAT} runs ok)`)
+    } else {
+      const last = runs[runs.length - 1]
+      trailing = dim(`(top=${last.observed?.topIntent || '?'}/answer=${last.observed?.answerIntent || 'fallback'})`)
+    }
+    console.log(`${status} ${trailing}`)
+
+    if (VERBOSE) {
+      if (allError) {
+        console.log(`    ${dim(runs[0].error)}`)
+      } else {
+        for (const [name, m] of Object.entries(majorityResults)) {
+          if (!m.pass && !m.skipped) console.log(`    ${bad('✗')} ${name}: ${m.reason}`)
+          else if (REPEAT > 1 && !m.stable && !m.skipped) console.log(`    ${warn('~')} ${name}: ${m.reason}`)
         }
-        console.log(`    ${dim('answer:')} ${(observed.answer || '').slice(0, 120).replace(/\n/g, ' ')}`)
+        const ans = (runs[runs.length - 1].observed?.answer || '').slice(0, 120).replace(/\n/g, ' ')
+        if (ans) console.log(`    ${dim('answer:')} ${ans}`)
       }
     }
-    results.push({ case: c, observed, error, assertResults })
+    results.push({ case: c, runs, majorityResults })
   }
 
   // Phase 4: aggregate
   console.log()
   console.log(`${C.bold}========== 报告 ==========${C.reset}`)
 
+  // helpers · 用 majorityResults 判 pass 与 skipped
+  const isCasePass = (r) => Object.values(r.majorityResults).every((m) => m.pass)
+  const isDimSkipped = (m) => m.skipped === true
+
   // 按维度
   console.log(`\n${C.bold}按维度:${C.reset}`)
   for (const [name] of ASSERTIONS) {
     let p = 0, t = 0
     for (const r of results) {
-      const ar = r.assertResults[name]
-      if (!ar.reason.startsWith('skipped')) {
-        t++; if (ar.pass) p++
+      const m = r.majorityResults[name]
+      if (!isDimSkipped(m)) {
+        t++; if (m.pass) p++
       }
     }
     if (t === 0) continue
@@ -450,9 +548,8 @@ async function main() {
   for (const r of results) {
     const k = r.case.doc_type
     if (!byDocType.has(k)) byDocType.set(k, { pass: 0, total: 0 })
-    const allPass = !r.error && Object.values(r.assertResults).every((ar) => ar.pass)
     byDocType.get(k).total++
-    if (allPass) byDocType.get(k).pass++
+    if (isCasePass(r)) byDocType.get(k).pass++
   }
   for (const [k, v] of [...byDocType.entries()].sort()) {
     const pct = ((v.pass / v.total) * 100).toFixed(1)
@@ -465,9 +562,8 @@ async function main() {
   for (const r of results) {
     const k = r.case.expected_intent || 'null'
     if (!byIntent.has(k)) byIntent.set(k, { pass: 0, total: 0 })
-    const allPass = !r.error && Object.values(r.assertResults).every((ar) => ar.pass)
     byIntent.get(k).total++
-    if (allPass) byIntent.get(k).pass++
+    if (isCasePass(r)) byIntent.get(k).pass++
   }
   for (const [k, v] of [...byIntent.entries()].sort()) {
     const pct = ((v.pass / v.total) * 100).toFixed(1)
@@ -480,8 +576,7 @@ async function main() {
     console.log(`\n${C.bold}must_pass cases:${C.reset}`)
     let mustFail = 0
     for (const r of mustPassResults) {
-      const allPass = !r.error && Object.values(r.assertResults).every((ar) => ar.pass)
-      if (allPass) console.log(`  ${ok('PASS')} ${r.case.id}`)
+      if (isCasePass(r)) console.log(`  ${ok('PASS')} ${r.case.id}`)
       else { console.log(`  ${bad('FAIL')} ${r.case.id}`); mustFail++ }
     }
     if (mustFail > 0 && STRICT) {
@@ -490,20 +585,63 @@ async function main() {
     }
   }
 
-  // failed cases 详情
-  const failed = results.filter((r) => r.error || Object.values(r.assertResults).some((ar) => !ar.pass))
+  // D-002.4 · 稳定性报告（仅 N>1 时打印）
+  // 三档分类：
+  //   STABLE  — 所有维度 N/N 跑过 → 系统稳定
+  //   FLAKY   — 多数维度过但有维度 N/N 没过 → LLM 抖动
+  //   BROKEN  — 任一维度多数不过 → 系统问题
+  if (REPEAT > 1) {
+    console.log(`\n${C.bold}稳定性报告（${REPEAT} 次跑）:${C.reset}`)
+    const stableCases = []
+    const flakyCases = []
+    const brokenCases = []
+    for (const r of results) {
+      const ms = Object.values(r.majorityResults)
+      const hasNonMaj = ms.some((m) => !m.pass)
+      const hasFlakyDim = ms.some((m) => m.pass && !m.stable && !m.skipped)
+      if (hasNonMaj) brokenCases.push(r)
+      else if (hasFlakyDim) flakyCases.push(r)
+      else stableCases.push(r)
+    }
+    console.log(`  ${ok('STABLE')}  ${String(stableCases.length).padStart(2)}/${results.length}（每维度 ${REPEAT}/${REPEAT} 跑过 = 系统稳定）`)
+    console.log(`  ${warn('FLAKY')}   ${String(flakyCases.length).padStart(2)}/${results.length}（多数过但抖动 = LLM 非确定性）`)
+    console.log(`  ${bad('BROKEN')}  ${String(brokenCases.length).padStart(2)}/${results.length}（多数不过 = 系统问题，需介入）`)
+    if (flakyCases.length > 0) {
+      console.log(`\n  ${dim('FLAKY 详情（哪些维度抖）:')}`)
+      for (const r of flakyCases) {
+        const dims = Object.entries(r.majorityResults)
+          .filter(([_, m]) => m.pass && !m.stable && !m.skipped)
+          .map(([n, m]) => `${n} ${m.passCount}/${m.total}`)
+        console.log(`    ${warn('~')} ${r.case.id} ${dim(`(${r.case.doc_type})`)}: ${dims.join(', ')}`)
+      }
+    }
+    if (brokenCases.length > 0) {
+      console.log(`\n  ${dim('BROKEN 详情（哪些维度多数不过）:')}`)
+      for (const r of brokenCases) {
+        const dims = Object.entries(r.majorityResults)
+          .filter(([_, m]) => !m.pass)
+          .map(([n, m]) => `${n} ${m.passCount}/${m.total}`)
+        console.log(`    ${bad('✗')} ${r.case.id} ${dim(`(${r.case.doc_type})`)}: ${dims.join(', ')}`)
+      }
+    }
+  }
+
+  // failed cases 详情（多数不过的）
+  const failed = results.filter((r) => !isCasePass(r))
   if (failed.length > 0) {
     console.log(`\n${C.bold}Failed cases (${failed.length}):${C.reset}`)
     for (const r of failed) {
       console.log(`  ${bad('✗')} ${r.case.id} ${dim(r.case.doc_type)}`)
-      if (r.error) {
-        console.log(`      error: ${r.error}`)
+      const allError = r.runs.every((rn) => rn.error)
+      if (allError) {
+        console.log(`      error: ${r.runs[0].error}`)
         continue
       }
-      for (const [name, ar] of Object.entries(r.assertResults)) {
-        if (!ar.pass) console.log(`      ${name}: ${ar.reason}`)
+      for (const [name, m] of Object.entries(r.majorityResults)) {
+        if (!m.pass) console.log(`      ${name}: ${m.reason}`)
       }
-      const ansPrefix = (r.observed?.answer || '').slice(0, 200).replace(/\n/g, ' ')
+      // 打印最后一次跑的 answer prefix（与 N=1 旧行为一致）
+      const ansPrefix = (r.runs[r.runs.length - 1].observed?.answer || '').slice(0, 200).replace(/\n/g, ' ')
       if (ansPrefix) console.log(`      ${dim('answer prefix: ' + ansPrefix)}`)
     }
   }

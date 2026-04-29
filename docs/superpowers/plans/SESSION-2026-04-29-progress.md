@@ -1,8 +1,8 @@
 # Session Progress · 2026-04-29
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool
-> 下一站待选：N-007 / N-008 / D-002.4 多次调用取众数
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器
+> 下一站待选：D-002.5 V3D kbMetaHandler 语义筛 prompt 修复 / D-002.6 sop-数值 retrieval/prompt 修复 / N-007 / N-008
 
 ---
 
@@ -25,6 +25,31 @@
 - assert 加 NFKC normalize（OCR 异体字 ⽼ U+2F77 → 老 U+8001）
 - `assertPatternType.list` 加 4 模式：经典 bullet / 顿号 ≥3 / 粗体段 ≥2 / 分号 ≥3，任一过即可
 - `assertPatternType.bilingual` 阈值 20% → 10%（支持工业 SOP "轻度双语"）
+
+### Commit ⑤ · D-002.4 eval-multidoc.mjs majority-of-N（C 工作流离线 only）
+**修改**：`scripts/eval-multidoc.mjs`（+约 130 行）
+**新增**：`docs/superpowers/specs/rag-majority-of-n-design.md`（Explore，4 路径 trade-off + 3 落地方案）
+**新增**：`docs/superpowers/plans/rag-majority-of-n-impl-plan.md`（Plan，7 步实施切片）
+
+新 CLI flags：
+- `--repeat N`（默认 1，常用 N=3）—— 每 case 跑 N 次
+- `--case <id>`（顺手补，原先被静默忽略）—— 单 case 精确过滤
+
+新核心：
+- `majorityVote(perRun, N)` 纯函数：`⌈N/2⌉` 阈值 + skipped 透传 + 三档分类（stable / majority / broken）
+- 主循环抽 `runOnce(c)`，N>1 时打 `STABLE` / `MAJORITY` / `FAIL` 三档标签
+- 新「稳定性报告」段：STABLE / FLAKY / BROKEN 三档 + flaky/broken 维度详情
+
+向后兼容：
+- N=1（默认）输出与 baseline 8 完全等价（PASS/N-of-7 标签 + `(top=.../answer=...)` trailing）
+- 仅改 `scripts/`，不动 `src/**`，vitest 零回归
+
+V-9 实测：
+- 全集 N=3：13/15 STABLE、2/15 FLAKY（V3E intent 2/3 + classical-translate pattern 2/3）、0/15 BROKEN
+- 单 case verbose 揭示 V3D keyword 0/3 + sop-数值 pattern 1/3 / keywords 1/3
+  → 之前认为是"LLM 抖动"，N=3 多采样揭示**疑似系统问题**，需 D-002.5 / D-002.6 后续介入
+
+production 完全不动；streaming UX 不变；零延迟代价；token 成本仅在跑评测时 N×。
 
 ### Commit ④ · D-002.3 答案意图分类 multi-tool function call（B 工作流四阶段）
 **新增**：`docs/superpowers/archive/rag-intent-multi-tool/design.md`（已归档）
@@ -134,6 +159,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #63 | **D-002.4 eval-multidoc.mjs majority-of-N（C 工作流离线 only）** |
 | #62 | **D-002.3 答案意图分类 multi-tool function call（B 工作流四阶段）** |
 | #61 | D-003 评测器太严修复（C 工作流）—— pattern.list 4 模式 + bilingual 阈值放宽 + 删 V3B-prime2 |
 | #60 | D-002.2 V3D 0 命中退化修复（C 工作流）|
@@ -146,20 +172,25 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A · D-002.4 多次调用取众数（C 工作流，~1 小时）—— 治残留 generateAnswer 抖动
-**修**：V3A keywords miss / V3D keywords miss / sop-数值 pattern / V3A transparency 等 LLM 抖动维度
-**架构**：在 `generateAnswer` 的 LLM 调用层加 majority-of-N（N=3 同 prompt 取众数答案）；评测器侧加 confidence interval
-**期望**：keywords 81.8% → 100%，pattern 92~100% → 100% 稳
+### 选项 A · D-002.5 V3D kbMetaHandler 语义筛 prompt 修复（C 工作流，~30 分钟）
+**修**：D-002.4 揭示 V3D keyword "LFTGATE" 0/3 — 不是抖动是真问题
+**根因**：kbMetaHandler 的 LLM 语义筛只挑了 1 条 Bumper PDF，丢掉了 LFTGATE-32 文件
+**改法**：renderKbMetaAnswer 大于 10 候选时的 LLM 筛选 prompt 强制"≥3 条候选"+ assert 输出非空 → 失败兜底全 SQL 结果
 
-### 选项 B · N-007 公共模板（B 工作流，~1 小时）
+### 选项 B · D-002.6 sop-数值 retrieval/prompt 拒答倾向修复（B 工作流，~1 小时）
+**修**：D-002.4 揭示 sop-数值 pattern 1/3 / keywords 1/3 — 2/3 LLM 拒答 "知识库中没有相关内容"
+**根因**：retrieval 召回 alpha/beta clearance 内容稳定但 LLM 倾向不引用
+**改法**：调查召回 chunks 是否真含 alpha/beta；调 factual_lookup prompt 强制"如召回有相关内容必须引用 verbatim"
+
+### 选项 C · N-007 公共模板（B 工作流，~1 小时）
 **做**：把 N-006 的 6 个 NotebookTemplate 提到"公共模板池"，加 source 字段（system / community / user），社区可见的模板能被所有空间引用
 **架构**：模板提交流程（submit → review → publish）+ 模板浏览页 + Detail 引入"应用模板"按钮
 
-### 选项 C · N-008 用户自定义模板（B 工作流，~1 小时）
+### 选项 D · N-008 用户自定义模板（B 工作流，~1 小时）
 **做**：用户可以自己创建模板（label / icon / desc / recommendedSourceHint / starter questions / recommended artifacts），存到 `notebook_template` 表
 **前置**：N-007 完成后 schema 复用；如果直接做 N-008，需要先把存储层扩出来
 
-### 选项 D · D-003 评测集扩到 60 case（C 工作流，~45 分钟手动）
+### 选项 E · D-003 评测集扩到 60 case（C 工作流，~45 分钟手动）
 **做**：当前 15 case 起步集 → 按 doc_type × expected_intent × pattern_type 矩阵补全到 60 case
 **前置**：需要更多文档入库（覆盖 presentation_pptx / table_xlsx / short_news_md 三个低 case 数 doc_type）
 
