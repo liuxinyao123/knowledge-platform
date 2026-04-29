@@ -11,7 +11,8 @@ export function isFactualStrictVerbatimEnabled(): boolean
 ```
 
 - 读 `process.env.FACTUAL_STRICT_VERBATIM_ENABLED`
-- 默认 `true`；`false / 0 / off / no`（大小写不敏感）→ `false`
+- **默认 `false`**（A4 verify 反直觉发现：严格 prompt 反而更易拒答）
+- `true / 1 / on / yes`（大小写不敏感）→ `true`，opt-in 实验通道
 
 ## MODIFIED Requirements
 
@@ -19,7 +20,7 @@ export function isFactualStrictVerbatimEnabled(): boolean
 
 签名不变 `(context: string, inlineImageRule: string) => string`。
 
-**新行为**（env on，默认）：
+**严格行为**（env=true，opt-in 实验）：
 
 第 1 条规则改为两段：
 ```
@@ -35,7 +36,9 @@ export function isFactualStrictVerbatimEnabled(): boolean
 - 4 [N] 引用
 - 5 不漏组件
 
-**旧行为**（env off）：完整保留原第 1 条 "只使用提供的文档作答...找不到就说「知识库中没有相关内容」，不要猜"，其它 4 条相同。
+**默认行为**（env 未设 / =false）：完整保留原第 1 条 "只使用提供的文档作答...找不到就说「知识库中没有相关内容」，不要猜"，其它 4 条相同。
+
+A4 verify 反直觉发现：fast LLM 对长复杂指令（严格版）反而更易拒答；简单的 legacy prompt 让 LLM 更愿做"部分回答 + 引用 verbatim 数值"。default off 保留生产现状直到 D-002.7 重新设计 prompt。
 
 ## Acceptance Tests
 
@@ -43,9 +46,9 @@ export function isFactualStrictVerbatimEnabled(): boolean
 
 | ID | 场景 | 期望 |
 |---|---|---|
-| FL-1 | env on, factual_lookup prompt 含 "先尝试 verbatim 提取" | toContain |
-| FL-2 | env on prompt 含 "完全没有出现问题的关键实体或同义实体" | toContain |
-| FL-3 | env off prompt 含 "找不到就说" + 不含 "先尝试 verbatim" | toContain + not.toContain |
-| FL-4 | env on/off, 其它 4 个 intent prompt 完全相同 | snapshot or stringEquals |
-| FL-5 | env on, footnote 模式：prompt prefix 段 [N] → [^N]（context 段不变）| toContain '[^N]' before '文档内容：' |
-| FL-6 | env 5 个值的开关回归 (true/false/0/off/no/未设)  | isFactualStrictVerbatimEnabled 5 case |
+| FL-1 | env=true (opt-in), prompt 含 "先尝试 verbatim 提取" | toContain |
+| FL-2 | env=true, prompt 含 "完全没有出现问题的关键实体或同义实体" | toContain |
+| FL-3 | 默认 (env 未设), prompt 是 legacy（含 "找不到就说" 不含 "先尝试 verbatim"）| toContain + not.toContain |
+| FL-4 | env true/false 切换, 其它 4 个 intent prompt 完全相同 | stringEquals |
+| FL-5 | env=true, footnote 模式：prompt prefix 段 [N] → [^N]（context 段不变）| toContain '[^N]' before '文档内容：' |
+| FL-6 | env 守卫 3 case：默认 off / true 等显式启用 / 其它值仍 off | isFactualStrictVerbatimEnabled |

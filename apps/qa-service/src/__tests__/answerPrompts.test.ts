@@ -179,20 +179,20 @@ describe('isFactualStrictVerbatimEnabled · D-002.6 env 守卫', () => {
     else process.env.FACTUAL_STRICT_VERBATIM_ENABLED = orig
   })
 
-  it('默认 on', () => {
+  it('默认 off (D-002.6 v1 探索归零，待 D-002.7 重新设计 prompt)', () => {
     delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
-    expect(isFactualStrictVerbatimEnabled()).toBe(true)
+    expect(isFactualStrictVerbatimEnabled()).toBe(false)
   })
-  it('false / 0 / off / no 关闭（大小写不敏感）', () => {
-    for (const v of ['false', '0', 'off', 'no', 'FALSE', 'OFF']) {
-      process.env.FACTUAL_STRICT_VERBATIM_ENABLED = v
-      expect(isFactualStrictVerbatimEnabled()).toBe(false)
-    }
-  })
-  it('其它值（true/1/on/yes/空串）保持 on', () => {
-    for (const v of ['true', '1', 'on', 'yes', '']) {
+  it('true / 1 / on / yes 显式启用 (大小写不敏感)', () => {
+    for (const v of ['true', '1', 'on', 'yes', 'TRUE', 'ON']) {
       process.env.FACTUAL_STRICT_VERBATIM_ENABLED = v
       expect(isFactualStrictVerbatimEnabled()).toBe(true)
+    }
+  })
+  it('其它值 (false/0/off/no/空串/未知值) 保持 off', () => {
+    for (const v of ['false', '0', 'off', 'no', '', 'unknown']) {
+      process.env.FACTUAL_STRICT_VERBATIM_ENABLED = v
+      expect(isFactualStrictVerbatimEnabled()).toBe(false)
     }
   })
 })
@@ -204,42 +204,42 @@ describe('buildFactualLookupPrompt · D-002.6 改造', () => {
     else process.env.FACTUAL_STRICT_VERBATIM_ENABLED = orig
   })
 
-  it('FL-1: env on（默认），prompt 含 "先尝试 verbatim 提取" 段', () => {
-    delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
+  it('FL-1: env=true (opt-in), prompt 含 "先尝试 verbatim 提取" 段', () => {
+    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'true'
     const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '')
     expect(p).toContain('先尝试 verbatim 提取')
   })
-  it('FL-2: env on, prompt 含 "完全没有出现问题的关键实体或同义实体" 严格门槛', () => {
-    delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
+  it('FL-2: env=true, prompt 含 "完全没有出现问题的关键实体或同义实体" 严格门槛', () => {
+    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'true'
     const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '')
     expect(p).toContain('完全没有出现问题的关键实体或同义实体')
   })
-  it('FL-3: env off, prompt 是旧版（含 "找不到就说" 但不含 "先尝试 verbatim"）', () => {
-    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'false'
+  it('FL-3: 默认 (env 未设), prompt 是旧版（含 "找不到就说" 但不含 "先尝试 verbatim"）', () => {
+    delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
     const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '')
     expect(p).toContain('找不到就说')
     expect(p).not.toContain('先尝试 verbatim 提取')
   })
   it('FL-4: 其它 4 个 intent prompt 不受 env 影响', () => {
     delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
-    const onLang = buildSystemPromptByIntent('language_op', FAKE_CTX, '')
-    const onCmp = buildSystemPromptByIntent('multi_doc_compare', FAKE_CTX, '')
-    const onMeta = buildSystemPromptByIntent('kb_meta', FAKE_CTX, '')
-    const onOos = buildSystemPromptByIntent('out_of_scope', FAKE_CTX, '')
-
-    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'false'
     const offLang = buildSystemPromptByIntent('language_op', FAKE_CTX, '')
     const offCmp = buildSystemPromptByIntent('multi_doc_compare', FAKE_CTX, '')
     const offMeta = buildSystemPromptByIntent('kb_meta', FAKE_CTX, '')
     const offOos = buildSystemPromptByIntent('out_of_scope', FAKE_CTX, '')
+
+    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'true'
+    const onLang = buildSystemPromptByIntent('language_op', FAKE_CTX, '')
+    const onCmp = buildSystemPromptByIntent('multi_doc_compare', FAKE_CTX, '')
+    const onMeta = buildSystemPromptByIntent('kb_meta', FAKE_CTX, '')
+    const onOos = buildSystemPromptByIntent('out_of_scope', FAKE_CTX, '')
 
     expect(onLang).toBe(offLang)
     expect(onCmp).toBe(offCmp)
     expect(onMeta).toBe(offMeta)
     expect(onOos).toBe(offOos)
   })
-  it('FL-5: env on + footnote 模式：prompt prefix 段 [N] → [^N]，context 不变', () => {
-    delete process.env.FACTUAL_STRICT_VERBATIM_ENABLED
+  it('FL-5: env=true + footnote 模式：prompt prefix 段 [N] → [^N]，context 不变', () => {
+    process.env.FACTUAL_STRICT_VERBATIM_ENABLED = 'true'
     const p = buildSystemPromptByIntent('factual_lookup', FAKE_CTX, '', 'footnote')
     // prefix 段（"文档内容："之前）应该 footnote 化
     const prefix = p.split('文档内容：')[0]

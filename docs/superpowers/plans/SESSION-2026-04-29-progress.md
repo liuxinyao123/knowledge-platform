@@ -1,8 +1,8 @@
 # Session Progress · 2026-04-29
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛
-> 下一站待选：D-002.6 sop-数值 retrieval/prompt 修复 / N-007 / N-008 / D-003 扩到 60 case
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec
+> 下一站待选：N-007 Execute（macOS）/ N-008 Execute（前置 N-007）/ D-002.7 重新设计 factual_lookup prompt
 
 ---
 
@@ -25,6 +25,51 @@
 - assert 加 NFKC normalize（OCR 异体字 ⽼ U+2F77 → 老 U+8001）
 - `assertPatternType.list` 加 4 模式：经典 bullet / 顿号 ≥3 / 粗体段 ≥2 / 分号 ≥3，任一过即可
 - `assertPatternType.bilingual` 阈值 20% → 10%（支持工业 SOP "轻度双语"）
+
+### Commit ⑦ · D-002.6 v1 factual_lookup prompt 探索（B 工作流，default off）
+**修改**：`apps/qa-service/src/services/answerPrompts.ts`（+30 / -2）
+**修改**：`apps/qa-service/src/__tests__/answerPrompts.test.ts`（+13 case：env 守卫 3 + FL-1..FL-5）
+**新增**：`docs/superpowers/archive/rag-factual-lookup-refusal-fix/design.md`（已归档）
+**新增**：`docs/superpowers/plans/rag-factual-lookup-refusal-fix-impl-plan.md`
+**新增**：`openspec/changes/rag-factual-lookup-refusal-fix/{proposal,design,specs/factual-lookup-prompt-spec,tasks}.md`
+
+改造内容：
+1. 加 `isFactualStrictVerbatimEnabled()` env 守卫，**default `false`**（A4 verify 后翻转）
+2. `buildFactualLookupPrompt` 第 1 条规则按 env 分支：
+   - **严格版** (env=true, opt-in)：`先尝试 verbatim 提取... 只有所有 chunks 完全无关键实体或同义实体才说找不到`
+   - **legacy 版** (default)：保留原 `找不到就说「知识库中没有相关内容」，不要猜`
+3. 其它 4 条规则不变（禁模糊措辞 / verbatim 数值 / [N] 引用 / 不漏组件）
+
+A4 verify 反直觉发现：
+- 单跑 N=3：env=true 路径 keywords 2/3 + pattern_type 1/3 → BROKEN
+- 单跑 N=3：env=false 路径（legacy）keywords 3/3 + pattern_type 3/3 → STABLE，答案含 "8.0mm" verbatim
+- **严格 prompt 反而更易拒答**——可能 fast LLM 对长复杂指令解析不佳，被 fallback 短语 prime
+- 整体 v3 全集跑：sop-数值 多 sample 平均 78% keyword 命中（baseline 33%）—— 有改善但与 LLM 抖动重叠
+
+决策：保留代码架构 + 测试 + env 守卫，default `false` 让生产保 legacy。env=true opt-in 实验通道，待 D-002.7 重新设计 prompt（候选：few-shot 示例 / chain-of-extract 步骤拆分 / system-then-user 结构调整）。
+
+零回归：industrial_sop_en 全集 STABLE / 全集 N=3 intent 14/14 + must_pass 5/5 / vitest D-002.6 测试 24/24 全过。
+
+### Commit ⑧ · N-007 + N-008 specs（B 工作流 Explore + Lock 阶段）
+**新增**：`docs/superpowers/specs/notebook-public-templates/design.md`（N-007）
+**新增**：`docs/superpowers/specs/notebook-user-templates/design.md`（N-008）
+**新增**：`openspec/changes/notebook-public-templates/{proposal,design,specs,tasks}.md`
+**新增**：`openspec/changes/notebook-user-templates/{proposal,design,specs,tasks}.md`
+
+N-007 公共模板池（前置 N-008）：
+- 把 N-006 6 个内置模板从代码常量迁到 DB 表 `notebook_template`
+- 加 `source` 字段（`system / community / user`）
+- DB 表 schema + CHECK constraints + 8 acceptance test (PT-1..PT-8)
+- v1 不做 community 提交流程
+
+N-008 用户自定义模板（基于 N-007 schema）：
+- 4 个 CRUD API: POST/GET/PATCH/DELETE /api/templates
+- 字段约束: label≤10, desc≤60, hint≤40, starterQuestions 1-3 条≤50/each
+- 前端: CreateTemplateModal + MyTemplateActions hover 按钮 + source 角标
+- env `USER_TEMPLATES_ENABLED` 守卫
+- 14 acceptance test (UT-1..UT-14)
+
+Execute 阶段下 session 在 macOS 上做（DB migration + 前后端跨改）。
 
 ### Commit ⑥ · D-002.5 v2-A kbMetaHandler 语义筛 V3D 修复（C 工作流，迭代 2 次）
 **修改**：`apps/qa-service/src/services/kbMetaHandler.ts`（+50 / -10）
@@ -188,6 +233,8 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #66 | **N-007 + N-008 specs（B 工作流 Explore + Lock 阶段）** |
+| #65 | **D-002.6 v1 factual_lookup prompt 探索（B 工作流，default off，待 D-002.7 重设计）** |
 | #64 | **D-002.5 v2-A kbMetaHandler 语义筛 V3D 修复（C 工作流，迭代 2 次）** |
 | #63 | **D-002.4 eval-multidoc.mjs majority-of-N（C 工作流离线 only）** |
 | #62 | **D-002.3 答案意图分类 multi-tool function call（B 工作流四阶段）** |
@@ -202,7 +249,17 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A · D-002.6 sop-数值 retrieval/prompt 拒答倾向修复（B 工作流，~1 小时）
+### 选项 A · N-007 Execute（macOS，~1.7 小时）
+**做**：DB migration `notebook_template` 表 + seed 6 system 模板 + service 改造 + 前端类型 widening
+**前置**：spec/openspec 已 lock；参 `openspec/changes/notebook-public-templates/tasks.md` BE-1..BE-6
+**为啥重要**：N-008 前置；模板基础架构
+
+### 选项 B · D-002.7 重新设计 factual_lookup prompt（B 工作流，~1 小时）
+**做**：基于 D-002.6 v1 反直觉发现重新设计严格 prompt
+**候选方向**：(a) few-shot 示例 prompt；(b) chain-of-extract 步骤拆分（先识别 entity → 引用 chunk → 决定是否拒答）；(c) system message 与 user message 解耦
+**期望**：sop-数值 keywords 2/3 → 3/3 + pattern_type 也 ≥ 2/3
+
+### ~~选项 C · D-002.6 sop-数值 retrieval/prompt 拒答倾向修复~~（已做 v1，default off 探索归零；下次走 D-002.7）
 **修**：D-002.4 揭示 sop-数值 pattern 1/3 / keywords 1/3 — 2/3 LLM 拒答 "知识库中没有相关内容"
 **根因**：retrieval 召回 alpha/beta clearance 内容稳定但 LLM 倾向不引用
 **改法**：调查召回 chunks 是否真含 alpha/beta；调 factual_lookup prompt 强制"如召回有相关内容必须引用 verbatim"
@@ -231,7 +288,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 提交状态
 
-**待 push**：4 条 commit 等用户在 macOS 跑：
+**待 push**（更新版）：7 条 commit 累计在分支等用户决定 push 节奏。前 4 已脚本化（commit ① ② ③ ④），新增 commit ⑤ majority-of-N、⑥ V3D 语义筛、⑦ D-002.6 v1（default off 探索归零）、⑧ N-007/N-008 specs。具体脚本见各次会话回复。 (旧版 4 条 commit 脚本如下：)
 
 ```bash
 cd ~/Git/knowledge-platform
