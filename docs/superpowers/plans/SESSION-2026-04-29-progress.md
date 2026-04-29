@@ -1,12 +1,47 @@
 # Session Progress · 2026-04-29
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec
-> 下一站待选：N-007 Execute（macOS）/ N-008 Execute（前置 N-007）/ D-002.7 重新设计 factual_lookup prompt
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute（B-3）**（含 cleanup commit + 8 旧 commit 已在远程的发现）
+> 下一站待选：N-007 V-1..V-8 macOS 本地验证 → archive / N-008 Execute（前置 N-007 verified）/ D-002.7 重新设计 factual_lookup prompt
 
 ---
 
 ## 本次完成（按提交分组）
+
+### Commit ⑩ · N-007 公共模板池 Execute（B 工作流 B-3 Execute；commit 36266e4）
+**新增**：`apps/qa-service/src/migrations/002-notebook-template-table.sql`
+**修改**：`apps/qa-service/src/services/pgDb.ts`（+34）—— inline DDL `notebook_template` 表
+**修改**：`apps/qa-service/src/services/notebookTemplates.ts`（+206 / -8）—— DB API 三件套
+**修改**：`apps/qa-service/src/index.ts`（+15）—— `seedSystemTemplatesIfMissing()` startup hook
+**修改**：`apps/qa-service/src/routes/notebooks.ts`（+30 / -18）—— `GET /templates` 异步 + `POST /` 校验切 `getTemplateByKey`
+**修改**：`apps/qa-service/src/__tests__/notebookTemplates.test.ts`（+167 / -3）—— PT-1..PT-11
+**修改**：`apps/web/src/api/notebooks.ts`（+18 / -7）—— `NotebookTemplateSpec.id` widening + `source`
+**修改**：`apps/web/src/knowledge/Notebooks/index.tsx` / `TemplateHintCard.tsx` 类型同步
+
+公共 API：
+- `loadTemplatesFromDb({ userId, isAdmin? })` —— 按可见性过滤 system / community / 自己的 user
+- `getTemplateByKey({ key, userId, isAdmin? })` —— 单 key 查 + 同可见性规则
+- `seedSystemTemplatesIfMissing()` —— 启动时按 template_key 集合差集插入；幂等
+
+DB schema（pgDb.ts inline + migrations/002 备份）：
+- `notebook_template` 表 + `UNIQUE(template_key)` + `CHECK source IN system/community/user`
+- 复合 CHECK：`user` 必须有 owner_user_id；`system/community` 不能有 owner_user_id
+- INDEX `idx_notebook_template_source_owner`
+
+兜底链：DB 失败时 `loadTemplatesFromDb` 退回 6 个 system 常量；`getTemplateByKey` 在 key 命中常量时退回，否则 null。
+
+测试（Linux 沙箱）：
+- vitest notebookTemplates.test.ts 30/30（含 PT-1..PT-11；mock pgPool）
+- vitest notebooks.accessibility 15/15（无回归）
+- vitest answerIntent 51/51（intent 链路零回归）
+- tsc qa-service / web 双向 exit 0
+
+V-1..V-8 verify 仍待 macOS 本地：真实 PG 跑 migration / seed / API e2e。CHECK 约束 PT-7/PT-8 也在 V-1 manual INSERT 验证（沙箱无 testcontainers）。
+
+### Commit ⑨ · cleanup: 移除 dangling factual-lookup-refusal-fix 规格副本（commit 5c16aa9）
+**删除**：`docs/superpowers/specs/rag-factual-lookup-refusal-fix/design.md`
+
+Commit ⑦ (48257e4) 把 design.md 移到 `archive/rag-factual-lookup-refusal-fix/` 但漏删 `specs/` 原副本，本次补刀。**注意：发现 commit ①..⑧ 早已在 origin（session 文档原"待 push"是过时信息）。**本 cleanup commit 仍待用户在 macOS 一起 push。
 
 ### Commit ① · D-003 评测集 jsonl 修复
 **文件**：`apps/qa-service/src/services/answerIntent.ts`、`eval/multidoc-set.jsonl`、`docs/superpowers/plans/rag-multidoc-eval-set-impl-plan.md`
@@ -233,6 +268,8 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #68 | **N-007 公共模板池 Execute（B 工作流 B-3，commit 36266e4）** |
+| #67 | cleanup: 删除 dangling factual-lookup-refusal-fix specs/ 副本（commit 5c16aa9）|
 | #66 | **N-007 + N-008 specs（B 工作流 Explore + Lock 阶段）** |
 | #65 | **D-002.6 v1 factual_lookup prompt 探索（B 工作流，default off，待 D-002.7 重设计）** |
 | #64 | **D-002.5 v2-A kbMetaHandler 语义筛 V3D 修复（C 工作流，迭代 2 次）** |
@@ -249,10 +286,19 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A · N-007 Execute（macOS，~1.7 小时）
-**做**：DB migration `notebook_template` 表 + seed 6 system 模板 + service 改造 + 前端类型 widening
-**前置**：spec/openspec 已 lock；参 `openspec/changes/notebook-public-templates/tasks.md` BE-1..BE-6
-**为啥重要**：N-008 前置；模板基础架构
+### 选项 A' · N-007 V-1..V-8 macOS 验证 + B-5 archive（~30 分钟）
+**做**：在 macOS 本地真 PG 跑 migration / seed / API e2e 验证；通过后 mv specs → archive
+**前置**：commit 36266e4 已落地，等 push（cleanup 5c16aa9 也一起）
+**步骤**：
+1. `cd ~/Git/knowledge-platform && git push origin feat/rag-followup-condensation`（含 5c16aa9 cleanup + 36266e4 N-007 Execute）
+2. `pnpm dev:down && pnpm dev:up` 重启 qa-service → 看到 `✓ notebook_template seeded 6 system templates`
+3. `psql ... -c "SELECT template_key, source FROM notebook_template"` → 6 rows source=system
+4. `curl /api/notebooks/templates`（带 cookie）→ 返回 6 个含 source 字段
+5. `curl POST /api/notebooks { template_id: 'research_review' }` → 201
+6. `curl POST /api/notebooks { template_id: 'foo' }` → 400 with "不存在或对当前用户不可见"
+7. PT-7/PT-8 manual：`psql -c "INSERT ... source='user', owner_user_id=NULL"` 应失败；`source='system', owner_user_id=1` 也失败
+8. 前端创建 notebook → 模板选择器仍显示 6 个 + 应用模板成功
+9. 通过后：`mv docs/superpowers/specs/notebook-public-templates docs/superpowers/archive/notebook-public-templates && git commit -m "docs: archive notebook-public-templates spec after V-* 验证"`
 
 ### 选项 B · D-002.7 重新设计 factual_lookup prompt（B 工作流，~1 小时）
 **做**：基于 D-002.6 v1 反直觉发现重新设计严格 prompt
@@ -288,7 +334,15 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 提交状态
 
-**待 push**（更新版）：7 条 commit 累计在分支等用户决定 push 节奏。前 4 已脚本化（commit ① ② ③ ④），新增 commit ⑤ majority-of-N、⑥ V3D 语义筛、⑦ D-002.6 v1（default off 探索归零）、⑧ N-007/N-008 specs。具体脚本见各次会话回复。 (旧版 4 条 commit 脚本如下：)
+**已在 origin**（commit ①..⑧，分支起点）：D-003 jsonl + SSE 修复 / D-002.2 kb_meta 路由 / D-002.3 multi-tool / D-002.4 majority-of-N / D-002.5 V3D 语义筛 / D-002.6 v1 探索归零 / N-007+N-008 specs lock。
+
+**本地待 push**（2 条）：
+- `5c16aa9` chore: 删除 dangling factual-lookup-refusal-fix specs/ 副本（commit ⑨）
+- `36266e4` feat(notebook): N-007 公共模板池 Execute (B 工作流 B-3)（commit ⑩）
+
+下次 macOS 会话第一件事：`git push origin feat/rag-followup-condensation`，然后做选项 A' V-1..V-8。
+
+(旧版 4 条 commit 脚本如下：)
 
 ```bash
 cd ~/Git/knowledge-platform
