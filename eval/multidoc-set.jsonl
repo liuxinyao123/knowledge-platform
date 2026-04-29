@@ -1,0 +1,48 @@
+// eval/multidoc-set.jsonl —— D-003 RAG 多文档类型评估集
+//
+// 跑法：node scripts/eval-multidoc.mjs
+// 详细参数 / 字段说明：openspec/changes/rag-multidoc-eval-set/specs/eval-case-schema-spec.md
+//
+// 字段：
+//   必填：id / doc_type / question
+//   可选：history / expected_intent / expected_pattern_type / expected_keywords[] /
+//        expected_must_not_contain[] / expected_asset_ids[] / expected_recall_top_k /
+//        must_pass / data_version / comment
+//
+// data_version: 2026-04-28（基于截至 GET /api/knowledge/documents 返回的库内文档快照）
+//
+// 注：起步 case 集 = V-3 实测 7 case 转 jsonl + 各 doc_type 补若干核心 case。
+// 后续按 doc_type 矩阵补全到 60 case。本批先证 runner 可用 + 各意图能跑通。
+
+// ── classical_chinese · 道德经（asset id 从 GET /api/knowledge/documents 拿，
+//    本 jsonl 用占位 expected_asset_ids:[20]，跑前请按你库内实际 id 调整）
+{"id":"D003-V3A1","doc_type":"classical_chinese","question":"道德经是谁写的","expected_intent":"factual_lookup","expected_pattern_type":null,"expected_keywords":["老子"],"expected_must_not_contain":["可能","似乎","大约"],"expected_asset_ids":[20],"expected_recall_top_k":3,"must_pass":true,"data_version":"2026-04-28","comment":"基础事实查询；factual_lookup 标准 case · pattern_type=null（人名查询非数值题）"}
+{"id":"D003-V3A2","doc_type":"classical_chinese","question":"那你把原文发我","history":[{"role":"user","content":"道德经是谁写的"},{"role":"assistant","content":"《道德经》的作者是老子。"},{"role":"user","content":"你给我道德经第一章的内容"},{"role":"assistant","content":"道可道，非常道；名可名，非常名。无名，天地之始；有名，万物之母。"}],"expected_intent":null,"expected_pattern_type":null,"expected_keywords":["非常道"],"expected_asset_ids":[20],"expected_recall_top_k":5,"must_pass":true,"data_version":"2026-04-28","comment":"A condense 关键 case · 验证 condense 改写 + retrieval 命中道德经；intent/pattern null（流式可能漏开头字 + LLM 不稳）；keywords 仅锁'非常道'核心字"}
+{"id":"D003-case2a","doc_type":"classical_chinese","question":"给他的原文的解释","history":[{"role":"user","content":"给我道德经的第一章"},{"role":"assistant","content":"道可道，非常道；名可名，非常名。无名，天地之始；有名，万物之母。"}],"expected_intent":"language_op","expected_pattern_type":"list","expected_keywords":["道可道"],"expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[20],"expected_recall_top_k":5,"must_pass":true,"data_version":"2026-04-28","comment":"档 B language_op 关键 case · isObviousLanguageOp 命中规则前置 + 透明度声明"}
+{"id":"D003-classical-translate","doc_type":"classical_chinese","question":"把第一章翻译成白话","history":[{"role":"user","content":"给我道德经的第一章"},{"role":"assistant","content":"道可道，非常道；名可名，非常名。"}],"expected_intent":"language_op","expected_pattern_type":"list","expected_keywords":["可以"],"expected_must_not_contain":["知识库中没有","老子认为"],"expected_asset_ids":[20],"expected_recall_top_k":5,"data_version":"2026-04-28","comment":"language_op 翻译类；不应引入'老子认为'这种作者意图。keywords 只锁'可以'（白话翻译几乎必有），避免锁死特定译法"}
+
+// ── industrial_sop_en · LFTGATE / Bumper PDFs（id 占位 [1, 2, 5, 14, 15]）
+{"id":"D003-V3C","doc_type":"industrial_sop_en","question":"什么是 over slam","expected_intent":"factual_lookup","expected_pattern_type":"refusal","expected_keywords":[],"expected_asset_ids":[5,14],"expected_recall_top_k":5,"data_version":"2026-04-28","comment":"V3C 已知 limitation · 文档只有 over slam 缩写没有解释 → factual_lookup 拒答是合理（refusal 模式）。待 D-002.3 召回策略优化"}
+{"id":"D003-V3B","doc_type":"industrial_sop_en","question":"把上面这段翻译成中文","history":[{"role":"user","content":"What is the recommended swing clearance for liftgate?"},{"role":"assistant","content":"Per LFTGATE-32 best practice, swing clearance is defined by alpha angle and beta angle; tool clearance zone is also included."}],"expected_intent":"language_op","expected_pattern_type":"bilingual","expected_keywords":["摆动","间隙"],"expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[5],"expected_recall_top_k":5,"must_pass":true,"data_version":"2026-04-28","comment":"V3B 关键 case · 顶层 + 档 B 双层修复；rule 前置直接 language_op；keywords 仅锁中文核心词（alpha/beta 翻译时可能消失）"}
+{"id":"D003-sop-数值","doc_type":"industrial_sop_en","question":"alpha angle and beta angle clearance requirements","expected_intent":"factual_lookup","expected_pattern_type":"verbatim","expected_keywords":["alpha","beta"],"expected_must_not_contain":["大约","可能"],"expected_asset_ids":[1,5],"expected_recall_top_k":3,"data_version":"2026-04-28","comment":"factual_lookup 数值题；verbatim 提取"}
+{"id":"D003-sop-中英","doc_type":"industrial_sop_en","question":"翻译一下 LFTGATE 的核心要求","expected_intent":"language_op","expected_pattern_type":"bilingual","expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[19],"expected_recall_top_k":5,"data_version":"2026-04-29","comment":"language_op 中英翻译；asset_id 19 是真实的 LFTGATE 文档（baseline 4 实测命中）"}
+
+// ── cn_product_doc · 知识中台产品需求文档.md（id 占位 18）
+{"id":"D003-V3A","doc_type":"cn_product_doc","question":"把上面这段总结成 3 个要点","history":[{"role":"user","content":"知识中台的核心模块有哪些"},{"role":"assistant","content":"知识中台是用于统一检索、治理运营的内嵌模式产品，核心模块包括数据权限管理、统一检索、用户角色管理、内嵌模式接入等。"}],"expected_intent":"language_op","expected_pattern_type":"list","expected_keywords":["数据权限"],"expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[18],"expected_recall_top_k":5,"data_version":"2026-04-28","comment":"V3A · language_op 总结；keywords 仅锁'数据权限'（核心稳定）"}
+{"id":"D003-cn-fact","doc_type":"cn_product_doc","question":"知识中台的核心模块有哪些","expected_intent":"factual_lookup","expected_pattern_type":"list","expected_keywords":["数据权限"],"expected_asset_ids":[18],"expected_recall_top_k":3,"data_version":"2026-04-29","comment":"factual_lookup · 模块列表（pattern_type=list；模块清单本来就不该有数值+单位）"}
+{"id":"D003-cn-explain","doc_type":"cn_product_doc","question":"用白话解释一下知识中台是什么","expected_intent":"language_op","expected_pattern_type":"list","expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[18],"expected_recall_top_k":5,"data_version":"2026-04-28","comment":"language_op 释义类（无 history，靠 question 自身'白话解释'触发规则前置）"}
+
+// ── short_news_md · 今日头条.md（id 占位 4）
+//
+// REMOVED 2026-04-29 · 文档自身只有"网站需要 JavaScript"一句话，retrieval 召回不到、
+// LLM 也凑不出 list 形态。这是文档质量问题而非系统问题，留着只会持续误报 recall fail。
+// 当短新闻文档库内容更丰富时再补回 case，用 expected_keywords 锁定真实主题词。
+// {"id":"D003-V3B-prime2","doc_type":"short_news_md","question":"总结一下今日头条这份文档的要点","expected_intent":"language_op","expected_pattern_type":"list","expected_must_not_contain":["知识库中没有"],"expected_asset_ids":[4],"expected_recall_top_k":5,"data_version":"2026-04-28"}
+
+// ── kb_meta · 跨文档目录查询（不绑特定 asset）
+{"id":"D003-V3D","doc_type":"table_xlsx","question":"库里有哪些汽车工程相关的资料","expected_intent":"kb_meta","expected_pattern_type":"asset_list","expected_keywords":["LFTGATE","Bumper"],"expected_recall_top_k":10,"data_version":"2026-04-28","comment":"V3D 已知 limitation · short-circuit 前不到分类层；待 D-002.2 路由 asset_catalog 才能根治"}
+{"id":"D003-kbmeta-test","doc_type":"classical_chinese","question":"我这库里有道德经吗","expected_intent":"kb_meta","expected_pattern_type":"asset_list","expected_recall_top_k":5,"data_version":"2026-04-28","comment":"kb_meta · 单类查询"}
+
+// ── out_of_scope · 文档外问题
+{"id":"D003-V3E","doc_type":"industrial_sop_en","question":"为什么 GM 要写这份尾门工程文档","expected_intent":"out_of_scope","expected_pattern_type":"refusal","expected_keywords":["没有"],"expected_recall_top_k":5,"must_pass":true,"data_version":"2026-04-28","comment":"V3E · out_of_scope 标准 case；问作者意图文档不会有；refusal 模式 + keywords 只锁'没有'宽松匹配"}
+{"id":"D003-oos-historical","doc_type":"classical_chinese","question":"老子是哪个朝代的人","expected_intent":"factual_lookup","expected_pattern_type":null,"expected_keywords":["春秋"],"expected_recall_top_k":3,"data_version":"2026-04-28","comment":"实测发现文档含序言提到'春秋末期'→ 应当 factual_lookup（文档里有该信息）。从 out_of_scope 改成 factual_lookup"}
