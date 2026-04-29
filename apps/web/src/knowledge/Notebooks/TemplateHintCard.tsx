@@ -9,13 +9,14 @@
  */
 import { useEffect, useState } from 'react'
 import {
-  listTemplates, type NotebookTemplateId, type NotebookTemplateSpec,
+  listTemplates, type NotebookTemplateSpec,
   type ArtifactKind,
 } from '@/api/notebooks'
 
 interface Props {
   notebookId: number
-  templateId: NotebookTemplateId
+  /** N-007: 模板 key（任意字符串，含 system / community / user） */
+  templateId: string
   onTriggerArtifact: (kind: ArtifactKind) => void
   onPickStarter: (question: string) => void
 }

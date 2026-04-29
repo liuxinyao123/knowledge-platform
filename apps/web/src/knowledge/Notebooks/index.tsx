@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import {
   listNotebooks, createNotebook, deleteNotebook, listTemplates,
-  type NotebookSummary, type NotebookTemplateId, type NotebookTemplateSpec,
+  type NotebookSummary, type NotebookTemplateSpec,
 } from '@/api/notebooks'
 
 export default function NotebooksPage() {
@@ -202,9 +202,9 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
   const [desc, setDesc] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  // N-006：模板选择
+  // N-006/N-007：模板选择（id widening 到 string 容纳 community/user 模板）
   const [templates, setTemplates] = useState<NotebookTemplateSpec[]>([])
-  const [pickedTemplate, setPickedTemplate] = useState<NotebookTemplateId | null>(null)
+  const [pickedTemplate, setPickedTemplate] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {

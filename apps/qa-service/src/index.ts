@@ -33,6 +33,7 @@ import { actionsRouter } from './routes/actions.ts'
 import { insightsRouter } from './routes/insights.ts'
 import { runMigrations } from './services/db.ts'
 import { runPgMigrations } from './services/pgDb.ts'
+import { seedSystemTemplatesIfMissing } from './services/notebookTemplates.ts'
 import { bootstrapGraph } from './services/graphDb.ts'
 import { loadRules } from './auth/evaluateAcl.ts'
 import { isAuthConfigured, authMode } from './auth/verifyToken.ts'
@@ -108,6 +109,20 @@ const PORT = process.env.PORT ?? 3001
 
   await runMigrations()
   await runPgMigrations()
+
+  // N-007 公共模板池：把 6 个 system 模板补到 notebook_template 表（幂等）
+  // 失败只 warn，不阻塞启动——后端依然可以走 NOTEBOOK_TEMPLATES 常量 fallback
+  try {
+    const { seeded } = await seedSystemTemplatesIfMissing()
+    if (seeded > 0) {
+      // eslint-disable-next-line no-console
+      console.log(`✓ notebook_template seeded ${seeded} system templates`)
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('WARN: seedSystemTemplatesIfMissing failed:', err)
+  }
+
   // 知识图谱 sidecar（ADR 2026-04-23-27）——失败只 warn，不阻塞主服务
   await bootstrapGraph()
 

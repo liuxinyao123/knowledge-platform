@@ -31,10 +31,8 @@ import {
   type ArtifactKind,
 } from '../services/artifactGenerator.ts'
 import {
-  NOTEBOOK_TEMPLATES,
-  ALL_NOTEBOOK_TEMPLATE_IDS,
-  isNotebookTemplateId,
-  type NotebookTemplateId,
+  loadTemplatesFromDb,
+  getTemplateByKey,
 } from '../services/notebookTemplates.ts'
 
 export const notebooksRouter = Router()
@@ -158,33 +156,55 @@ notebooksRouter.get('/', async (req: Request, res: Response) => {
   res.json({ items: ownRows, shared: sharedRows })
 })
 
-// ── N-006：模板列表（公开元信息，缓存 1h）────────────────────────────────────
+// ── N-006/N-007：模板列表（含 system / community / 自己的 user）────────────
 //    必须放在 GET /:id 之前，否则 Express 会把 'templates' 当 id 路由
-notebooksRouter.get('/templates', (_req: Request, res: Response) => {
-  res.setHeader('Cache-Control', 'public, max-age=3600')
-  const templates = ALL_NOTEBOOK_TEMPLATE_IDS.map((id) => NOTEBOOK_TEMPLATES[id])
+//
+//    N-007 改造：
+//      - 改异步从 notebook_template 表读
+//      - 返回值含 source 字段（system / community / user）
+//      - 可见性 per principal：admin 可见全部；普通用户只见 system + community + 自己的 user
+//      - DB 故障时 service 层会兜底为 system 常量列表（fail closed）
+//
+//    Cache-Control 改 private + 0：现在按 user 维度过滤，不能再被 CDN / 公网代理共享
+notebooksRouter.get('/templates', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'private, no-store')
+  const principal = req.principal
+  if (!principal) return res.status(401).json({ error: 'unauthenticated' })
+  const isAdmin = Array.isArray(principal.roles) && principal.roles.includes('admin')
+  const templates = await loadTemplatesFromDb({
+    userId: principal.user_id,
+    isAdmin,
+  })
   res.json({ templates })
 })
 
 notebooksRouter.post('/', async (req: Request, res: Response) => {
-  const email = req.principal?.email
+  const principal = req.principal
+  if (!principal) return res.status(401).json({ error: 'unauthenticated' })
+  const email = principal.email
   if (!email) return res.status(401).json({ error: 'unauthenticated' })
   const body = (req.body ?? {}) as { name?: unknown; description?: unknown; template_id?: unknown }
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return res.status(400).json({ error: 'name required' })
   const description = typeof body.description === 'string' ? body.description.trim() : null
-  // N-006：可选 template_id 校验
-  let templateId: NotebookTemplateId | null = null
+  // N-006/N-007：可选 template_id 校验。改走 DB 存在性 + 可见性。
+  let templateId: string | null = null
   if (body.template_id !== undefined && body.template_id !== null) {
     if (typeof body.template_id !== 'string') {
       return res.status(400).json({ error: 'template_id must be string' })
     }
-    if (!isNotebookTemplateId(body.template_id)) {
+    const isAdmin = Array.isArray(principal.roles) && principal.roles.includes('admin')
+    const tpl = await getTemplateByKey({
+      key: body.template_id,
+      userId: principal.user_id,
+      isAdmin,
+    })
+    if (!tpl) {
       return res.status(400).json({
-        error: `invalid template_id; must be one of: ${ALL_NOTEBOOK_TEMPLATE_IDS.join(' / ')}`,
+        error: `invalid template_id: ${body.template_id} (不存在或对当前用户不可见)`,
       })
     }
-    templateId = body.template_id
+    templateId = tpl.id
   }
   const pool = getPgPool()
   const { rows } = await pool.query(

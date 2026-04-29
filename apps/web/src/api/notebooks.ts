@@ -18,8 +18,8 @@ export interface NotebookSummary {
   updated_at_ms: number
   source_count: number
   message_count: number
-  /** N-006：模板 ID（创建时选择，老 notebook 为 null）*/
-  template_id?: NotebookTemplateId | null
+  /** N-006/N-007：模板 key（创建时选择，老 notebook 为 null）。N-007 起可为任意 community/user key，不再限定字面量 union */
+  template_id?: string | null
 }
 
 export interface NotebookMember {
@@ -96,15 +96,20 @@ export async function listNotebooks(): Promise<{ items: NotebookSummary[]; share
 }
 
 export async function createNotebook(input: {
-  name: string; description?: string; template_id?: NotebookTemplateId | null
+  name: string; description?: string; template_id?: string | null
 }): Promise<NotebookSummary> {
   const { data } = await client.post<NotebookSummary>('/', input)
   return data
 }
 
-// ── N-006：Notebook Templates ────────────────────────────────────────────────
-// 跟后端 services/notebookTemplates.ts NOTEBOOK_TEMPLATES 同步
-
+// ── N-006/N-007：Notebook Templates ─────────────────────────────────────────
+// 跟后端 services/notebookTemplates.ts 同步
+//
+// N-006：6 个 system 模板（字面量 union）
+// N-007：把模板搬到 DB 表 notebook_template，加 source 字段；NotebookTemplateSpec.id
+//        类型 widening 到 string（容纳 community / user 模板的任意 key）
+//
+// 内置 system id 字面量保留作类型 narrowing；不再约束 NotebookTemplateSpec.id
 export type NotebookTemplateId =
   | 'research_review' | 'meeting_prep' | 'competitive_analysis'
   | 'learning_aid' | 'project_retrospective' | 'translation_explain'
@@ -114,8 +119,14 @@ export const ALL_NOTEBOOK_TEMPLATE_IDS: readonly NotebookTemplateId[] = [
   'learning_aid', 'project_retrospective', 'translation_explain',
 ] as const
 
+/** N-007：模板来源 */
+export type NotebookTemplateSource = 'system' | 'community' | 'user'
+
 export interface NotebookTemplateSpec {
-  id: NotebookTemplateId
+  /** N-007: 任意字符串（system 用 NotebookTemplateId，community/user 用 DB 生成的 key） */
+  id: string
+  /** N-007 新增：用来在 UI 上显示来源徽章 / 决定权限按钮 */
+  source: NotebookTemplateSource
   label: string
   icon: string
   desc: string
