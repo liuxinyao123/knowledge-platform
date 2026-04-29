@@ -169,15 +169,17 @@ describe('classifyAnswerIntent', () => {
   })
 
   it('tool 返回合法 intent → 该 intent + fallback=false', async () => {
+    // 用一条规则前置不命中的 question（无 meta 动词），走 LLM 路径
     mockChatComplete.mockResolvedValue({
       content: '',
-      toolCalls: [{ function: { name: 'classify_answer_intent', arguments: '{"intent":"language_op","reason":"asks for translation"}' } }],
+      toolCalls: [{ function: { name: 'classify_answer_intent', arguments: '{"intent":"factual_lookup","reason":"asks about author"}' } }],
       rawMessage: { role: 'assistant', content: null },
     })
-    const r = await classifyAnswerIntent('给我翻译一下', FAKE_DOCS)
-    expect(r.intent).toBe('language_op')
+    const r = await classifyAnswerIntent('道德经的作者是谁', FAKE_DOCS)
+    expect(r.intent).toBe('factual_lookup')
     expect(r.fallback).toBe(false)
-    expect(r.reason).toBe('asks for translation')
+    expect(r.reason).toBe('asks about author')
+    expect(mockChatComplete).toHaveBeenCalledTimes(1)  // 验证确实走了 LLM 路径
   })
 
   it('LLM 抛异常 → factual_lookup + fallback', async () => {
