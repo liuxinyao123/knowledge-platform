@@ -18,6 +18,8 @@ export interface NotebookSummary {
   updated_at_ms: number
   source_count: number
   message_count: number
+  /** N-006：模板 ID（创建时选择，老 notebook 为 null）*/
+  template_id?: NotebookTemplateId | null
 }
 
 export interface NotebookMember {
@@ -60,7 +62,18 @@ export interface NotebookMessage {
   created_at_ms: number
 }
 
-export type ArtifactKind = 'briefing' | 'faq'
+// N-002：跟后端 services/artifactGenerator.ts ARTIFACT_REGISTRY 同步
+export type ArtifactKind =
+  | 'briefing' | 'faq'                                          // V1
+  | 'mindmap' | 'outline' | 'timeline'                          // N-002
+  | 'comparison_matrix' | 'glossary' | 'slides'                 // N-002
+
+export const ALL_ARTIFACT_KINDS: readonly ArtifactKind[] = [
+  'briefing', 'faq',
+  'mindmap', 'outline', 'timeline',
+  'comparison_matrix', 'glossary', 'slides',
+] as const
+
 export type ArtifactStatus = 'pending' | 'running' | 'done' | 'failed'
 
 export interface NotebookArtifact {
@@ -83,10 +96,37 @@ export async function listNotebooks(): Promise<{ items: NotebookSummary[]; share
 }
 
 export async function createNotebook(input: {
-  name: string; description?: string
+  name: string; description?: string; template_id?: NotebookTemplateId | null
 }): Promise<NotebookSummary> {
   const { data } = await client.post<NotebookSummary>('/', input)
   return data
+}
+
+// ── N-006：Notebook Templates ────────────────────────────────────────────────
+// 跟后端 services/notebookTemplates.ts NOTEBOOK_TEMPLATES 同步
+
+export type NotebookTemplateId =
+  | 'research_review' | 'meeting_prep' | 'competitive_analysis'
+  | 'learning_aid' | 'project_retrospective' | 'translation_explain'
+
+export const ALL_NOTEBOOK_TEMPLATE_IDS: readonly NotebookTemplateId[] = [
+  'research_review', 'meeting_prep', 'competitive_analysis',
+  'learning_aid', 'project_retrospective', 'translation_explain',
+] as const
+
+export interface NotebookTemplateSpec {
+  id: NotebookTemplateId
+  label: string
+  icon: string
+  desc: string
+  recommendedSourceHint: string
+  recommendedArtifactKinds: ArtifactKind[]
+  starterQuestions: string[]
+}
+
+export async function listTemplates(): Promise<NotebookTemplateSpec[]> {
+  const { data } = await client.get<{ templates: NotebookTemplateSpec[] }>('/templates')
+  return data.templates
 }
 
 export async function getNotebook(id: number): Promise<{

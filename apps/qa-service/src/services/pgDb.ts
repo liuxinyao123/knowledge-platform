@@ -263,6 +263,8 @@ export async function runPgMigrations(): Promise<void> {
     )
   `)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_notebook_owner ON notebook(owner_email)`)
+  // N-006：notebook 加 template_id（nullable，老 notebook 兼容）
+  await pool.query(`ALTER TABLE notebook ADD COLUMN IF NOT EXISTS template_id VARCHAR(64)`)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS notebook_source (
       notebook_id INT NOT NULL REFERENCES notebook(id) ON DELETE CASCADE,

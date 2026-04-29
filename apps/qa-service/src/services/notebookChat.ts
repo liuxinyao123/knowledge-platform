@@ -3,42 +3,16 @@
  *
  * 跟 /api/qa/ask 同源（runRagPipeline），区别：
  *   1. 检索 scope 限定为 notebook 的 source asset_ids
- *   2. system prompt 引导 [^N] inline 引用
+ *   2. **N-001**：传 `citationStyle: 'footnote'` 让 ragPipeline 走档 B 5 类
+ *      意图分流 + 输出 [^N] 引用样式（Notebook ChatPanel.tsx:304 regex 解析格式）
+ *      不再用 NOTEBOOK_SYSTEM_PROMPT monolithic prompt（绕过档 B 是 rag-intent-routing
+ *      的隐患，N-001 修复）
  *   3. 流式结束后把 user / assistant 两条消息持久化到 notebook_chat_message
  */
 import type { Response, Request } from 'express'
 import { getPgPool } from './pgDb.ts'
 import { runRagPipeline } from './ragPipeline.ts'
 import type { SseEvent, RagTrace, Citation, HistoryMessage } from '../ragTypes.ts'
-
-const NOTEBOOK_SYSTEM_PROMPT = `你是用户的研究助手。严格遵循以下规则：
-
-【硬性规则】
-1. **只使用下列文档作答**，不引入外部知识。找不到信息就明确回复「知识库中没有相关内容」，不要编造、不要猜
-2. **每处引用文档必须加 [^N]**，N 是文档编号。同一句多来源用 [^1][^2]
-3. **禁止使用模糊措辞**：不要「可能」「似乎」「大约」「应该是」「左右」「估计」。要么给确定答案，要么明说找不到
-4. **数值/规格题必须 verbatim 提取原文**：原文写「7 degrees」就答「7 degrees」或「7°」，不要近似
-5. **复合答案不要漏组件**：原文「X = A + B」必须答出 A 和 B，不能只说 X
-
-【作答步骤（CoT）】
-1. 先扫文档片段，找直接相关的句子
-2. 复合题（含"和/分别/对比/区别/构成/步骤"）逐项列出
-3. 数字/规格/缩写：原文里找不到就承认找不到，不要推测
-
-【3 个示例】
-
-✓ Q: 缓冲块设计间隙？  文档 [^1]: ... 下角缓冲块 2.0mm
-   A: 2.0mm [^1]
-✗ 错误: 大约 2mm 左右 / 似乎是 2.0mm
-
-✓ Q: 偏移 1.0mm 由什么构成？
-   文档 [^1]: ... 1.0 mm offset (0.3 for paint variation + 0.7 for hinge tolerance)
-   A: 1.0mm = 0.3mm（油漆变差）+ 0.7mm（铰链公差）[^1]
-✗ 错误: 1.0mm，由 0.3mm 等因素构成
-
-✓ Q: COF 代表什么？  文档只用了 COF 缩写但未解释全称
-   A: 知识库中没有 COF 的明确定义。文档只在标题里使用了该缩写。
-✗ 错误: COF 可能是 Coefficient of Friction（编造）`
 
 const HISTORY_MAX_RECENT = 10  // 取最近 10 条历史
 
@@ -113,9 +87,12 @@ export async function streamNotebookChat(input: NotebookChatInput): Promise<void
     emit(event)
   }
   try {
+    // N-001：不再传 systemPromptOverride（绕过档 B 是隐患）；
+    // 改传 citationStyle: 'footnote' 让 ragPipeline 走完整档 B 5 类意图分流
+    // + 输出 [^N] 引用样式（兼容 ChatPanel.tsx:304 regex /\[\^(\d+)\]/g）
     await runRagPipeline(question, history, collector, ac.signal, {
       assetIds,
-      systemPromptOverride: NOTEBOOK_SYSTEM_PROMPT,
+      citationStyle: 'footnote',
     })
   } catch (err) {
     if (!res.writableEnded) {

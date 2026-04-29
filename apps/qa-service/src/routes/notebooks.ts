@@ -24,7 +24,18 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { requireAuth } from '../auth/index.ts'
 import { getPgPool } from '../services/pgDb.ts'
 import { streamNotebookChat } from '../services/notebookChat.ts'
-import { executeArtifact, type ArtifactKind } from '../services/artifactGenerator.ts'
+import {
+  executeArtifact,
+  isArtifactKind,
+  ALL_ARTIFACT_KINDS,
+  type ArtifactKind,
+} from '../services/artifactGenerator.ts'
+import {
+  NOTEBOOK_TEMPLATES,
+  ALL_NOTEBOOK_TEMPLATE_IDS,
+  isNotebookTemplateId,
+  type NotebookTemplateId,
+} from '../services/notebookTemplates.ts'
 
 export const notebooksRouter = Router()
 
@@ -147,20 +158,41 @@ notebooksRouter.get('/', async (req: Request, res: Response) => {
   res.json({ items: ownRows, shared: sharedRows })
 })
 
+// ── N-006：模板列表（公开元信息，缓存 1h）────────────────────────────────────
+//    必须放在 GET /:id 之前，否则 Express 会把 'templates' 当 id 路由
+notebooksRouter.get('/templates', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600')
+  const templates = ALL_NOTEBOOK_TEMPLATE_IDS.map((id) => NOTEBOOK_TEMPLATES[id])
+  res.json({ templates })
+})
+
 notebooksRouter.post('/', async (req: Request, res: Response) => {
   const email = req.principal?.email
   if (!email) return res.status(401).json({ error: 'unauthenticated' })
-  const body = (req.body ?? {}) as { name?: unknown; description?: unknown }
+  const body = (req.body ?? {}) as { name?: unknown; description?: unknown; template_id?: unknown }
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return res.status(400).json({ error: 'name required' })
   const description = typeof body.description === 'string' ? body.description.trim() : null
+  // N-006：可选 template_id 校验
+  let templateId: NotebookTemplateId | null = null
+  if (body.template_id !== undefined && body.template_id !== null) {
+    if (typeof body.template_id !== 'string') {
+      return res.status(400).json({ error: 'template_id must be string' })
+    }
+    if (!isNotebookTemplateId(body.template_id)) {
+      return res.status(400).json({
+        error: `invalid template_id; must be one of: ${ALL_NOTEBOOK_TEMPLATE_IDS.join(' / ')}`,
+      })
+    }
+    templateId = body.template_id
+  }
   const pool = getPgPool()
   const { rows } = await pool.query(
-    `INSERT INTO notebook (name, description, owner_email)
-     VALUES ($1, $2, $3)
-     RETURNING id, name, description, owner_email,
+    `INSERT INTO notebook (name, description, owner_email, template_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, description, owner_email, template_id,
                EXTRACT(EPOCH FROM created_at) * 1000 AS created_at_ms`,
-    [name, description, email],
+    [name, description, email, templateId],
   )
   res.status(201).json(rows[0])
 })
@@ -189,7 +221,7 @@ notebooksRouter.get('/:id', async (req: Request, res: Response) => {
     [nb.id],
   )
   const { rows: nbRow } = await pool.query(
-    `SELECT id, name, description, owner_email,
+    `SELECT id, name, description, owner_email, template_id,
             EXTRACT(EPOCH FROM created_at) * 1000 AS created_at_ms,
             EXTRACT(EPOCH FROM updated_at) * 1000 AS updated_at_ms
      FROM notebook WHERE id = $1`,
@@ -321,10 +353,12 @@ notebooksRouter.post('/:id/artifacts/:kind', async (req: Request, res: Response)
   const nb = await loadAccessibleNotebook(req, res, String(req.params.id), 'write')
   if (!nb) return
   const kindRaw = String(req.params.kind)
-  if (kindRaw !== 'briefing' && kindRaw !== 'faq') {
-    return res.status(400).json({ error: 'kind must be briefing or faq' })
+  if (!isArtifactKind(kindRaw)) {
+    return res.status(400).json({
+      error: `kind must be one of: ${ALL_ARTIFACT_KINDS.join(' / ')}`,
+    })
   }
-  const kind = kindRaw as ArtifactKind
+  const kind: ArtifactKind = kindRaw
   const pool = getPgPool()
   // 校验 source 不为空
   const { rows: srcCount } = await pool.query(

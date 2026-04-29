@@ -11,13 +11,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  getNotebook, clearMessages,
+  getNotebook, clearMessages, generateArtifact,
   type NotebookSummary, type NotebookSource, type NotebookMessage,
+  type ArtifactKind,
 } from '@/api/notebooks'
 import SourcesPanel from './SourcesPanel'
 import ChatPanel from './ChatPanel'
 import StudioPanel from './StudioPanel'
 import ShareModal from './ShareModal'
+import TemplateHintCard from './TemplateHintCard'
 
 export default function NotebookDetail() {
   const { id } = useParams<{ id: string }>()
@@ -29,6 +31,8 @@ export default function NotebookDetail() {
   const [err, setErr] = useState<string | null>(null)
   const [highlightedAssetId, setHighlightedAssetId] = useState<number | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  // N-006：模板推荐起手问题预填到 ChatPanel input
+  const [chatPrefill, setChatPrefill] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     if (!Number.isFinite(notebookId)) return
@@ -90,6 +94,23 @@ export default function NotebookDetail() {
         }}>{err}</div>
       )}
 
+      {/* N-006：模板推荐提示卡（template_id 存在 + 未 dismiss 时显示）*/}
+      {notebook?.template_id && (
+        <TemplateHintCard
+          notebookId={notebookId}
+          templateId={notebook.template_id}
+          onTriggerArtifact={async (kind: ArtifactKind) => {
+            try {
+              await generateArtifact(notebookId, kind)
+              // 不自动 reload；StudioPanel 自己 1.5s 轮询会拿到
+            } catch (e) {
+              setErr(e instanceof Error ? e.message : '触发 artifact 失败')
+            }
+          }}
+          onPickStarter={(q) => setChatPrefill(q)}
+        />
+      )}
+
       {/* 三栏 */}
       <div style={{
         flex: 1, marginTop: 12, display: 'grid',
@@ -116,11 +137,16 @@ export default function NotebookDetail() {
               // 5s 后自动取消高亮
               setTimeout(() => setHighlightedAssetId((cur) => cur === assetId ? null : cur), 5000)
             }}
+            prefillInput={chatPrefill}
+            onPrefillConsumed={() => setChatPrefill(null)}
           />
         </ColumnCard>
 
         <ColumnCard title="Studio" noPadding>
-          <StudioPanel notebookId={notebookId} sourceCount={sources.length} />
+          <StudioPanel
+            notebookId={notebookId}
+            sourceAssetIds={sources.map((s) => s.asset_id)}
+          />
         </ColumnCard>
       </div>
 

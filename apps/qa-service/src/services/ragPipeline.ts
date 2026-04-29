@@ -20,7 +20,7 @@ import { recordCitations } from './knowledgeGraph.ts'
 import { expandOntologyContext } from './ontologyContext.ts'
 import { condenseQuestion } from './condenseQuestion.ts'
 import { classifyAnswerIntent, isHandlerRoutingEnabled } from './answerIntent.ts'
-import { buildSystemPromptByIntent } from './answerPrompts.ts'
+import { buildSystemPromptByIntent, type CitationStyle } from './answerPrompts.ts'
 
 export type { Citation, RagTrace, SseEvent, EmitFn, HistoryMessage } from '../ragTypes.ts'
 export type { AssetChunk } from './knowledgeSearch.ts'
@@ -434,6 +434,7 @@ export async function generateAnswer(
     webHits?: Array<{ title: string; url: string; snippet: string }>
     image?: { base64: string; mimeType?: string }
   },
+  citationStyle: CitationStyle = 'inline',
 ): Promise<void> {
   emit({ type: 'rag_step', icon: '💡', label: '正在生成回答...' })
 
@@ -547,8 +548,8 @@ export async function generateAnswer(
 
 文档内容：
 ${context}`
-    : // 默认 RAG · 按意图选 prompt 模板
-      buildSystemPromptByIntent(intent, context, inlineImageRule)
+    : // 默认 RAG · 按意图选 prompt 模板（N-001：透传 citationStyle，notebook 用 footnote）
+      buildSystemPromptByIntent(intent, context, inlineImageRule, citationStyle)
 
   // 有图时优先 VLM；没图沿用默认 LLM
   const visionModel = process.env.INGEST_VLM_MODEL?.trim()
@@ -630,6 +631,11 @@ export interface RunRagOptions {
   webSearch?: boolean
   /** ADR-35：多模态附件（base64 图片），存在时走 Qwen2.5-VL 视觉模型 */
   image?: { base64: string; mimeType?: string }
+  /**
+   * N-001 · 引用样式。inline = [N]（默认，全局 chat）；footnote = [^N]（notebook）
+   * 仅在不传 systemPromptOverride 时生效（override 优先级最高，保持 freeze 契约）
+   */
+  citationStyle?: CitationStyle
 }
 
 export async function runRagPipeline(
@@ -873,6 +879,7 @@ export async function runRagPipeline(
       signal,
       opts.systemPromptOverride,
       { webHits, image: opts.image },
+      opts.citationStyle,  // N-001：notebook 用 'footnote'，全局 chat 默认 'inline'
     )
     // Step 5
     emit({ type: 'trace', data: trace })

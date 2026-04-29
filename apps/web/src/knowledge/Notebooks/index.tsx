@@ -7,7 +7,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
-import { listNotebooks, createNotebook, deleteNotebook, type NotebookSummary } from '@/api/notebooks'
+import {
+  listNotebooks, createNotebook, deleteNotebook, listTemplates,
+  type NotebookSummary, type NotebookTemplateId, type NotebookTemplateSpec,
+} from '@/api/notebooks'
 
 export default function NotebooksPage() {
   const navigate = useNavigate()
@@ -199,9 +202,16 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
   const [desc, setDesc] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // N-006：模板选择
+  const [templates, setTemplates] = useState<NotebookTemplateSpec[]>([])
+  const [pickedTemplate, setPickedTemplate] = useState<NotebookTemplateId | null>(null)
 
   useEffect(() => {
-    if (open) { setName(''); setDesc(''); setErr(null); setBusy(false) }
+    if (open) {
+      setName(''); setDesc(''); setErr(null); setBusy(false); setPickedTemplate(null)
+      // 拉模板列表（首次或重开都拉，后端有 1h cache）
+      listTemplates().then(setTemplates).catch(() => setTemplates([]))
+    }
   }, [open])
   if (!open) return null
 
@@ -210,7 +220,11 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
     if (!trimmed) { setErr('请输入名称'); return }
     setBusy(true); setErr(null)
     try {
-      const r = await createNotebook({ name: trimmed, description: desc.trim() || undefined })
+      const r = await createNotebook({
+        name: trimmed,
+        description: desc.trim() || undefined,
+        template_id: pickedTemplate,
+      })
       onCreated(r.id)
     } catch (e) {
       setErr(e instanceof Error ? e.message : '创建失败')
@@ -225,12 +239,37 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
          }}>
       <div style={{
-        background: '#fff', borderRadius: 12, padding: 24, width: 420, maxWidth: '90vw',
+        background: '#fff', borderRadius: 12, padding: 24, width: 560, maxWidth: '92vw',
+        maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 12px 32px rgba(0,0,0,0.16)',
       }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>
           新建笔记本
         </div>
+
+        {/* N-006：模板选择器（含"📄 空白"兜底）*/}
+        <div style={{ marginBottom: 16 }}>
+          <Label>选择模板（可选）</Label>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+            gap: 8, marginTop: 6,
+          }}>
+            <TemplateOption
+              icon="📄" label="空白" desc="从零开始"
+              picked={pickedTemplate === null}
+              onClick={() => setPickedTemplate(null)}
+            />
+            {templates.map((t) => (
+              <TemplateOption
+                key={t.id}
+                icon={t.icon} label={t.label} desc={t.desc}
+                picked={pickedTemplate === t.id}
+                onClick={() => setPickedTemplate(t.id)}
+              />
+            ))}
+          </div>
+        </div>
+
         <div style={{ marginBottom: 12 }}>
           <Label>名称 <span style={{ color: '#dc2626' }}>*</span></Label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)}
@@ -257,6 +296,36 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
         </div>
       </div>
     </div>
+  )
+}
+
+function TemplateOption({ icon, label, desc, picked, onClick }: {
+  icon: string; label: string; desc: string; picked: boolean; onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={desc}
+      style={{
+        background: picked ? '#eff6ff' : '#fff',
+        border: `1px solid ${picked ? 'var(--p, #6C47FF)' : 'var(--border)'}`,
+        borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
+        textAlign: 'left',
+        boxShadow: picked ? '0 0 0 2px rgba(108,71,255,0.15)' : 'none',
+        transition: 'border-color 0.15s, background 0.15s',
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+        {icon} {label}
+      </div>
+      <div style={{
+        fontSize: 11, color: 'var(--muted)', marginTop: 2,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {desc}
+      </div>
+    </button>
   )
 }
 

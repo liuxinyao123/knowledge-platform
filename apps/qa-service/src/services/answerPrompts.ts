@@ -16,6 +16,13 @@
  */
 import type { AnswerIntent } from './answerIntent.ts'
 
+/**
+ * N-001 · 引用样式
+ *   inline   = [N] [1][2]    （rag-intent-routing 默认；全局 chat）
+ *   footnote = [^N] [^1][^2] （Notebook ChatPanel.tsx:304 regex 解析格式）
+ */
+export type CitationStyle = 'inline' | 'footnote'
+
 const COMMON_OUTPUT_FORMAT = `
 【输出格式】
 - 简洁直接，不复述问题
@@ -27,24 +34,54 @@ const COMMON_OUTPUT_FORMAT = `
  * @param intent 答案意图
  * @param context 召回的文档上下文（已含 [N] asset_name + chunk_content）
  * @param inlineImageRule 可选，ADR-45 inline image 规则（会拼到规则尾部）
+ * @param citationStyle 可选（N-001），默认 'inline'。'footnote' 模式下
+ *   prompt 段所有 [N] 替换为 [^N]（context 段保留 [N] 不变，给 LLM 看的
+ *   是"哪个 chunk 编号几"，不是引用模板）。Notebook 用 footnote。
  */
 export function buildSystemPromptByIntent(
   intent: AnswerIntent,
   context: string,
   inlineImageRule = '',
+  citationStyle: CitationStyle = 'inline',
 ): string {
-  switch (intent) {
-    case 'factual_lookup':
-      return buildFactualLookupPrompt(context, inlineImageRule)
-    case 'language_op':
-      return buildLanguageOpPrompt(context, inlineImageRule)
-    case 'multi_doc_compare':
-      return buildMultiDocComparePrompt(context, inlineImageRule)
-    case 'kb_meta':
-      return buildKbMetaPrompt(context)
-    case 'out_of_scope':
-      return buildOutOfScopePrompt(context)
+  const inlinePrompt = (() => {
+    switch (intent) {
+      case 'factual_lookup':
+        return buildFactualLookupPrompt(context, inlineImageRule)
+      case 'language_op':
+        return buildLanguageOpPrompt(context, inlineImageRule)
+      case 'multi_doc_compare':
+        return buildMultiDocComparePrompt(context, inlineImageRule)
+      case 'kb_meta':
+        return buildKbMetaPrompt(context)
+      case 'out_of_scope':
+        return buildOutOfScopePrompt(context)
+    }
+  })()
+  if (citationStyle === 'inline') return inlinePrompt
+  return toFootnoteCitations(inlinePrompt)
+}
+
+/**
+ * footnote 模式实现：把 prompt 段的引用占位 [N] / 例 [1][2] 都换成 footnote 形式
+ * （[^N] / [^1][^2]）。context 段（"文档内容："之后）保留 [N] 不动 —— 那是
+ * 给 LLM 看的 chunk 编号标识，不是引用模板。LLM 看到 [1] 知道 doc 1，按规则
+ * 输出 [^1] 给前端。
+ *
+ * regex `\[(N|\d+)\]` 一次匹配两类：
+ *   - `[N]`（字面占位符，N 是字母）
+ *   - `[1]` `[12]`（具体例子里的数字）
+ * 不会误伤 `![alt](url)` markdown image syntax（那个含 `(`，不在 `[...]` 模式）
+ */
+function toFootnoteCitations(prompt: string): string {
+  const REPLACE = (s: string) => s.replace(/\[(N|\d+)\]/g, '[^$1]')
+  const marker = '文档内容：'
+  const idx = prompt.indexOf(marker)
+  if (idx < 0) {
+    // 没有 context 分隔符（理论不该发生）→ 全文替换兜底
+    return REPLACE(prompt)
   }
+  return REPLACE(prompt.slice(0, idx)) + prompt.slice(idx)
 }
 
 // ── factual_lookup ──────────────────────────────────────────────────────────
