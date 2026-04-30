@@ -2,6 +2,7 @@
  * CreateSpaceModal —— 新建空间
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createSpace, type SpaceVisibility } from '@/api/spaces'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function CreateSpaceModal({ onClose, onCreated }: Props) {
+  const { t } = useTranslation('spaces')
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
@@ -28,8 +30,8 @@ export default function CreateSpaceModal({ onClose, onCreated }: Props) {
   async function save() {
     setSaving(true); setErr(null)
     try {
-      if (!name.trim()) throw new Error('名称不能为空')
-      if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new Error('slug 必须小写字母/数字/短横线')
+      if (!name.trim()) throw new Error(t('create.errorRequired'))
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new Error(t('create.errorSlug'))
       const { id } = await createSpace({
         slug,
         name: name.trim(),
@@ -48,37 +50,37 @@ export default function CreateSpaceModal({ onClose, onCreated }: Props) {
     <div style={overlay}>
       <div style={modalBox}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700 }}>
-          新建空间
+          {t('create.title')}
         </div>
         <div style={{ padding: 20, display: 'grid', gap: 12 }}>
           <label>
-            <div style={lbl}>名称</div>
+            <div style={lbl}>{t('create.fieldName')}</div>
             <input value={name} onChange={(e) => autoSlug(e.target.value)} style={inp} autoFocus />
           </label>
           <label>
-            <div style={lbl}>slug（URL 友好，小写 + 数字 + 短横线）</div>
+            <div style={lbl}>{t('create.fieldSlug')}</div>
             <input value={slug} onChange={(e) => setSlug(e.target.value)} style={{ ...inp, fontFamily: 'monospace' }} />
           </label>
           <label>
-            <div style={lbl}>描述（可选）</div>
+            <div style={lbl}>{t('create.fieldDescription')}</div>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={inp} />
           </label>
           <label>
-            <div style={lbl}>可见范围</div>
+            <div style={lbl}>{t('create.fieldVisibility')}</div>
             <select value={visibility} onChange={(e) => setVisibility(e.target.value as SpaceVisibility)} style={inp}>
-              <option value="org">组织内</option>
-              <option value="private">私有</option>
+              <option value="org">{t('create.visibilityOrg')}</option>
+              <option value="private">{t('create.visibilityPrivate')}</option>
             </select>
           </label>
           <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-            创建后当前账号自动成为所有者；组织内空间默认对所有登录用户可见。
+            {t('create.ownerNote')}
           </div>
           {err && <div style={{ padding: 8, background: '#FEF2F2', color: '#B91C1C', borderRadius: 6, fontSize: 12 }}>{err}</div>}
         </div>
         <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-          <button className="btn" onClick={onClose} style={{ marginRight: 6 }}>取消</button>
+          <button className="btn" onClick={onClose} style={{ marginRight: 6 }}>{t('common:actions.cancel')}</button>
           <button className="btn primary" onClick={() => void save()} disabled={saving}>
-            {saving ? '创建中…' : '创建'}
+            {saving ? t('create.submitting') : t('create.submit')}
           </button>
         </div>
       </div>

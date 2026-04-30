@@ -563,6 +563,140 @@
       "days": "{{n}} 天前"
     }
   },
+  "spaces": {
+    "title": "我的空间",
+    "subtitle": "先选知识库，再在右侧看文档与成员。左侧按「我的 / 团队共享 / 我订阅的」整理。",
+    "backToOverview": "返回运行概览",
+    "newSpace": "+ 新建知识库",
+    "importKnowledge": "导入知识",
+    "detailTitleFallback": "空间详情",
+    "myRolePrefix": "我是",
+    "roleLabels": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "editor": "编辑者",
+      "viewer": "查看者"
+    },
+    "loading": "加载中…",
+    "selectHint": "从左侧选一个空间，或点「新建空间」",
+    "list": {
+      "loading": "加载中…",
+      "empty": "还没有任何空间",
+      "newBtn": "+ 新建知识库",
+      "groupOwned": "我的",
+      "groupShared": "团队共享",
+      "groupSubscribed": "我订阅的",
+      "search": "搜索空间…",
+      "private": "私有",
+      "team": "团队",
+      "public": "公开"
+    },
+    "info": {
+      "title": "空间信息",
+      "fieldName": "名称",
+      "fieldDescription": "描述",
+      "fieldVisibility": "可见性",
+      "fieldOwner": "所有者",
+      "fieldCreated": "创建时间",
+      "fieldUpdated": "更新时间",
+      "edit": "编辑",
+      "delete": "删除空间",
+      "deleteConfirm": "确认删除空间「{{name}}」？此操作不可恢复。"
+    },
+    "members": {
+      "title": "成员与权限",
+      "invite": "+ 邀请成员",
+      "loading": "加载中…",
+      "empty": "暂无成员",
+      "colSubject": "成员",
+      "colRole": "角色",
+      "colAddedAt": "加入时间",
+      "colActions": "操作",
+      "subjectUser": "用户",
+      "subjectTeam": "团队",
+      "removeBtn": "移除",
+      "removeConfirm": "确认移除「{{name}}」？",
+      "saveRole": "保存",
+      "saveFailed": "保存失败",
+      "addUser": "添加用户",
+      "addTeam": "添加团队",
+      "addPlaceholder": "输入邮箱或团队 id",
+      "submit": "添加"
+    },
+    "directory": {
+      "title": "目录结构",
+      "browseTree": "浏览资产树",
+      "attachSource": "+ 关联数据源",
+      "empty": "尚未关联任何资产",
+      "loading": "加载中…",
+      "removeAsset": "移除",
+      "removeConfirm": "确认从空间移除「{{name}}」？资产本身不会删除。"
+    },
+    "create": {
+      "title": "新建空间",
+      "fieldName": "名称",
+      "namePlaceholder": "如：行政内控空间",
+      "fieldSlug": "slug（URL 友好，小写 + 数字 + 短横线）",
+      "fieldDescription": "描述（可选）",
+      "descPlaceholder": "这个空间用来放什么？",
+      "fieldVisibility": "可见范围",
+      "visibilityOrg": "组织内",
+      "visibilityPrivate": "私有",
+      "ownerNote": "创建后当前账号自动成为所有者；组织内空间默认对所有登录用户可见。",
+      "submit": "创建",
+      "submitting": "创建中…",
+      "errorRequired": "名称不能为空",
+      "errorSlug": "slug 必须小写字母/数字/短横线"
+    },
+    "editModal": {
+      "title": "编辑空间",
+      "submit": "保存",
+      "submitting": "保存中…"
+    },
+    "createSource": {
+      "title": "新建数据源",
+      "fieldName": "数据源名称",
+      "fieldType": "类型",
+      "fieldConnector": "连接器",
+      "fieldConfig": "配置（JSON）",
+      "submit": "创建",
+      "submitting": "创建中…",
+      "errorRequired": "名称必填"
+    },
+    "attachSource": {
+      "title": "关联已有数据源",
+      "search": "搜索数据源…",
+      "empty": "没有可关联的数据源",
+      "alreadyAttached": "已在此空间",
+      "attach": "关联",
+      "attaching": "关联中…",
+      "loading": "加载中…",
+      "loadFailed": "加载失败"
+    },
+    "preview": {
+      "title": "预览",
+      "selectAsset": "在左侧选一个资产以预览",
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "openOriginal": "↗ 打开原文",
+      "noContent": "（无可预览内容）",
+      "tabAssets": "资产",
+      "tabContent": "内容",
+      "tabRag": "RAG"
+    },
+    "sourceTreePage": {
+      "title": "{{name}} · 资产树",
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "back": "← 返回空间",
+      "empty": "尚无任何资产"
+    },
+    "errors": {
+      "loadFailed": "加载失败",
+      "deleteFailed": "删除失败",
+      "saveFailed": "保存失败"
+    }
+  },
   "search": {
     "title": "统一检索",
     "subtitle": "全文 / 标签 / 作者 / 时间过滤，支持预览命中片段",

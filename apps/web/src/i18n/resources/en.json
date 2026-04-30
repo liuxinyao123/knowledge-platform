@@ -565,6 +565,140 @@
       "days": "{{n}}d ago"
     }
   },
+  "spaces": {
+    "title": "My spaces",
+    "subtitle": "Pick a knowledge base on the left, then see docs and members on the right. The list is grouped into Mine / Team-shared / Subscribed.",
+    "backToOverview": "Back to overview",
+    "newSpace": "+ New space",
+    "importKnowledge": "Import knowledge",
+    "detailTitleFallback": "Space detail",
+    "myRolePrefix": "I am ",
+    "roleLabels": {
+      "owner": "owner",
+      "admin": "admin",
+      "editor": "editor",
+      "viewer": "viewer"
+    },
+    "loading": "Loading…",
+    "selectHint": "Pick a space on the left, or click \"New space\"",
+    "list": {
+      "loading": "Loading…",
+      "empty": "No spaces yet",
+      "newBtn": "+ New space",
+      "groupOwned": "Mine",
+      "groupShared": "Team-shared",
+      "groupSubscribed": "Subscribed",
+      "search": "Search spaces…",
+      "private": "Private",
+      "team": "Team",
+      "public": "Public"
+    },
+    "info": {
+      "title": "Space info",
+      "fieldName": "Name",
+      "fieldDescription": "Description",
+      "fieldVisibility": "Visibility",
+      "fieldOwner": "Owner",
+      "fieldCreated": "Created at",
+      "fieldUpdated": "Updated at",
+      "edit": "Edit",
+      "delete": "Delete space",
+      "deleteConfirm": "Delete space \"{{name}}\"? This cannot be undone."
+    },
+    "members": {
+      "title": "Members & permissions",
+      "invite": "+ Invite member",
+      "loading": "Loading…",
+      "empty": "No members",
+      "colSubject": "Subject",
+      "colRole": "Role",
+      "colAddedAt": "Joined",
+      "colActions": "Actions",
+      "subjectUser": "User",
+      "subjectTeam": "Team",
+      "removeBtn": "Remove",
+      "removeConfirm": "Remove \"{{name}}\"?",
+      "saveRole": "Save",
+      "saveFailed": "Save failed",
+      "addUser": "Add user",
+      "addTeam": "Add team",
+      "addPlaceholder": "Email or team id",
+      "submit": "Add"
+    },
+    "directory": {
+      "title": "Directory",
+      "browseTree": "Browse asset tree",
+      "attachSource": "+ Attach source",
+      "empty": "No assets attached yet",
+      "loading": "Loading…",
+      "removeAsset": "Remove",
+      "removeConfirm": "Remove \"{{name}}\" from this space? The asset itself will not be deleted."
+    },
+    "create": {
+      "title": "New space",
+      "fieldName": "Name",
+      "namePlaceholder": "e.g. Admin internal-control space",
+      "fieldSlug": "slug (URL-friendly, lowercase letters/digits/hyphens)",
+      "fieldDescription": "Description (optional)",
+      "descPlaceholder": "What goes into this space?",
+      "fieldVisibility": "Visibility",
+      "visibilityOrg": "Organization",
+      "visibilityPrivate": "Private",
+      "ownerNote": "After creation the current account becomes the owner; org-level spaces are visible to all signed-in users by default.",
+      "submit": "Create",
+      "submitting": "Creating…",
+      "errorRequired": "Name is required",
+      "errorSlug": "slug must be lowercase letters / digits / hyphens"
+    },
+    "editModal": {
+      "title": "Edit space",
+      "submit": "Save",
+      "submitting": "Saving…"
+    },
+    "createSource": {
+      "title": "New data source",
+      "fieldName": "Source name",
+      "fieldType": "Type",
+      "fieldConnector": "Connector",
+      "fieldConfig": "Config (JSON)",
+      "submit": "Create",
+      "submitting": "Creating…",
+      "errorRequired": "Name is required"
+    },
+    "attachSource": {
+      "title": "Attach existing source",
+      "search": "Search sources…",
+      "empty": "No sources available",
+      "alreadyAttached": "Already attached",
+      "attach": "Attach",
+      "attaching": "Attaching…",
+      "loading": "Loading…",
+      "loadFailed": "Load failed"
+    },
+    "preview": {
+      "title": "Preview",
+      "selectAsset": "Pick an asset on the left to preview",
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "openOriginal": "↗ Open original",
+      "noContent": "(no preview content)",
+      "tabAssets": "Assets",
+      "tabContent": "Content",
+      "tabRag": "RAG"
+    },
+    "sourceTreePage": {
+      "title": "{{name}} · Asset tree",
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "back": "← Back to space",
+      "empty": "No assets yet"
+    },
+    "errors": {
+      "loadFailed": "Load failed",
+      "deleteFailed": "Delete failed",
+      "saveFailed": "Save failed"
+    }
+  },
   "search": {
     "title": "Search",
     "subtitle": "Full-text / tag / author / time filters with snippet preview",
