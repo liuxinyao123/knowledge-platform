@@ -8,6 +8,26 @@
 
 ## 本次完成（按提交分组）
 
+### Commit ⑯..㉑ · i18n P1 / P2-a / P2-b 大批量推进（C 工作流）
+
+- `bc1c414` ⑯ P1 Layout/Nav/Login/Overview/components 共用件
+- `6170d86` ⑰ P2-a Search 全量
+- `1c14a24` ⑱ P2-a QA + AssetDirectoryPanel + AnswerContent
+- `cc8ebde` ⑲ P2-b Mcp 全量
+- `82cff23` ⑳ P2-b Assets 5 文件全量
+- `92d6ee3` ㉑ P2-b Spaces 起步（index + CreateSpaceModal + 整套字典 100+ key）
+
+**总进度：~53%**（已迁 ~1015/2000 CJK 行）
+
+**剩余路线图**（详见 `apps/web/src/i18n/README.md`）：
+- P2-b Spaces 剩余 12 个子文件（字典已就位）
+- P2-b Ingest 19 文件 / 411 行 CJK（最大模块）
+- P3: Governance / Iam / Insights / Eval / KG / Agent (~784 行 / 38 文件)
+- P4: auth / api / Notebook 子组件 / _shared (~290 行)
+- P5: system 模板数据层 + 后端错误归一化
+
+下次 session 接续策略：先收 Spaces 12 子件 → Ingest 拆 2-3 commit → 然后 P3 → P4 → P5 → P6 翻译填充。
+
 ### Commit ⑯ + ⑰ · i18n P1 + P2-a Search（C 工作流，commits bc1c414 / 6170d86）
 
 **P1 完成（bc1c414）**：Layout / KnowledgeTabs / Login / Overview / components 共用件

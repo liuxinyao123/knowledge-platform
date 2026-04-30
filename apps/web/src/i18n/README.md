@@ -121,15 +121,46 @@ en            ──>  zh-CN
 |---|---|---|---|
 | 基础设施 | 6 | — | ✅ |
 | Notebook | 5 | ~200 | ✅ |
-| P1 | 8 | ~200 | ✅ |
+| P1 (Layout/Login/Overview/components) | 8 | ~200 | ✅ |
 | P2-a Search | 1 | 46 | ✅ |
-| P2-a QA | 3 | 147 | ⏳ |
-| P2-b | 39 | ~942 | ⏳ |
-| P3 | 38 | ~784 | ⏳ |
-| P4 | ~25 | ~290 | ⏳ |
+| P2-a QA | 3 | 147 | ✅ |
+| P2-b Mcp | 1 | 92 | ✅ |
+| P2-b Assets | 5 | 198 | ✅ |
+| P2-b Spaces | 14 | 241 | 🟡 (2/14) |
+| P2-b Ingest | 19 | 411 | ⏳ |
+| P3 (Governance/Iam/Insights/Eval/KG/Agent) | 38 | ~784 | ⏳ |
+| P4 (auth/api/Notebook 子组件/_shared) | ~25 | ~290 | ⏳ |
 | P5 数据层 | — | ~80 | ⏳ |
 
-**总进度：约 25-30% 全量完成**（已迁 ~500/2000 CJK 行）。剩余按 P2 → P3 → P4 → P5 → P6 顺序推。
+**总进度：约 53% 全量完成**（已迁 ~1015/2000 CJK 行）。剩余按 P2-b 续 → P3 → P4 → P5 → P6 顺序推。
+
+## 已 commit 的 i18n 系列（按时间顺序）
+
+- `43da800` 基础设施 + Notebook 全量（commit ⑮）
+- `bc1c414` P1 Layout/Nav/Login/Overview/components（commit ⑯）
+- `6170d86` P2-a Search（commit ⑰）
+- `1c14a24` P2-a QA + AssetDirectoryPanel + AnswerContent（commit ⑱）
+- `cc8ebde` P2-b Mcp 全量（commit ⑲）
+- `82cff23` P2-b Assets 5 文件全量（commit ⑳）
+- `92d6ee3` P2-b Spaces 起步（index + CreateSpaceModal + 整套字典）（commit ㉑）
+
+## 下次 session 接力清单
+
+**P2-b Spaces 剩余 12 个文件**（字典已就位，对应 t() 引用即可）：
+- AttachSourceModal / CreateSourceModal / EditSpaceModal
+- PreviewPane / SpaceDetailPane / SpaceDirectoryList / SpaceInfoCard
+- SpaceListPane / SpaceMembersTable / SpaceSourceTreePage / TreePane / types
+
+**P2-b Ingest** 19 文件 / 411 行 CJK，最大模块。建议拆 2-3 个 commit：
+- 第一片：index/Wizard/EmptyState/UploadTab/BatchTab/FetchUrlTab
+- 第二片：FileQueue/FileSourceForm/FileSourceList/FileSourceLogDrawer
+- 第三片：IngestConfigPanel/JobQueue/MetaForm/PreprocessingModule/PreviewPane/RecentImports/ZipImporter/ConversationTab
+
+**P3** Governance / Iam / Insights / Eval / KG / Agent
+
+**P4** auth / api / Notebook 子组件 / _shared
+
+**P5** system 模板数据层 / 后端错误归一化
 
 ## 现已知 limitation
 
