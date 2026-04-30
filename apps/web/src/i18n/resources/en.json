@@ -176,6 +176,49 @@
     "loadFailedHint": "Failed to load, please retry",
     "tilesBlocked": "Permission denied for this module"
   },
+  "search": {
+    "title": "Search",
+    "subtitle": "Full-text / tag / author / time filters with snippet preview",
+    "backToOverview": "Back to overview",
+    "heroPlaceholder": "Search e.g. \"MCP onboarding\", \"growth retro\", \"governance KPIs\"",
+    "filters": {
+      "all": "All spaces",
+      "doc": "Docs",
+      "minutes": "Meeting notes",
+      "faq": "FAQ",
+      "web": "Web clips"
+    },
+    "panels": {
+      "results": "Results",
+      "preview": "Preview",
+      "openOriginal": "↗ Open original"
+    },
+    "states": {
+      "promptSearch": "Enter keywords to start searching",
+      "searching": "Searching…",
+      "noMatch": "No matches. Try broader keywords or remove filters.",
+      "selectResult": "Pick a result on the left to preview"
+    },
+    "preview": {
+      "typeLabel": "Type: {{label}}",
+      "bookPrefix": "Book #{{id}}",
+      "chapterPrefix": "Chapter #{{id}}",
+      "favorited": "Saved",
+      "favorite": "Save",
+      "copyRef": "⛓ Copy reference",
+      "copySuccess": "Reference copied",
+      "copyFail": "Copy failed (clipboard permission?)",
+      "noSnippet": "(no snippet)",
+      "tags": "Tags",
+      "errorBlob": "(This document had an ingest error and can't be previewed)"
+    },
+    "typeLabels": {
+      "bookshelf": "Shelf",
+      "book": "Book",
+      "chapter": "Chapter",
+      "page": "Page"
+    }
+  },
   "components": {
     "confidence": {
       "high": "High",

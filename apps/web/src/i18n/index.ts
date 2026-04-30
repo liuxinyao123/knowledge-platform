@@ -70,7 +70,7 @@ void i18n
       'default': ['zh-CN'],
     },
     defaultNS: 'common',
-    ns: ['common', 'nav', 'auth', 'overview', 'components', 'notebook'],
+    ns: ['common', 'nav', 'auth', 'overview', 'components', 'notebook', 'search'],
     interpolation: {
       escapeValue: false,   // React 已经做 XSS 转义
     },
