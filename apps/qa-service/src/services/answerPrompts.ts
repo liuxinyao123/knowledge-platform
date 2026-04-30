@@ -86,11 +86,39 @@ function toFootnoteCitations(prompt: string): string {
 
 // ── factual_lookup ──────────────────────────────────────────────────────────
 
+/**
+ * D-002.6 env 守卫：factual_lookup prompt 是否走"先尝试 verbatim 提取"严格版.
+ *
+ * 默认 `false`（D-002.6 v1 探索归零）. `true / 1 / on / yes`（大小写不敏感）→ 启用
+ * 新 prompt（opt-in 实验）.
+ *
+ * 改造背景 + 探索结果：
+ *   - D-002.4 N=3 揭示 sop-数值 case 2/3 LLM 输出 "知识库中没有相关内容 [1]..[10]"
+ *     — 引用 chunks 却说没内容. 旧 prompt 第 1 条 "找不到就说" 看似给 LLM 过弱 escape.
+ *   - D-002.6 v1 改造尝试: 严格版 "先尝试 verbatim 提取... 只有所有 chunks 完全无
+ *     关键实体或同义实体才拒答".
+ *   - A4 verify 反直觉发现: 严格版**反而**比旧版更易拒答（fast LLM 对长复杂指令解析
+ *     不佳，被 fallback 短语 prime）. 单跑 N=3 实测：env=false 3/3 STABLE，env=true
+ *     仅 2/3 keywords + 1/3 pattern_type.
+ *   - 决策: 保留架构作 opt-in 实验, default off 让生产走 legacy prompt. 待 D-002.7
+ *     重新设计 prompt（可能用 few-shot 示例 / chain-of-extract 步骤拆分等手段）.
+ */
+export function isFactualStrictVerbatimEnabled(): boolean {
+  const v = (process.env.FACTUAL_STRICT_VERBATIM_ENABLED ?? 'false').toLowerCase().trim()
+  return v === 'true' || v === '1' || v === 'on' || v === 'yes'
+}
+
 function buildFactualLookupPrompt(context: string, inlineImageRule: string): string {
+  const rule1Strict = `1. **先尝试 verbatim 提取**：扫描 [1]..[N] chunks 找出含问题关键实体（数值/术语/人名/缩写）或同义实体的片段，完整 verbatim 引用相关片段。**只有所有 chunks 都完全没有出现问题的关键实体或同义实体时**才说「知识库中没有相关内容」。不引入文档外的事实、背景、推断、评价`
+
+  const rule1Legacy = `1. **只使用提供的文档作答**，不引入文档外的事实、背景、推断、评价。找不到就说「知识库中没有相关内容」，不要猜`
+
+  const rule1 = isFactualStrictVerbatimEnabled() ? rule1Strict : rule1Legacy
+
   return `你是知识库助手 · **事实查询模式**。用户在文档里找具体事实（数值、规格、定义、位置、时间、人物、状态等）。
 
 【硬性规则】
-1. **只使用提供的文档作答**，不引入文档外的事实、背景、推断、评价。找不到就说「知识库中没有相关内容」，不要猜
+${rule1}
 2. **禁止使用模糊措辞**：不要「可能」「似乎」「大约」「应该是」「左右」「估计」。要么给确定答案，要么明说找不到
 3. **数值、规格、单位、缩写、专有名词、代码、URL、人名、日期必须 verbatim 从原文提取**：原文「7 degrees」就用「7 degrees」或「7°」，不近似为「约 7 度」；不省略不简写
 4. **每个事实陈述后加 [N] 引用**（N 是文档编号）。同一句多个来源用 [1][2]

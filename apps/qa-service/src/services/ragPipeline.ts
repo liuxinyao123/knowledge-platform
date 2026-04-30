@@ -21,6 +21,7 @@ import { expandOntologyContext } from './ontologyContext.ts'
 import { condenseQuestion } from './condenseQuestion.ts'
 import { classifyAnswerIntent, isHandlerRoutingEnabled } from './answerIntent.ts'
 import { buildSystemPromptByIntent, type CitationStyle } from './answerPrompts.ts'
+import { isObviousKbMeta, isKbMetaHandlerEnabled, runKbMetaHandler } from './kbMetaHandler.ts'
 
 export type { Citation, RagTrace, SseEvent, EmitFn, HistoryMessage } from '../ragTypes.ts'
 export type { AssetChunk } from './knowledgeSearch.ts'
@@ -527,6 +528,22 @@ export async function generateAnswer(
     }
   }
 
+  // D-002.2 · 档 B kb_meta fallback —— 顶层 isObviousKbMeta 漏判时（语义型查询，
+  // 例如"我这库里有道德经吗"档 B 才意识到是 kb_meta）也走目录直查 handler，
+  // 不走 buildKbMetaPrompt + LLM 流（LLM 容易把 retrieval 命中的内容当成"问内容"
+  // 来吐 chunk content；kbMetaHandler 直查 metadata_asset 输出 asset 列表更准）。
+  // env KB_META_HANDLER_ENABLED=false 时回退到老 buildKbMetaPrompt + LLM 流。
+  if (!hasWeb && intent === 'kb_meta' && isKbMetaHandlerEnabled()) {
+    // 档 B fallback：caller (runRagPipeline) 自己 emit trace + done；
+    // 🎭 已在前面 emit 过 → 都跳过
+    await runKbMetaHandler(question, emit, signal, {
+      assetIds: docs.map((d) => d.asset_id),  // 复用 retrieval 命中的 asset_id 子集
+      omitDoneAndTrace: true,
+      omitIntentEmit: true,
+    })
+    return
+  }
+
   const defaultSystem = hasWeb
     ? // ADR-35：web 模式 prompt 不变（联网检索特有的"两类来源优先级"语义跟意图正交）
       `你是知识库 + 联网检索助手。可用两类来源：
@@ -657,6 +674,15 @@ export async function runRagPipeline(
 
   if (isDataAdminQuestion(question)) {
     await runDataAdminPipeline(question, emit, signal)
+    return
+  }
+
+  // D-002.2 · kb_meta 顶层规则前置 ——
+  // "我这库里有 X 吗"/"列出 X 文档" 这类目录元查询不应走 retrieval（rerank 必凉，
+  // 走 short-circuit 兜底就把用户问的目录给吞了）。直查 metadata_asset 表。
+  // 漏判会落到下面 retrieval → 档 B answerIntent='kb_meta' fallback 兜底。
+  if (isKbMetaHandlerEnabled() && isObviousKbMeta(question)) {
+    await runKbMetaHandler(question, emit, signal, { assetIds: opts.assetIds })
     return
   }
 

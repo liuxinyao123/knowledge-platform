@@ -361,6 +361,40 @@ export async function runPgMigrations(): Promise<void> {
   `)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_notebook_member_subject ON notebook_member(subject_type, subject_id)`)
 
+  // ─── N-007 公共模板池 ─────────────────────────────────────────────────────
+  // 把 N-006 的 6 个内置模板从代码常量迁到 DB；source 区分 system / community / user
+  // 详见 openspec/changes/notebook-public-templates/ + apps/qa-service/src/migrations/002-...
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notebook_template (
+      id                          SERIAL PRIMARY KEY,
+      template_key                TEXT NOT NULL UNIQUE,
+      source                      TEXT NOT NULL CHECK (source IN ('system', 'community', 'user')),
+      owner_user_id               INT REFERENCES users(id) ON DELETE CASCADE,
+      label                       TEXT NOT NULL,
+      icon                        TEXT NOT NULL,
+      description                 TEXT NOT NULL,
+      recommended_source_hint     TEXT NOT NULL,
+      recommended_artifact_kinds  JSONB NOT NULL DEFAULT '[]'::jsonb,
+      starter_questions           JSONB NOT NULL DEFAULT '[]'::jsonb,
+      created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_notebook_template_source_owner
+      ON notebook_template (source, owner_user_id)
+  `)
+  // 复合 CHECK：user 模板必须有 owner，system/community 不能有
+  // 兼容旧表（理论上 fresh DB 没有此 case）：先 DROP 再 ADD，幂等
+  await pool.query(`
+    ALTER TABLE notebook_template DROP CONSTRAINT IF EXISTS chk_notebook_template_owner
+  `)
+  await pool.query(`
+    ALTER TABLE notebook_template ADD CONSTRAINT chk_notebook_template_owner
+      CHECK ((source = 'user' AND owner_user_id IS NOT NULL)
+           OR (source IN ('system','community') AND owner_user_id IS NULL))
+  `)
+
   // Permissions V2 · F-3：ACL 规则审计（与既有 audit_log 并行）
   await pool.query(`
     CREATE TABLE IF NOT EXISTS acl_rule_audit (

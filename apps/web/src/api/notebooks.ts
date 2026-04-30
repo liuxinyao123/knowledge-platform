@@ -18,8 +18,8 @@ export interface NotebookSummary {
   updated_at_ms: number
   source_count: number
   message_count: number
-  /** N-006：模板 ID（创建时选择，老 notebook 为 null）*/
-  template_id?: NotebookTemplateId | null
+  /** N-006/N-007：模板 key（创建时选择，老 notebook 为 null）。N-007 起可为任意 community/user key，不再限定字面量 union */
+  template_id?: string | null
 }
 
 export interface NotebookMember {
@@ -96,15 +96,20 @@ export async function listNotebooks(): Promise<{ items: NotebookSummary[]; share
 }
 
 export async function createNotebook(input: {
-  name: string; description?: string; template_id?: NotebookTemplateId | null
+  name: string; description?: string; template_id?: string | null
 }): Promise<NotebookSummary> {
   const { data } = await client.post<NotebookSummary>('/', input)
   return data
 }
 
-// ── N-006：Notebook Templates ────────────────────────────────────────────────
-// 跟后端 services/notebookTemplates.ts NOTEBOOK_TEMPLATES 同步
-
+// ── N-006/N-007：Notebook Templates ─────────────────────────────────────────
+// 跟后端 services/notebookTemplates.ts 同步
+//
+// N-006：6 个 system 模板（字面量 union）
+// N-007：把模板搬到 DB 表 notebook_template，加 source 字段；NotebookTemplateSpec.id
+//        类型 widening 到 string（容纳 community / user 模板的任意 key）
+//
+// 内置 system id 字面量保留作类型 narrowing；不再约束 NotebookTemplateSpec.id
 export type NotebookTemplateId =
   | 'research_review' | 'meeting_prep' | 'competitive_analysis'
   | 'learning_aid' | 'project_retrospective' | 'translation_explain'
@@ -114,8 +119,14 @@ export const ALL_NOTEBOOK_TEMPLATE_IDS: readonly NotebookTemplateId[] = [
   'learning_aid', 'project_retrospective', 'translation_explain',
 ] as const
 
+/** N-007：模板来源 */
+export type NotebookTemplateSource = 'system' | 'community' | 'user'
+
 export interface NotebookTemplateSpec {
-  id: NotebookTemplateId
+  /** N-007: 任意字符串（system 用 NotebookTemplateId，community/user 用 DB 生成的 key） */
+  id: string
+  /** N-007 新增：用来在 UI 上显示来源徽章 / 决定权限按钮 */
+  source: NotebookTemplateSource
   label: string
   icon: string
   desc: string
@@ -127,6 +138,54 @@ export interface NotebookTemplateSpec {
 export async function listTemplates(): Promise<NotebookTemplateSpec[]> {
   const { data } = await client.get<{ templates: NotebookTemplateSpec[] }>('/templates')
   return data.templates
+}
+
+// ── N-008：用户自定义模板 CRUD ──────────────────────────────────────────────
+// 跟后端 routes/templates.ts 同步
+//
+// 使用专门的 templatesClient（baseURL=/api/templates）而不是 client（/api/notebooks），
+// 端点完全独立。
+
+const templatesClient = axios.create({ baseURL: '/api/templates' })
+
+/** N-008 用户自定义模板 input（创建用 / patch 用） */
+export interface CreateUserTemplateInput {
+  label: string
+  icon: string
+  description: string                       // ← 后端 service 字段名为 description（不是 desc）
+  recommendedSourceHint: string
+  recommendedArtifactKinds: ArtifactKind[]
+  starterQuestions: string[]
+}
+
+export interface UserTemplatesMeta {
+  enabled: boolean
+}
+
+/** GET /api/templates/_meta —— 暴露 USER_TEMPLATES_ENABLED flag */
+export async function getUserTemplatesMeta(): Promise<UserTemplatesMeta> {
+  const { data } = await templatesClient.get<UserTemplatesMeta>('/_meta')
+  return data
+}
+
+/** POST /api/templates */
+export async function createUserTemplate(input: CreateUserTemplateInput): Promise<NotebookTemplateSpec> {
+  const { data } = await templatesClient.post<NotebookTemplateSpec>('/', input)
+  return data
+}
+
+/** PATCH /api/templates/:key */
+export async function updateUserTemplate(
+  key: string,
+  patch: Partial<CreateUserTemplateInput>,
+): Promise<NotebookTemplateSpec> {
+  const { data } = await templatesClient.patch<NotebookTemplateSpec>(`/${encodeURIComponent(key)}`, patch)
+  return data
+}
+
+/** DELETE /api/templates/:key */
+export async function deleteUserTemplate(key: string): Promise<void> {
+  await templatesClient.delete(`/${encodeURIComponent(key)}`)
 }
 
 export async function getNotebook(id: number): Promise<{

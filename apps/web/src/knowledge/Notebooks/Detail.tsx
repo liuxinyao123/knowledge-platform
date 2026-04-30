@@ -28,7 +28,14 @@ export default function NotebookDetail() {
   const [notebook, setNotebook] = useState<NotebookSummary | null>(null)
   const [sources, setSources] = useState<NotebookSource[]>([])
   const [messages, setMessages] = useState<NotebookMessage[]>([])
-  const [err, setErr] = useState<string | null>(null)
+  /**
+   * 错误状态拆分（2026-04-29 UX bug fix）：
+   *   - loadErr：getNotebook 失败 → 顶部标题变"加载失败" + 红条
+   *   - actionErr：用户点击型操作（chip 触发 artifact / 共享 / 等）失败 → 红条
+   *     展示但**不**覆盖标题，避免一个无关的 chip 失败把整页面伪装成"加载失败"
+   */
+  const [loadErr, setLoadErr] = useState<string | null>(null)
+  const [actionErr, setActionErr] = useState<string | null>(null)
   const [highlightedAssetId, setHighlightedAssetId] = useState<number | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   // N-006：模板推荐起手问题预填到 ChatPanel input
@@ -41,9 +48,9 @@ export default function NotebookDetail() {
       setNotebook(d.notebook)
       setSources(d.sources)
       setMessages(d.messages)
-      setErr(null)
+      setLoadErr(null)
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'load failed')
+      setLoadErr(e instanceof Error ? e.message : 'load failed')
     }
   }, [notebookId])
 
@@ -65,7 +72,7 @@ export default function NotebookDetail() {
       }}>
         <div>
           <div className="page-title">
-            {err
+            {loadErr
               ? '加载失败'
               : notebook === null
                 ? '加载中…'
@@ -87,11 +94,31 @@ export default function NotebookDetail() {
         </div>
       </div>
 
-      {err && (
+      {loadErr && (
         <div style={{
           padding: 12, marginTop: 8, background: '#fee2e2', color: '#b91c1c',
           borderRadius: 8, fontSize: 13, flexShrink: 0,
-        }}>{err}</div>
+        }}>{loadErr}</div>
+      )}
+      {actionErr && !loadErr && (
+        <div style={{
+          padding: '8px 12px', marginTop: 8,
+          background: '#fef3c7', color: '#92400e',
+          border: '1px solid #fde68a', borderRadius: 8,
+          fontSize: 12, flexShrink: 0,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+        }}>
+          <span>{actionErr}</span>
+          <button
+            type="button"
+            aria-label="关闭提示"
+            onClick={() => setActionErr(null)}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#92400e', fontSize: 16, lineHeight: 1, padding: 4,
+            }}
+          >×</button>
+        </div>
       )}
 
       {/* N-006：模板推荐提示卡（template_id 存在 + 未 dismiss 时显示）*/}
@@ -101,10 +128,17 @@ export default function NotebookDetail() {
           templateId={notebook.template_id}
           onTriggerArtifact={async (kind: ArtifactKind) => {
             try {
+              setActionErr(null)
               await generateArtifact(notebookId, kind)
               // 不自动 reload；StudioPanel 自己 1.5s 轮询会拿到
             } catch (e) {
-              setErr(e instanceof Error ? e.message : '触发 artifact 失败')
+              // 用 actionErr 而不是 loadErr，避免把页面标题伪装成"加载失败"
+              const msg = e instanceof Error ? e.message : '触发 artifact 失败'
+              // axios 把 4xx 包成 "Request failed with status code N"，
+              // 尽量从 response.data.error 中取后端的中文消息
+              const apiErr =
+                (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+              setActionErr(apiErr ?? `触发 ${kind} 失败：${msg}`)
             }
           }}
           onPickStarter={(q) => setChatPrefill(q)}

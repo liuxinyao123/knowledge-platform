@@ -9,8 +9,11 @@ import { useNavigate } from 'react-router-dom'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import {
   listNotebooks, createNotebook, deleteNotebook, listTemplates,
-  type NotebookSummary, type NotebookTemplateId, type NotebookTemplateSpec,
+  getUserTemplatesMeta, deleteUserTemplate,
+  type NotebookSummary, type NotebookTemplateSpec,
 } from '@/api/notebooks'
+import CreateTemplateModal from './CreateTemplateModal'
+import MyTemplateActions from './MyTemplateActions'
 
 export default function NotebooksPage() {
   const navigate = useNavigate()
@@ -202,15 +205,33 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
   const [desc, setDesc] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  // N-006：模板选择
+  // N-006/N-007：模板选择（id widening 到 string 容纳 community/user 模板）
   const [templates, setTemplates] = useState<NotebookTemplateSpec[]>([])
-  const [pickedTemplate, setPickedTemplate] = useState<NotebookTemplateId | null>(null)
+  const [pickedTemplate, setPickedTemplate] = useState<string | null>(null)
+  // N-008：用户自定义模板入口（受 USER_TEMPLATES_ENABLED 守卫）
+  const [userTplEnabled, setUserTplEnabled] = useState(false)
+  const [tplModalOpen, setTplModalOpen] = useState(false)
+  const [tplEditing, setTplEditing] = useState<NotebookTemplateSpec | undefined>(undefined)
+  // hover state for MyTemplateActions
+  const [hoverTplId, setHoverTplId] = useState<string | null>(null)
+
+  async function reloadTemplates() {
+    try {
+      const all = await listTemplates()
+      setTemplates(all)
+    } catch {
+      setTemplates([])
+    }
+  }
 
   useEffect(() => {
     if (open) {
       setName(''); setDesc(''); setErr(null); setBusy(false); setPickedTemplate(null)
-      // 拉模板列表（首次或重开都拉，后端有 1h cache）
-      listTemplates().then(setTemplates).catch(() => setTemplates([]))
+      void reloadTemplates()
+      // 探 N-008 enabled flag；失败时降级到 disabled
+      getUserTemplatesMeta()
+        .then((m) => setUserTplEnabled(m.enabled))
+        .catch(() => setUserTplEnabled(false))
     }
   }, [open])
   if (!open) return null
@@ -247,9 +268,20 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
           新建笔记本
         </div>
 
-        {/* N-006：模板选择器（含"📄 空白"兜底）*/}
+        {/* N-006/N-007/N-008：模板选择器（"📄 空白" + 6 system + community + 自己的 user）*/}
         <div style={{ marginBottom: 16 }}>
-          <Label>选择模板（可选）</Label>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <Label>选择模板（可选）</Label>
+            {userTplEnabled && (
+              <button type="button"
+                      onClick={() => { setTplEditing(undefined); setTplModalOpen(true) }}
+                      style={{
+                        marginLeft: 'auto', fontSize: 11, padding: '2px 10px',
+                        border: '1px dashed var(--border)', background: 'transparent',
+                        color: 'var(--p, #6C47FF)', borderRadius: 999, cursor: 'pointer',
+                      }}>+ 创建我的模板</button>
+            )}
+          </div>
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
             gap: 8, marginTop: 6,
@@ -257,18 +289,58 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
             <TemplateOption
               icon="📄" label="空白" desc="从零开始"
               picked={pickedTemplate === null}
+              source={null}
               onClick={() => setPickedTemplate(null)}
             />
-            {templates.map((t) => (
-              <TemplateOption
-                key={t.id}
-                icon={t.icon} label={t.label} desc={t.desc}
-                picked={pickedTemplate === t.id}
-                onClick={() => setPickedTemplate(t.id)}
-              />
-            ))}
+            {templates.map((t) => {
+              const isMine = t.source === 'user'
+              return (
+                <TemplateOption
+                  key={t.id}
+                  icon={t.icon} label={t.label} desc={t.desc}
+                  picked={pickedTemplate === t.id}
+                  source={t.source}
+                  onClick={() => setPickedTemplate(t.id)}
+                  onMouseEnter={() => setHoverTplId(t.id)}
+                  onMouseLeave={() => setHoverTplId((cur) => cur === t.id ? null : cur)}
+                  actions={isMine ? (
+                    <MyTemplateActions
+                      template={t}
+                      visible={hoverTplId === t.id}
+                      onEdit={(spec) => { setTplEditing(spec); setTplModalOpen(true) }}
+                      onDelete={async (spec) => {
+                        try {
+                          await deleteUserTemplate(spec.id)
+                          if (pickedTemplate === spec.id) setPickedTemplate(null)
+                          await reloadTemplates()
+                        } catch (e) {
+                          const msg = (e as { response?: { data?: { error?: string } } })
+                            ?.response?.data?.error
+                          setErr(msg ?? (e instanceof Error ? e.message : '删除失败'))
+                        }
+                      }}
+                    />
+                  ) : null}
+                />
+              )
+            })}
           </div>
         </div>
+
+        {/* N-008：创建/编辑用户模板 modal */}
+        {userTplEnabled && (
+          <CreateTemplateModal
+            open={tplModalOpen}
+            mode={tplEditing ? 'edit' : 'create'}
+            initial={tplEditing}
+            onClose={() => { setTplModalOpen(false); setTplEditing(undefined) }}
+            onSaved={async (spec) => {
+              setTplModalOpen(false); setTplEditing(undefined)
+              await reloadTemplates()
+              setPickedTemplate(spec.id)   // 创建/编辑后自动选中
+            }}
+          />
+        )}
 
         <div style={{ marginBottom: 12 }}>
           <Label>名称 <span style={{ color: '#dc2626' }}>*</span></Label>
@@ -299,33 +371,66 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
   )
 }
 
-function TemplateOption({ icon, label, desc, picked, onClick }: {
-  icon: string; label: string; desc: string; picked: boolean; onClick: () => void
+function TemplateOption({
+  icon, label, desc, picked, source, onClick,
+  onMouseEnter, onMouseLeave, actions,
+}: {
+  icon: string; label: string; desc: string; picked: boolean
+  /** N-008: 'system' / 'community' / 'user' / null（空白） */
+  source: 'system' | 'community' | 'user' | null
+  onClick: () => void
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  /** N-008: hover-only 编辑/删除按钮（自己的 user 模板才传） */
+  actions?: React.ReactNode
 }) {
+  const sourceLabel =
+    source === 'user' ? '我的'
+    : source === 'community' ? '社区'
+    : null   // system / null 不显示角标
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={desc}
-      style={{
-        background: picked ? '#eff6ff' : '#fff',
-        border: `1px solid ${picked ? 'var(--p, #6C47FF)' : 'var(--border)'}`,
-        borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
-        textAlign: 'left',
-        boxShadow: picked ? '0 0 0 2px rgba(108,71,255,0.15)' : 'none',
-        transition: 'border-color 0.15s, background 0.15s',
-      }}
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{ position: 'relative' }}
     >
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-        {icon} {label}
-      </div>
-      <div style={{
-        fontSize: 11, color: 'var(--muted)', marginTop: 2,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>
-        {desc}
-      </div>
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        title={desc}
+        style={{
+          width: '100%',
+          background: picked ? 'rgba(108, 71, 255, 0.06)' : '#fff',
+          border: `1px solid ${picked ? 'var(--p, #6C47FF)' : 'var(--border)'}`,
+          borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
+          textAlign: 'left',
+          boxShadow: picked ? '0 0 0 2px rgba(108,71,255,0.15)' : 'none',
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+            {icon} {label}
+          </span>
+          {sourceLabel && (
+            <span style={{
+              fontSize: 10, padding: '1px 6px', borderRadius: 999,
+              background: source === 'user' ? 'rgba(108, 71, 255, 0.12)' : 'rgba(34, 197, 94, 0.12)',
+              color: source === 'user' ? 'var(--p, #6C47FF)' : '#15803d',
+              fontWeight: 500,
+            }}>{sourceLabel}</span>
+          )}
+        </div>
+        <div style={{
+          fontSize: 11, color: 'var(--muted)', marginTop: 2,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {desc}
+        </div>
+      </button>
+      {actions}
+    </div>
   )
 }
 
