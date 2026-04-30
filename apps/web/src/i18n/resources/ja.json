@@ -1,4 +1,179 @@
 {
-  "common": {},
-  "notebook": {}
+  "common": {
+    "actions": {
+      "create": "作成",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "edit": "編集",
+      "delete": "削除",
+      "confirm": "確認",
+      "close": "閉じる",
+      "back": "戻る",
+      "share": "共有",
+      "submit": "送信",
+      "retry": "再試行",
+      "search": "検索",
+      "refresh": "更新",
+      "open": "開く",
+      "addOne": "+ 追加"
+    },
+    "states": {
+      "loading": "読み込み中…",
+      "loadFailed": "読み込み失敗",
+      "creating": "作成中…",
+      "saving": "保存中…",
+      "empty": "データなし",
+      "required": "必須",
+      "optional": "任意"
+    },
+    "errors": {
+      "generic": "エラーが発生しました。もう一度お試しください",
+      "createFailed": "作成に失敗しました",
+      "saveFailed": "保存に失敗しました",
+      "deleteFailed": "削除に失敗しました",
+      "loadFailed": "読み込みに失敗しました"
+    },
+    "language": {
+      "switchTitle": "言語を切り替える"
+    },
+    "validation": {
+      "atLeast_one": "最低 {{count}} 件",
+      "atLeast_other": "最低 {{count}} 件",
+      "atMost_one": "最大 {{count}} 件",
+      "atMost_other": "最大 {{count}} 件",
+      "atLeastChars": "最低 {{count}} 文字",
+      "atMostChars": "最大 {{count}} 文字"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "ナレッジプラットフォーム",
+    "brandShort": "ナレッジ",
+    "newTaskCta": "質問する",
+    "sidebarSearchPlaceholder": "タスク / ナレッジを検索…",
+    "sectionPrimary": "ワークスペース",
+    "sectionManage": "管理とデータ",
+    "sectionExtra": "ツール",
+    "sectionAdmin": "管理",
+    "tabs": {
+      "qa": "💬 質問",
+      "search": "🔎 検索",
+      "spaces": "🗂 スペース",
+      "ingest": "⬆️ 取り込み",
+      "overview": "🏠 概要",
+      "agent": "🤖 Agent",
+      "governance": "🛡 ガバナンス",
+      "assets": "📦 アセット",
+      "mcp": "🔌 接続"
+    },
+    "labels": {
+      "qa": "質問",
+      "search": "検索",
+      "spaces": "マイスペース",
+      "ingest": "アップロード",
+      "overview": "概要",
+      "insights": "インサイト",
+      "knowledgeGraph": "ナレッジグラフ",
+      "governance": "ガバナンス",
+      "assets": "アセットカタログ",
+      "mcp": "接続",
+      "agent": "Agent",
+      "notebooks": "ノートブック",
+      "eval": "評価",
+      "iam": "ID と権限"
+    },
+    "tabsAriaLabel": "ナレッジプラットフォームのモジュール",
+    "topbarQuickCreate": "クイック操作（質問）",
+    "topbarAssetsBtn": "アセットカタログ"
+  },
+  "auth": {
+    "login": {
+      "title": "ナレッジプラットフォーム",
+      "subtitle": "ワークスペースにサインイン",
+      "emailLabel": "メールアドレス",
+      "passwordLabel": "パスワード",
+      "submit": "サインイン",
+      "submitting": "サインイン中…",
+      "errorInvalid": "メールアドレスまたはパスワードが正しくありません",
+      "errorNoSecret": "サーバー設定がありません（AUTH_HS256_SECRET 未設定）",
+      "errorNetwork": "サインインに失敗しました"
+    },
+    "userArea": {
+      "changePassword": "変更",
+      "changePasswordTitle": "パスワード変更",
+      "changePasswordDevTooltip": "DEV モードではパスワード変更は無効",
+      "logout": "サインアウト",
+      "logoutTitle": "サインアウト",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "パスワード変更",
+      "currentLabel": "現在のパスワード",
+      "newLabel": "新しいパスワード",
+      "confirmLabel": "新しいパスワード(確認)",
+      "submit": "保存",
+      "submitting": "保存中…",
+      "cancel": "キャンセル",
+      "errorMismatch": "パスワードが一致しません",
+      "errorWrongCurrent": "現在のパスワードが正しくありません",
+      "successTitle": "パスワードを更新しました"
+    }
+  },
+  "overview": {
+    "title": "概要",
+    "subtitle": "目的から始めましょう：質問する・探す・取り込む。KPI は運用担当者向けです。",
+    "actions": {
+      "askQuestion": "質問する",
+      "search": "検索",
+      "newSpace": "+ 新しいスペース",
+      "importKnowledge": "ナレッジを取り込む"
+    },
+    "quickStart": {
+      "skipHeading": "どこから始めるか迷ったら、以下の中からお選びください",
+      "ariaLabel": "クイックスタート",
+      "qaTitle": "質問",
+      "qaDesc": "自然言語で質問し、引用付きで回答を得られます。",
+      "searchTitle": "検索",
+      "searchDesc": "キーワード / タグ / 意味でドキュメント・ノート・Web クリップを検索します。",
+      "ingestTitle": "アップロード",
+      "ingestDesc": "ファイル・リンク・クリップボード内容を再利用可能なナレッジベースに追加します。"
+    },
+    "kpiSection": "スペースとデータの健全性（管理者・オーナー向け）",
+    "kpi": {
+      "documents": "ドキュメント",
+      "documentsSub": "ドキュメント・FAQ・議事録・Web クリップを含む",
+      "documentsRecent": "+{{count}} 過去 7 日",
+      "recentDays": "過去 7 日",
+      "spaces": "ナレッジスペース",
+      "spacesSub": "クロスチーム共有 + プライベートスペース",
+      "spacesPill": "管理中 {{count}}",
+      "ingestPending": "取り込み待ち",
+      "ingestPendingSub": "チャンク分割 / 解析 / ベクトル化",
+      "ingestProcessing": "処理中",
+      "ingestAllDone": "完了",
+      "anomaly": "異常 / 低品質",
+      "anomalySub": "重複・古い・欠損フィールド",
+      "anomalyNeedsReview": "要確認",
+      "anomalyNoIssue": "問題なし"
+    },
+    "panels": {
+      "recentUpdates": "最近の更新",
+      "myFavorites": "お気に入り",
+      "activeSpaces": "アクティブスペース Top5",
+      "goSearch": "検索へ ›",
+      "goSearchPlain": "検索へ",
+      "bookPrefix": "ブック #{{id}}",
+      "spaceBooksCount": "{{count}} 冊"
+    },
+    "empty": {
+      "noDocs": "まだドキュメントがありません — 取り込みを行ってください",
+      "noFavorites": "お気に入りがありません — 検索ページから登録できます",
+      "noShelves": "スペースデータがありません"
+    },
+    "errors": {
+      "apiDown": "API に接続できません。BookStack（:6875）と qa-service（:3001）が稼働しているか、サーバーに BookStack トークンが設定されているか確認してください。"
+    },
+    "loadFailedHint": "読み込みに失敗しました。再度お試しください",
+    "tilesBlocked": "このモジュールにアクセスする権限がありません"
+  }
 }

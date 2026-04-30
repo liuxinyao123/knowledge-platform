@@ -1,4 +1,179 @@
 {
-  "common": {},
-  "notebook": {}
+  "common": {
+    "actions": {
+      "create": "Tạo",
+      "cancel": "Hủy",
+      "save": "Lưu",
+      "edit": "Chỉnh sửa",
+      "delete": "Xóa",
+      "confirm": "Xác nhận",
+      "close": "Đóng",
+      "back": "Quay lại",
+      "share": "Chia sẻ",
+      "submit": "Gửi",
+      "retry": "Thử lại",
+      "search": "Tìm kiếm",
+      "refresh": "Làm mới",
+      "open": "Mở",
+      "addOne": "+ Thêm"
+    },
+    "states": {
+      "loading": "Đang tải…",
+      "loadFailed": "Tải thất bại",
+      "creating": "Đang tạo…",
+      "saving": "Đang lưu…",
+      "empty": "Chưa có dữ liệu",
+      "required": "bắt buộc",
+      "optional": "tùy chọn"
+    },
+    "errors": {
+      "generic": "Đã xảy ra lỗi, vui lòng thử lại",
+      "createFailed": "Tạo thất bại",
+      "saveFailed": "Lưu thất bại",
+      "deleteFailed": "Xóa thất bại",
+      "loadFailed": "Tải thất bại"
+    },
+    "language": {
+      "switchTitle": "Đổi ngôn ngữ"
+    },
+    "validation": {
+      "atLeast_one": "tối thiểu {{count}} mục",
+      "atLeast_other": "tối thiểu {{count}} mục",
+      "atMost_one": "tối đa {{count}} mục",
+      "atMost_other": "tối đa {{count}} mục",
+      "atLeastChars": "tối thiểu {{count}} ký tự",
+      "atMostChars": "tối đa {{count}} ký tự"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "Nền tảng tri thức",
+    "brandShort": "Tri thức",
+    "newTaskCta": "Đặt câu hỏi",
+    "sidebarSearchPlaceholder": "Tìm tác vụ / tri thức…",
+    "sectionPrimary": "Không gian làm việc",
+    "sectionManage": "Quản lý & Dữ liệu",
+    "sectionExtra": "Công cụ",
+    "sectionAdmin": "Quản trị",
+    "tabs": {
+      "qa": "💬 Hỏi đáp",
+      "search": "🔎 Tìm kiếm",
+      "spaces": "🗂 Spaces",
+      "ingest": "⬆️ Nhập",
+      "overview": "🏠 Tổng quan",
+      "agent": "🤖 Agent",
+      "governance": "🛡 Quản trị",
+      "assets": "📦 Tài sản",
+      "mcp": "🔌 Kết nối"
+    },
+    "labels": {
+      "qa": "Hỏi",
+      "search": "Tìm kiếm",
+      "spaces": "Spaces của tôi",
+      "ingest": "Tải lên & nhập",
+      "overview": "Tổng quan",
+      "insights": "Insights",
+      "knowledgeGraph": "Đồ thị tri thức",
+      "governance": "Quản trị nội dung",
+      "assets": "Danh mục tài sản",
+      "mcp": "Kết nối",
+      "agent": "Agent",
+      "notebooks": "Notebook",
+      "eval": "Đánh giá",
+      "iam": "Định danh & Quyền"
+    },
+    "tabsAriaLabel": "Các module nền tảng tri thức",
+    "topbarQuickCreate": "Hành động nhanh (hỏi)",
+    "topbarAssetsBtn": "Danh mục tài sản"
+  },
+  "auth": {
+    "login": {
+      "title": "Nền tảng tri thức",
+      "subtitle": "Đăng nhập vào không gian làm việc của bạn",
+      "emailLabel": "Email",
+      "passwordLabel": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập…",
+      "errorInvalid": "Email hoặc mật khẩu không đúng",
+      "errorNoSecret": "Máy chủ chưa được cấu hình (thiếu AUTH_HS256_SECRET)",
+      "errorNetwork": "Đăng nhập thất bại"
+    },
+    "userArea": {
+      "changePassword": "Đổi",
+      "changePasswordTitle": "Đổi mật khẩu",
+      "changePasswordDevTooltip": "Đổi mật khẩu bị tắt ở chế độ DEV",
+      "logout": "Đăng xuất",
+      "logoutTitle": "Đăng xuất",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "Đổi mật khẩu",
+      "currentLabel": "Mật khẩu hiện tại",
+      "newLabel": "Mật khẩu mới",
+      "confirmLabel": "Xác nhận mật khẩu mới",
+      "submit": "Lưu",
+      "submitting": "Đang lưu…",
+      "cancel": "Hủy",
+      "errorMismatch": "Mật khẩu không khớp",
+      "errorWrongCurrent": "Mật khẩu hiện tại không đúng",
+      "successTitle": "Mật khẩu đã được cập nhật"
+    }
+  },
+  "overview": {
+    "title": "Tổng quan",
+    "subtitle": "Bắt đầu với mục đích: hỏi, tìm, nhập. KPI dành cho người vận hành hệ thống.",
+    "actions": {
+      "askQuestion": "Đặt câu hỏi",
+      "search": "Tìm kiếm",
+      "newSpace": "+ Space mới",
+      "importKnowledge": "Nhập tri thức"
+    },
+    "quickStart": {
+      "skipHeading": "Không biết bắt đầu từ đâu? Chọn một trong các tác vụ phổ biến bên dưới.",
+      "ariaLabel": "Khởi đầu nhanh",
+      "qaTitle": "Hỏi",
+      "qaDesc": "Đặt câu hỏi bằng ngôn ngữ tự nhiên, nhận câu trả lời có trích dẫn.",
+      "searchTitle": "Tìm kiếm",
+      "searchDesc": "Tìm tài liệu, ghi chú, web clip theo từ khóa, thẻ hoặc ngữ nghĩa.",
+      "ingestTitle": "Tải lên & nhập",
+      "ingestDesc": "Thêm tệp, liên kết, nội dung clipboard vào kho tri thức tìm kiếm được."
+    },
+    "kpiSection": "Tình trạng Space & dữ liệu (cho admin / chủ sở hữu)",
+    "kpi": {
+      "documents": "Tài liệu",
+      "documentsSub": "Bao gồm: tài liệu, FAQ, biên bản, web clip",
+      "documentsRecent": "+{{count}} 7 ngày qua",
+      "recentDays": "7 ngày qua",
+      "spaces": "Space tri thức",
+      "spacesSub": "Chia sẻ liên nhóm + Space riêng",
+      "spacesPill": "Tôi quản lý {{count}}",
+      "ingestPending": "Đang chờ nhập",
+      "ingestPendingSub": "Chunking / parsing / vector hóa",
+      "ingestProcessing": "Đang xử lý",
+      "ingestAllDone": "Đã nhập xong",
+      "anomaly": "Bất thường / chất lượng thấp",
+      "anomalySub": "Trùng lặp, lỗi thời, thiếu trường",
+      "anomalyNeedsReview": "Cần kiểm tra",
+      "anomalyNoIssue": "Tốt"
+    },
+    "panels": {
+      "recentUpdates": "Cập nhật gần đây",
+      "myFavorites": "Yêu thích của tôi",
+      "activeSpaces": "Top 5 Space hoạt động",
+      "goSearch": "Đến tìm kiếm ›",
+      "goSearchPlain": "Đến tìm kiếm",
+      "bookPrefix": "Book #{{id}}",
+      "spaceBooksCount": "{{count}} sách"
+    },
+    "empty": {
+      "noDocs": "Chưa có tài liệu — hãy nhập một số",
+      "noFavorites": "Chưa có yêu thích — hãy đánh dấu từ trang tìm kiếm",
+      "noShelves": "Chưa có dữ liệu Space"
+    },
+    "errors": {
+      "apiDown": "Không thể truy cập API. Đảm bảo BookStack (:6875) và qa-service (:3001) đang chạy và server đã được cấu hình token BookStack."
+    },
+    "loadFailedHint": "Tải thất bại, vui lòng thử lại",
+    "tilesBlocked": "Không có quyền truy cập module này"
+  }
 }
