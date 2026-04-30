@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   enrichAssetSummaries,
   fetchAssetSources,
@@ -18,6 +19,7 @@ type SseNavigate = {
 }
 
 export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: SseNavigate }) {
+  const { t } = useTranslation('qa')
   const [sources, setSources] = useState<AssetSourceRow[]>([])
   const [sourceId, setSourceId] = useState<number | null>(null)
   const [items, setItems] = useState<AssetItemRow[]>([])
@@ -40,7 +42,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
         setSources(list)
         setSourceId((prev) => prev ?? list[0]?.id ?? null)
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : '加载数据源失败')
+        if (!cancelled) setErr(e instanceof Error ? e.message : t('assetPanel.errors.loadSources'))
       }
     })()
     return () => {
@@ -62,11 +64,11 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
       setItems(data.items)
       setTotal(data.total)
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '加载失败')
+      setErr(e instanceof Error ? e.message : t('assetPanel.errors.loadList'))
     } finally {
       setLoading(false)
     }
-  }, [sourceId])
+  }, [sourceId, t])
 
   useEffect(() => {
     void loadItems()
@@ -86,7 +88,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
           setDetail(d)
         } catch (e) {
           setDetail(null)
-          setErr(e instanceof Error ? e.message : '加载详情失败')
+          setErr(e instanceof Error ? e.message : t('assetPanel.errors.loadDetail'))
         }
       })()
     } else {
@@ -104,7 +106,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
       setSources(list)
       await loadItems()
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '同步失败')
+      setErr(e instanceof Error ? e.message : t('assetPanel.errors.syncFailed'))
     } finally {
       setSyncing(false)
     }
@@ -123,7 +125,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
         }
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '刷新映射失败')
+      setErr(e instanceof Error ? e.message : t('assetPanel.errors.refreshLinksFailed'))
     } finally {
       setRefreshingLinks(false)
     }
@@ -142,7 +144,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
         }
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '摘要生成失败')
+      setErr(e instanceof Error ? e.message : t('assetPanel.errors.enrichFailed'))
     } finally {
       setEnriching(false)
     }
@@ -166,7 +168,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ padding: '0 12px 8px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>数据源</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{t('assetPanel.sourceLabel')}</div>
         <select
           data-testid="asset-source-select"
           value={sourceId ?? ''}
@@ -195,8 +197,10 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
         </select>
         {currentSource && (
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
-            状态 {currentSource.status} · 更新{' '}
-            {currentSource.updatedAtMs ? new Date(currentSource.updatedAtMs).toLocaleString() : '—'}
+            {t('assetPanel.statusUpdated', {
+              status: currentSource.status,
+              time: currentSource.updatedAtMs ? new Date(currentSource.updatedAtMs).toLocaleString() : '—',
+            })}
           </div>
         )}
         <button
@@ -207,7 +211,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
           onClick={() => void handleSync()}
           style={{ width: '100%', marginTop: 8, fontSize: 12, padding: '6px 10px' }}
         >
-          {syncing ? '同步中…' : '从 BookStack 同步页面'}
+          {syncing ? t('assetPanel.syncing') : t('assetPanel.syncBtn')}
         </button>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button
@@ -218,7 +222,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
             onClick={() => void handleRefreshLinks()}
             style={{ flex: 1, fontSize: 11, padding: '5px 8px' }}
           >
-            {refreshingLinks ? '刷新中…' : '刷新向量映射'}
+            {refreshingLinks ? t('assetPanel.refreshingLinks') : t('assetPanel.refreshLinks')}
           </button>
           <button
             type="button"
@@ -228,7 +232,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
             onClick={() => void handleEnrichSummaries()}
             style={{ flex: 1, fontSize: 11, padding: '5px 8px' }}
           >
-            {enriching ? '生成中…' : '摘要(10条)'}
+            {enriching ? t('assetPanel.enriching') : t('assetPanel.enrichSummary')}
           </button>
         </div>
       </div>
@@ -251,7 +255,7 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
                 setDetail(null)
               }}
             >
-              ← 返回列表
+              {t('assetPanel.backToList')}
             </button>
           </div>
         )}
@@ -259,15 +263,15 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
         {selectedItemId != null && detail ? (
           <div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-              {(['rag', 'graph'] as const).map((t) => (
+              {(['rag', 'graph'] as const).map((tabKey) => (
                 <button
-                  key={t}
+                  key={tabKey}
                   type="button"
-                  className={detailTab === t ? 'btn btn-primary' : 'btn'}
+                  className={detailTab === tabKey ? 'btn btn-primary' : 'btn'}
                   style={{ fontSize: 11, padding: '4px 8px' }}
-                  onClick={() => setDetailTab(t)}
+                  onClick={() => setDetailTab(tabKey)}
                 >
-                  {t === 'rag' ? 'RAG / 摘要' : '知识图谱'}
+                  {tabKey === 'rag' ? t('assetPanel.tabRag') : t('assetPanel.tabGraph')}
                 </button>
               ))}
             </div>
@@ -275,18 +279,18 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
               <div className="surface-card" style={{ padding: 10, fontSize: 12 }}>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>{detail.item.name}</div>
                 <div style={{ color: 'var(--muted)', lineHeight: 1.6 }}>
-                  <div>BookStack 页面 ID：{detail.rag.pageId ?? '—'}</div>
-                  <div>向量片段数：{detail.rag.chunkCount}</div>
-                  <div>已入索引：{detail.rag.indexed ? '是' : '否'}</div>
+                  <div>{t('assetPanel.rag.pageId', { id: detail.rag.pageId ?? '—' })}</div>
+                  <div>{t('assetPanel.rag.chunkCount', { count: detail.rag.chunkCount })}</div>
+                  <div>{t('assetPanel.rag.indexed', { yes: detail.rag.indexed ? t('assetPanel.yes') : t('assetPanel.no') })}</div>
                   {detail.rag.linkStatus != null && (
-                    <div>向量映射：{detail.rag.linkStatus}</div>
+                    <div>{t('assetPanel.rag.linkStatus', { status: detail.rag.linkStatus })}</div>
                   )}
                   <div style={{ marginTop: 8 }}>
-                    摘要状态：{detail.item.summaryStatus}
+                    {t('assetPanel.rag.summaryStatus', { status: detail.item.summaryStatus })}
                     {detail.item.summary ? (
                       <div style={{ marginTop: 6, color: 'var(--text)' }}>{detail.item.summary}</div>
                     ) : (
-                      <span style={{ color: 'var(--muted)' }}>（尚无摘要，可由后续预处理管道写入）</span>
+                      <span style={{ color: 'var(--muted)' }}>{t('assetPanel.rag.noSummary')}</span>
                     )}
                   </div>
                 </div>
@@ -294,21 +298,21 @@ export default function AssetDirectoryPanel({ sseNavigate }: { sseNavigate?: Sse
             )}
             {detailTab === 'graph' && (
               <div className="surface-card" style={{ padding: 10, fontSize: 12, color: 'var(--muted)' }}>
-                {detail.graph.message ?? '未接入图谱'}
+                {detail.graph.message ?? t('assetPanel.graph.notConnected')}
               </div>
             )}
           </div>
         ) : loading ? (
-          <div style={{ color: 'var(--muted)', fontSize: 13 }}>加载资产…</div>
+          <div style={{ color: 'var(--muted)', fontSize: 13 }}>{t('assetPanel.loading')}</div>
         ) : items.length === 0 ? (
           <div className="empty-state" style={{ padding: '1rem 0' }}>
             <div className="empty-illus">📂</div>
-            <div className="empty-text">暂无资产，请点击上方同步</div>
+            <div className="empty-text">{t('assetPanel.empty')}</div>
           </div>
         ) : (
           <div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
-              共 {total} 条（本页 {items.length}）
+              {t('assetPanel.totalLine', { total, current: items.length })}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {items.map((it) => (

@@ -1,4 +1,5 @@
 import { useState, useRef, useLayoutEffect, useCallback, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import ConfidenceBadge from '@/components/ConfidenceBadge'
 import AssetDirectoryPanel from '@/knowledge/QA/AssetDirectoryPanel'
 import AnswerContent from '@/knowledge/QA/AnswerContent'
@@ -56,12 +57,7 @@ interface SessionMeta {
   updatedAt: number      // ms
 }
 
-const SAMPLE_QUESTIONS = [
-  '文档「这是一个测试文档.docx」的具体内容是什么？',
-  '如何编辑首页文档中的愿景和目标部分？',
-  '我们现在的知识治理应该从哪些指标开始？',
-  '如何向知识库中上传文档？',
-]
+/* SAMPLE_QUESTIONS 现已移到 i18n 字典 qa.samples（从 t() 数组读取） */
 
 /* ───────────── localStorage helpers ───────────── */
 
@@ -155,8 +151,10 @@ function bootstrapSessions(): { sessions: SessionMeta[]; activeId: string } {
   return { sessions, activeId }
 }
 
-/** 把 ms 时间戳分组到「今天 / 近7天 / 更早」 */
-function groupSessions(sessions: SessionMeta[]): { label: string; items: SessionMeta[] }[] {
+type GroupKey = 'groupToday' | 'groupWeek' | 'groupEarlier'
+
+/** 把 ms 时间戳分组到「今天 / 近7天 / 更早」（返回 i18n key 让调用方翻译） */
+function groupSessions(sessions: SessionMeta[]): { labelKey: GroupKey; items: SessionMeta[] }[] {
   const now = Date.now()
   const oneDay = 24 * 60 * 60 * 1000
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
@@ -170,11 +168,11 @@ function groupSessions(sessions: SessionMeta[]): { label: string; items: Session
     else if (now - s.updatedAt < 7 * oneDay) week.push(s)
     else earlier.push(s)
   }
-  return [
-    { label: '今天', items: today },
-    { label: '近 7 天', items: week },
-    { label: '更早', items: earlier },
-  ].filter((g) => g.items.length > 0)
+  return ([
+    { labelKey: 'groupToday' as const,   items: today },
+    { labelKey: 'groupWeek' as const,    items: week },
+    { labelKey: 'groupEarlier' as const, items: earlier },
+  ]).filter((g) => g.items.length > 0)
 }
 
 /* ───────────── UI primitives ───────────── */
@@ -199,6 +197,7 @@ function ThinkingDots() {
 }
 
 function AiBubble({ msg }: { msg: AiMessage }) {
+  const { t } = useTranslation('qa')
   const [traceOpen, setTraceOpen] = useState(false)
 
   return (
@@ -225,7 +224,7 @@ function AiBubble({ msg }: { msg: AiMessage }) {
       {msg.bubbleState === 'thinking' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ThinkingDots />
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>思考中...</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{t('bubble.thinking')}</span>
         </div>
       )}
 
@@ -266,14 +265,14 @@ function AiBubble({ msg }: { msg: AiMessage }) {
                   fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4,
                 }}
               >
-                {traceOpen ? '▼' : '▶'} 展开检索过程
+                {traceOpen ? '▼' : '▶'} {traceOpen ? t('bubble.collapseTrace') : t('bubble.expandTrace')}
               </button>
               {traceOpen && (
                 <div data-testid="rag-trace" style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                  <div>检索 {msg.trace.initial_count} 篇 → 保留 {msg.trace.kept_count} 篇</div>
+                  <div>{t('bubble.traceFiltered', { initial: msg.trace.initial_count, kept: msg.trace.kept_count })}</div>
                   {msg.trace.rewrite_triggered && (
                     <div>
-                      触发查询重写：{msg.trace.rewrite_strategy === 'hyde' ? 'HyDE（假设答案）' : 'Step-Back（泛化）'}
+                      {msg.trace.rewrite_strategy === 'hyde' ? t('bubble.rewriteHyDe') : t('bubble.rewriteStepBack')}
                       {msg.trace.rewritten_query && (
                         <div style={{ fontStyle: 'italic', marginTop: 2 }}>「{msg.trace.rewritten_query}」</div>
                       )}
@@ -287,7 +286,7 @@ function AiBubble({ msg }: { msg: AiMessage }) {
       )}
 
       {msg.bubbleState === 'error' && (
-        <div>{msg.error ?? '请求失败，请稍后重试。'}</div>
+        <div>{msg.error ?? t('bubble.errorDefault')}</div>
       )}
     </div>
   )
@@ -334,6 +333,7 @@ type AssetPanelSseNavigate = {
 /* ───────────── Main page ───────────── */
 
 export default function QA() {
+  const { t } = useTranslation('qa')
   // sessions（侧栏列表 + 活跃 id）—— 用 useState 的惰性初始化，保证 bootstrap 只跑一次
   const [initialBootstrap] = useState(() => bootstrapSessions())
   const [sessions, setSessions] = useState<SessionMeta[]>(initialBootstrap.sessions)
@@ -433,7 +433,7 @@ export default function QA() {
 
   const handleDeleteSession = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!window.confirm('删除该会话及其历史？此操作不可撤销。')) return
+    if (!window.confirm(t('sessions.deleteConfirm'))) return
     deleteSessionStorage(id)
     const remaining = sessions.filter((s) => s.id !== id)
     if (remaining.length === 0) {
@@ -574,13 +574,13 @@ export default function QA() {
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'AbortError') {
         const msg = err.message || ''
-        let text = '网络错误，请稍后重试。'
-        if (/HTTP 401/.test(msg)) text = '未登录或登录已过期，请重新登录。'
-        else if (/HTTP 403/.test(msg)) text = '无权访问问答接口，联系管理员。'
+        let text = t('errors.network')
+        if (/HTTP 401/.test(msg)) text = t('errors.401')
+        else if (/HTTP 403/.test(msg)) text = t('errors.403')
         else if (msg.startsWith('HTTP ')) text = msg
         updateAiMsg(aiId, (m) => ({ ...m, bubbleState: 'error', error: text }))
       } else if (!(err instanceof Error && err.name === 'AbortError')) {
-        updateAiMsg(aiId, (m) => ({ ...m, bubbleState: 'error', error: '请求失败。' }))
+        updateAiMsg(aiId, (m) => ({ ...m, bubbleState: 'error', error: t('errors.generic') }))
       } else {
         updateAiMsg(aiId, (m) => ({ ...m, bubbleState: 'done' }))
       }
@@ -604,17 +604,17 @@ export default function QA() {
 
   const grouped = groupSessions(sessions)
   const currentSpaceLabel = spaceId == null
-    ? '检索范围：所有空间'
-    : `仅限：${spaces.find((s) => s.id === spaceId)?.name ?? '—'}`
+    ? t('scopeAll')
+    : t('scopeOnly', { name: spaces.find((s) => s.id === spaceId)?.name ?? '—' })
 
   return (
     <div className="page-body kc-qa-page-body">
       {/* 顶部 header（白底，描述 + 当前空间 chip） */}
       <div className="kc-qa-header">
         <div>
-          <div className="page-title" style={{ marginBottom: 2 }}>问一问</div>
+          <div className="page-title" style={{ marginBottom: 2 }}>{t('title')}</div>
           <div className="page-sub" style={{ marginBottom: 0 }}>
-            用一句话描述你的场景；有引用才放心采纳，点右侧可核对原文。
+            {t('subtitle')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -625,11 +625,11 @@ export default function QA() {
       {/* 三栏：会话 / 聊天 / 引用 */}
       <div className="kc-qa-layout">
         {/* ── 左：会话列表 ── */}
-        <aside className="kc-qa-sessions" aria-label="问一问：会话与历史">
+        <aside className="kc-qa-sessions" aria-label={t('sessions.ariaLabel')}>
           <div className="kc-qa-sessions-railhead">
-            <div className="kc-qa-sessions-railhead-title">历史会话</div>
+            <div className="kc-qa-sessions-railhead-title">{t('sessions.headTitle')}</div>
             <p className="kc-qa-sessions-railhead-hint">
-              找空间、搜资料请用左侧主菜单；这里只切换本会话的线程列表。
+              {t('sessions.headHint')}
             </p>
           </div>
           <div className="kc-qa-sessions-head">
@@ -640,36 +640,43 @@ export default function QA() {
               onClick={handleNewSession}
               data-testid="btn-new-session"
             >
-              + 新建会话
+              {t('sessions.newSession')}
             </button>
           </div>
           <div className="kc-qa-sessions-list" data-testid="qa-sessions-list">
             {grouped.length === 0 ? (
               <div style={{ padding: '12px 10px', fontSize: 12, color: 'var(--muted)' }}>
-                暂无历史会话。点击上方「+ 新建会话」开始。
+                {t('sessions.emptyHint')}
               </div>
             ) : (
               grouped.map((group) => (
-                <div key={group.label}>
-                  <div className="kc-sess-timeline">{group.label}</div>
-                  {group.items.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      data-testid={`qa-session-${s.id}`}
-                      className={`kc-sess-item${s.id === activeSessionId ? ' active' : ''}`}
-                      onClick={() => handleSwitchSession(s.id)}
-                      title={s.title}
-                    >
-                      {s.title}
-                      <span
-                        role="button"
-                        aria-label="删除会话"
-                        className="kc-sess-del"
-                        onClick={(e) => handleDeleteSession(s.id, e)}
-                      >×</span>
-                    </button>
-                  ))}
+                <div key={group.labelKey}>
+                  <div className="kc-sess-timeline">{t(`sessions.${group.labelKey}`)}</div>
+                  {group.items.map((s) => {
+                    // 默认会话标题（'新会话' / '我的会话'）走 i18n；用户自定义保持原文
+                    const displayTitle =
+                      s.title === '新会话' ? t('sessions.defaultTitle')
+                      : s.title === '我的会话' ? t('sessions.legacyTitle')
+                      : s.title
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        data-testid={`qa-session-${s.id}`}
+                        className={`kc-sess-item${s.id === activeSessionId ? ' active' : ''}`}
+                        onClick={() => handleSwitchSession(s.id)}
+                        title={displayTitle}
+                      >
+                        {displayTitle}
+                        <span
+                          role="button"
+                          aria-label={t('sessions.deleteAriaLabel')}
+                          className="kc-sess-del"
+                          onClick={(e) => handleDeleteSession(s.id, e)}
+                        >×</span>
+                      </button>
+                    )
+                  })}
                 </div>
               ))
             )}
@@ -686,16 +693,16 @@ export default function QA() {
                     <span>🧠</span>
                   </div>
                   <h1>
-                    基于知识库内容问答{' '}
-                    <span style={{ color: 'var(--muted)', fontWeight: 700 }}>— AI 问答</span>
+                    {t('hero.h1Main')}{' '}
+                    <span style={{ color: 'var(--muted)', fontWeight: 700 }}>{t('hero.h1Suffix')}</span>
                   </h1>
-                  <p className="kc-qa-hero-sub">向知识助手提问，获取精准引用答案</p>
+                  <p className="kc-qa-hero-sub">{t('hero.subPrimary')}</p>
                   <p className="kc-qa-hero-sub" style={{ marginTop: 4 }}>
-                    基于当前空间内文档与向量化内容作答；可配置联网、推理强度与模型。
+                    {t('hero.subSecondary')}
                   </p>
-                  <p className="kc-qa-hero-hint">你可以这样问我</p>
+                  <p className="kc-qa-hero-hint">{t('hero.hint')}</p>
                   <div className="kc-qa-suggest">
-                    {SAMPLE_QUESTIONS.map((q) => (
+                    {(t('samples', { returnObjects: true }) as unknown as string[]).map((q) => (
                       <button
                         key={q}
                         type="button"
@@ -718,12 +725,12 @@ export default function QA() {
                               <div className="bubble" style={{ wordBreak: 'break-word' }}>
                                 {msg.content}
                               </div>
-                              <div className="who" style={{ textAlign: 'right' }}>你</div>
+                              <div className="who" style={{ textAlign: 'right' }}>{t('bubble.userLabel')}</div>
                             </>
                           ) : (
                             <>
                               <AiBubble msg={msg as AiMessage} />
-                              <div className="who">知识助手</div>
+                              <div className="who">{t('bubble.aiLabel')}</div>
                             </>
                           )}
                         </div>
@@ -736,24 +743,24 @@ export default function QA() {
 
             <p className="kc-qa-hint" aria-live="polite">
               {messages.length === 0
-                ? '点击上方「示例问题」可快速填入；发送后，对话在上方区域滚动显示。'
-                : 'Shift + 回车换行；回车直接发送。'}
+                ? t('hint.empty')
+                : t('hint.active')}
             </p>
 
             {/* 复合输入器 */}
             <div className="kc-qa-composer">
               <div className="kc-qa-composer-in">
                 <div className="kc-qa-ctx-row">
-                  <span className="kc-qa-ctx-pill" title="必须引用：回答必须基于检索结果">
-                    必须引用
+                  <span className="kc-qa-ctx-pill" title={t('composer.mustCiteTitle')}>
+                    {t('composer.mustCite')}
                   </span>
                   {spaceId != null && (
-                    <span className="kc-qa-ctx-pill" title="当前限定的检索空间">
-                      {spaces.find((s) => s.id === spaceId)?.name ?? '空间'}
+                    <span className="kc-qa-ctx-pill" title={t('composer.spacePillTitle')}>
+                      {spaces.find((s) => s.id === spaceId)?.name ?? t('spacePillFallback')}
                       <button
                         type="button"
                         className="x"
-                        aria-label="移除空间限定"
+                        aria-label={t('composer.removeSpace')}
                         onClick={() => setSpaceId(null)}
                       >×</button>
                     </span>
@@ -762,13 +769,13 @@ export default function QA() {
                 <label className="visually-hidden" htmlFor="kc-qa-input" style={{
                   position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
                   overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
-                }}>输入问题</label>
+                }}>{t('composer.inputLabel')}</label>
                 <textarea
                   id="kc-qa-input"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="输入你的问题，例如：「如何降低知识重复率？」"
+                  placeholder={t('composer.inputPlaceholder')}
                   disabled={loading}
                 />
                 {/* ADR-35：图片附件预览（缩略图 + 文件名 + 移除） */}
@@ -786,7 +793,7 @@ export default function QA() {
                       style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }}
                     />
                     <span style={{ color: '#065f46', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🖼 已附图：<strong>{image.name}</strong>
+                      {t('composer.imageAttached')}<strong>{image.name}</strong>
                     </span>
                     <button
                       type="button"
@@ -795,21 +802,21 @@ export default function QA() {
                         padding: '2px 8px', fontSize: 11,
                         background: 'transparent', border: '1px solid #6ee7b7',
                         borderRadius: 4, color: '#065f46', cursor: 'pointer',
-                      }}>移除</button>
+                      }}>{t('composer.removeImage')}</button>
                   </div>
                 )}
                 <div className="kc-qa-composer-bar">
                   <select
                     className="mini-select"
-                    title="检索范围"
-                    aria-label="检索范围"
+                    title={t('composer.scopeSelect')}
+                    aria-label={t('composer.scopeSelect')}
                     value={spaceId == null ? '' : String(spaceId)}
                     onChange={(e) => {
                       const v = e.target.value
                       setSpaceId(v === '' ? null : Number(v))
                     }}
                   >
-                    <option value="">所有空间</option>
+                    <option value="">{t('composer.scopeAllOption')}</option>
                     {spaces.map((sp) => (
                       <option key={sp.id} value={sp.id}>
                         {sp.visibility === 'private' ? '🔒 ' : '📁 '}{sp.name}
@@ -819,7 +826,7 @@ export default function QA() {
                   <button
                     type="button"
                     className="kc-qa-cbar-ico"
-                    title={webSearch ? '联网检索：开（再点关闭）' : '联网检索：关（点开）'}
+                    title={webSearch ? t('composer.webSearchOn') : t('composer.webSearchOff')}
                     aria-pressed={webSearch}
                     onClick={() => setWebSearch((v) => !v)}
                     style={{
@@ -831,7 +838,7 @@ export default function QA() {
                   <button
                     type="button"
                     className="kc-qa-cbar-ico"
-                    title={image ? `已附图：${image.name}（点击重新选择）` : '附图（多模态 QA · Qwen2.5-VL）'}
+                    title={image ? t('composer.imageHasTitle', { name: image.name }) : t('composer.imageEmptyTitle')}
                     aria-pressed={!!image}
                     onClick={() => fileInputRef.current?.click()}
                     style={{
@@ -851,7 +858,7 @@ export default function QA() {
                       if (!file) return
                       // 6MB 上限，避免 8MB base64 上限超出
                       if (file.size > 6 * 1024 * 1024) {
-                        alert(`图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），上限 6MB`)
+                        alert(t('composer.imageTooLarge', { mb: (file.size / 1024 / 1024).toFixed(1) }))
                         return
                       }
                       const base64 = await fileToBase64(file)
@@ -865,8 +872,8 @@ export default function QA() {
                         data-testid="btn-abort"
                         className="stop-ico"
                         onClick={handleAbort}
-                        title="终止生成"
-                        aria-label="终止"
+                        title={t('composer.abortTitle')}
+                        aria-label={t('composer.abortAria')}
                       >■</button>
                     ) : (
                       <button
@@ -874,8 +881,8 @@ export default function QA() {
                         className="send-ico"
                         onClick={() => handleSend()}
                         disabled={!input.trim()}
-                        title="发送"
-                        aria-label="发送"
+                        title={t('composer.sendTitle')}
+                        aria-label={t('composer.sendAria')}
                       >➤</button>
                     )}
                   </div>
@@ -888,7 +895,7 @@ export default function QA() {
         {/* ── 右：引用来源 / 资产目录 ── */}
         <aside className="kc-qa-refs panel">
           <div className="panel-head" style={{ gap: 8 }}>
-            <div className="title">右侧面板</div>
+            <div className="title">{t('rightPanel.title')}</div>
             <div style={{ flex: 1 }} />
             <button
               type="button"
@@ -896,7 +903,9 @@ export default function QA() {
               className={`pill${rightPanelTab === 'citations' ? ' active' : ''}`}
               onClick={() => setRightPanelTab('citations')}
             >
-              引用{citations.length > 0 ? ` ${citations.length}` : ''}
+              {citations.length > 0
+                ? t('rightPanel.tabCitationsCount', { count: citations.length })
+                : t('rightPanel.tabCitations')}
             </button>
             <button
               type="button"
@@ -904,7 +913,7 @@ export default function QA() {
               className={`pill${rightPanelTab === 'assets' ? ' active' : ''}`}
               onClick={() => setRightPanelTab('assets')}
             >
-              资产目录
+              {t('rightPanel.tabAssets')}
             </button>
           </div>
           <div className="panel-body">
@@ -912,7 +921,7 @@ export default function QA() {
               citations.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-illus">📎</div>
-                  <div className="empty-text">提问后将在此处显示引用来源</div>
+                  <div className="empty-text">{t('rightPanel.emptyCitations')}</div>
                 </div>
               ) : (
                 citations.map((c) => (

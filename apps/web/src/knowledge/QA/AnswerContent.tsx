@@ -15,6 +15,7 @@
  * 仅供 ADR-45 inline image 路径用；其它地方继续走 MarkdownView 或纯文本。
  */
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   content: string
@@ -77,6 +78,7 @@ export function parseAnswerSegments(content: string): Segment[] {
 }
 
 export default function AnswerContent({ content }: Props) {
+  const { t } = useTranslation('qa')
   const segments = parseAnswerSegments(content)
 
   return (
@@ -90,7 +92,7 @@ export default function AnswerContent({ content }: Props) {
             <Fragment key={i}>
               <img
                 src={s.url}
-                alt={s.alt || '答案附图'}
+                alt={s.alt || t('answerContent.imageAlt')}
                 data-testid="answer-inline-image"
                 style={{
                   display: 'block',
@@ -106,7 +108,7 @@ export default function AnswerContent({ content }: Props) {
                 onError={(e) => {
                   // 图加载失败兜底：替换为提示文字（防 LLM 偶发输出已删除/无效 image_id）
                   const span = document.createElement('span')
-                  span.textContent = `[图片加载失败: ${s.url}]`
+                  span.textContent = t('answerContent.loadFailed', { url: s.url })
                   span.style.color = 'var(--muted)'
                   span.style.fontSize = '12px'
                   e.currentTarget.replaceWith(span)

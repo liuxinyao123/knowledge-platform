@@ -176,6 +176,130 @@
     "loadFailedHint": "Failed to load, please retry",
     "tilesBlocked": "Permission denied for this module"
   },
+  "qa": {
+    "title": "Ask",
+    "subtitle": "Describe your scenario in one sentence; only adopt cited answers, click the right panel to verify the source.",
+    "scopeAll": "Scope: all spaces",
+    "scopeOnly": "Only: {{name}}",
+    "spacePillFallback": "Space",
+    "sessions": {
+      "ariaLabel": "Ask: sessions and history",
+      "headTitle": "Session history",
+      "headHint": "Use the main left menu to find spaces / search docs; this list only switches threads of the current session.",
+      "newSession": "+ New session",
+      "emptyHint": "No history yet. Click \"+ New session\" above to start.",
+      "deleteAriaLabel": "Delete session",
+      "deleteConfirm": "Delete this session and its history? This cannot be undone.",
+      "defaultTitle": "New session",
+      "legacyTitle": "My session",
+      "groupToday": "Today",
+      "groupWeek": "Last 7 days",
+      "groupEarlier": "Earlier"
+    },
+    "hero": {
+      "h1Main": "Ask anything about your knowledge base",
+      "h1Suffix": "— AI Q&A",
+      "subPrimary": "Ask the assistant for cited answers",
+      "subSecondary": "Answers come from documents and vectorized content in the current space; web search, reasoning level and model are configurable.",
+      "hint": "You can ask things like"
+    },
+    "samples": [
+      "What's in the document \"test-doc.docx\"?",
+      "How do I edit the Vision & Goals section in the home doc?",
+      "Which metrics should we start with for knowledge governance?",
+      "How do I upload documents to the knowledge base?"
+    ],
+    "bubble": {
+      "thinking": "Thinking...",
+      "userLabel": "You",
+      "aiLabel": "Assistant",
+      "expandTrace": "Show retrieval trace",
+      "collapseTrace": "Hide retrieval trace",
+      "traceFiltered": "Retrieved {{initial}} → kept {{kept}}",
+      "rewriteHyDe": "Query rewrite: HyDE (hypothetical answer)",
+      "rewriteStepBack": "Query rewrite: Step-Back (generalize)",
+      "errorDefault": "Request failed, please retry."
+    },
+    "hint": {
+      "empty": "Click a sample to fill the input; replies will scroll above after sending.",
+      "active": "Shift + Enter for newline; Enter to send."
+    },
+    "composer": {
+      "mustCite": "Must cite",
+      "mustCiteTitle": "Must cite: answers must be grounded in retrieved snippets",
+      "spacePillTitle": "Current space scope",
+      "removeSpace": "Remove space scope",
+      "inputLabel": "Question input",
+      "inputPlaceholder": "Type your question, e.g. \"How can we reduce duplicate knowledge?\"",
+      "imageAttached": "🖼 Attached:",
+      "removeImage": "Remove",
+      "scopeSelect": "Search scope",
+      "scopeAllOption": "All spaces",
+      "webSearchOn": "Web search: ON (click to disable)",
+      "webSearchOff": "Web search: OFF (click to enable)",
+      "imageHasTitle": "Attached: {{name}} (click to re-select)",
+      "imageEmptyTitle": "Attach image (multimodal · Qwen2.5-VL)",
+      "imageTooLarge": "Image too large ({{mb}}MB), 6MB max",
+      "abortTitle": "Stop generation",
+      "abortAria": "Stop",
+      "sendTitle": "Send",
+      "sendAria": "Send"
+    },
+    "rightPanel": {
+      "title": "Side panel",
+      "tabCitations": "Citations",
+      "tabCitationsCount": "Citations {{count}}",
+      "tabAssets": "Asset directory",
+      "emptyCitations": "Citations will appear here after asking"
+    },
+    "errors": {
+      "network": "Network error, please retry.",
+      "401": "Not signed in or session expired, please sign in again.",
+      "403": "No permission to access QA, contact admin.",
+      "generic": "Request failed."
+    },
+    "assetPanel": {
+      "sourceLabel": "Source",
+      "statusUpdated": "Status {{status}} · Updated {{time}}",
+      "syncBtn": "Sync from BookStack",
+      "syncing": "Syncing…",
+      "refreshLinks": "Refresh vector links",
+      "refreshingLinks": "Refreshing…",
+      "enrichSummary": "Summarize (10)",
+      "enriching": "Generating…",
+      "backToList": "← Back",
+      "tabRag": "RAG / Summary",
+      "tabGraph": "Knowledge graph",
+      "rag": {
+        "pageId": "BookStack page ID: {{id}}",
+        "chunkCount": "Vector chunks: {{count}}",
+        "indexed": "Indexed: {{yes}}",
+        "linkStatus": "Vector mapping: {{status}}",
+        "summaryStatus": "Summary status: {{status}}",
+        "noSummary": "(no summary yet — will be written by the preprocessing pipeline)"
+      },
+      "graph": {
+        "notConnected": "Not connected to graph"
+      },
+      "loading": "Loading assets…",
+      "empty": "No assets — click sync above",
+      "totalLine": "{{total}} total (showing {{current}})",
+      "errors": {
+        "loadSources": "Failed to load sources",
+        "loadList": "Failed to load",
+        "loadDetail": "Failed to load details",
+        "syncFailed": "Sync failed",
+        "refreshLinksFailed": "Refresh failed",
+        "enrichFailed": "Summarization failed"
+      },
+      "yes": "Yes",
+      "no": "No"
+    },
+    "answerContent": {
+      "imageAlt": "Answer image",
+      "loadFailed": "[Image failed to load: {{url}}]"
+    }
+  },
   "search": {
     "title": "Search",
     "subtitle": "Full-text / tag / author / time filters with snippet preview",

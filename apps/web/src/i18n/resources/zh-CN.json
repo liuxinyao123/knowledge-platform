@@ -174,6 +174,130 @@
     "loadFailedHint": "加载失败，稍后重试",
     "tilesBlocked": "权限不足，无法访问该模块"
   },
+  "qa": {
+    "title": "问一问",
+    "subtitle": "用一句话描述你的场景；有引用才放心采纳，点右侧可核对原文。",
+    "scopeAll": "检索范围：所有空间",
+    "scopeOnly": "仅限：{{name}}",
+    "spacePillFallback": "空间",
+    "sessions": {
+      "ariaLabel": "问一问：会话与历史",
+      "headTitle": "历史会话",
+      "headHint": "找空间、搜资料请用左侧主菜单；这里只切换本会话的线程列表。",
+      "newSession": "+ 新建会话",
+      "emptyHint": "暂无历史会话。点击上方「+ 新建会话」开始。",
+      "deleteAriaLabel": "删除会话",
+      "deleteConfirm": "删除该会话及其历史？此操作不可撤销。",
+      "defaultTitle": "新会话",
+      "legacyTitle": "我的会话",
+      "groupToday": "今天",
+      "groupWeek": "近 7 天",
+      "groupEarlier": "更早"
+    },
+    "hero": {
+      "h1Main": "基于知识库内容问答",
+      "h1Suffix": "— AI 问答",
+      "subPrimary": "向知识助手提问，获取精准引用答案",
+      "subSecondary": "基于当前空间内文档与向量化内容作答；可配置联网、推理强度与模型。",
+      "hint": "你可以这样问我"
+    },
+    "samples": [
+      "文档「这是一个测试文档.docx」的具体内容是什么？",
+      "如何编辑首页文档中的愿景和目标部分？",
+      "我们现在的知识治理应该从哪些指标开始？",
+      "如何向知识库中上传文档？"
+    ],
+    "bubble": {
+      "thinking": "思考中...",
+      "userLabel": "你",
+      "aiLabel": "知识助手",
+      "expandTrace": "展开检索过程",
+      "collapseTrace": "收起检索过程",
+      "traceFiltered": "检索 {{initial}} 篇 → 保留 {{kept}} 篇",
+      "rewriteHyDe": "触发查询重写：HyDE（假设答案）",
+      "rewriteStepBack": "触发查询重写：Step-Back（泛化）",
+      "errorDefault": "请求失败，请稍后重试。"
+    },
+    "hint": {
+      "empty": "点击上方「示例问题」可快速填入；发送后，对话在上方区域滚动显示。",
+      "active": "Shift + 回车换行；回车直接发送。"
+    },
+    "composer": {
+      "mustCite": "必须引用",
+      "mustCiteTitle": "必须引用：回答必须基于检索结果",
+      "spacePillTitle": "当前限定的检索空间",
+      "removeSpace": "移除空间限定",
+      "inputLabel": "输入问题",
+      "inputPlaceholder": "输入你的问题，例如：「如何降低知识重复率？」",
+      "imageAttached": "🖼 已附图：",
+      "removeImage": "移除",
+      "scopeSelect": "检索范围",
+      "scopeAllOption": "所有空间",
+      "webSearchOn": "联网检索：开（再点关闭）",
+      "webSearchOff": "联网检索：关（点开）",
+      "imageHasTitle": "已附图：{{name}}（点击重新选择）",
+      "imageEmptyTitle": "附图（多模态 QA · Qwen2.5-VL）",
+      "imageTooLarge": "图片过大（{{mb}}MB），上限 6MB",
+      "abortTitle": "终止生成",
+      "abortAria": "终止",
+      "sendTitle": "发送",
+      "sendAria": "发送"
+    },
+    "rightPanel": {
+      "title": "右侧面板",
+      "tabCitations": "引用",
+      "tabCitationsCount": "引用 {{count}}",
+      "tabAssets": "资产目录",
+      "emptyCitations": "提问后将在此处显示引用来源"
+    },
+    "errors": {
+      "network": "网络错误，请稍后重试。",
+      "401": "未登录或登录已过期，请重新登录。",
+      "403": "无权访问问答接口，联系管理员。",
+      "generic": "请求失败。"
+    },
+    "assetPanel": {
+      "sourceLabel": "数据源",
+      "statusUpdated": "状态 {{status}} · 更新 {{time}}",
+      "syncBtn": "从 BookStack 同步页面",
+      "syncing": "同步中…",
+      "refreshLinks": "刷新向量映射",
+      "refreshingLinks": "刷新中…",
+      "enrichSummary": "摘要(10条)",
+      "enriching": "生成中…",
+      "backToList": "← 返回列表",
+      "tabRag": "RAG / 摘要",
+      "tabGraph": "知识图谱",
+      "rag": {
+        "pageId": "BookStack 页面 ID：{{id}}",
+        "chunkCount": "向量片段数：{{count}}",
+        "indexed": "已入索引：{{yes}}",
+        "linkStatus": "向量映射：{{status}}",
+        "summaryStatus": "摘要状态：{{status}}",
+        "noSummary": "（尚无摘要，可由后续预处理管道写入）"
+      },
+      "graph": {
+        "notConnected": "未接入图谱"
+      },
+      "loading": "加载资产…",
+      "empty": "暂无资产，请点击上方同步",
+      "totalLine": "共 {{total}} 条（本页 {{current}}）",
+      "errors": {
+        "loadSources": "加载数据源失败",
+        "loadList": "加载失败",
+        "loadDetail": "加载详情失败",
+        "syncFailed": "同步失败",
+        "refreshLinksFailed": "刷新映射失败",
+        "enrichFailed": "摘要生成失败"
+      },
+      "yes": "是",
+      "no": "否"
+    },
+    "answerContent": {
+      "imageAlt": "答案附图",
+      "loadFailed": "[图片加载失败: {{url}}]"
+    }
+  },
   "search": {
     "title": "统一检索",
     "subtitle": "全文 / 标签 / 作者 / 时间过滤，支持预览命中片段",
