@@ -8,6 +8,33 @@
 
 ## 本次完成（按提交分组）
 
+### Commit ⑯ + ⑰ · i18n P1 + P2-a Search（C 工作流，commits bc1c414 / 6170d86）
+
+**P1 完成（bc1c414）**：Layout / KnowledgeTabs / Login / Overview / components 共用件
+- 加 namespaces: nav / auth / overview / components
+- Layout：NavEntry labelKey 化 + sidebar brand / nav 段标题 / Topbar 面包屑 / 改密 / 登出 + SidebarSearch placeholder
+- KnowledgeTabs：9 个 tab + ariaLabel
+- Login：标题 + 表单 + 三档错误
+- Overview：标题 + 4 个 KPI metric（含 plural 插值）+ 三个面板 + empty state + API down 错误页
+- ConfidenceBadge: 4 档（high/medium/weak/none）+ tooltip 插值；RewriteBadge tooltip；MarkdownView 图片加载失败 fallback（用 i18n.t 模块级调用）
+
+**P2-a Search 完成（6170d86）**：
+- 加 search namespace
+- TypeFilter 改语义化 enum 'all'/'doc'/... 解耦 i18n 文案
+- 30 新 key：标题 / hero placeholder / 5 filters / 4 state / 预览面板（typeLabel/bookPrefix/chapterPrefix 插值）/ 收藏切换 / 复制反馈 / 错误 blob 防御提示
+
+**沙箱**：tsc apps/web exit 0 / pnpm-lock.yaml 同步 i18next 23.16.8 等
+
+**剩余路线图**（详见 apps/web/src/i18n/README.md）：
+- P2-a QA（102 行 CJK · 高频高复杂 · 待续）
+- P2-b: Spaces / Ingest / Assets / Mcp（~942 行 CJK）
+- P3: Governance / Iam / Insights / Eval / KG / Agent（~784 行）
+- P4: auth / api / _shared / Notebook 子组件（~290 行）
+- P5 数据层: system 模板 label/desc/questions + 后端错误归一化
+- P6: ja/ko/vi 翻译 + 日期数字 i18n + RTL
+
+**当前进度**：约 25-30% 全量完成（已迁 ~500/2000 CJK 行）
+
 ### Commit ⑮ · i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit 43da800）
 
 应用首次接入 i18n。
@@ -384,6 +411,8 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #75 | **i18n P2-a Search（C 工作流，commit ⑰ 6170d86）** |
+| #74 | **i18n P1 模块（Layout/Nav/Login/Overview/components，C 工作流，commit ⑯ bc1c414）** |
 | #73 | **i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit ⑮ 43da800）** |
 | #72 | **N-008 用户自定义模板 Execute + archive（B 工作流 B-3..B-5，2026-04-30，commit ⑭）** |
 | #71 | **N-007 archive sign-off（B 工作流 B-5，2026-04-30）** |
@@ -407,10 +436,17 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A'''' · i18n P1 模块迁移（C 工作流，~1.5 小时）
-**做**：把 i18n 推到下一个优先级模块。`apps/web/src/i18n/README.md` P1 列：Layout / KnowledgeTabs / sidebar nav / Login / Overview / QA
-**前置**：用户先 `pnpm install` 激活 react-i18next 等 deps；然后挑哪个模块先做（建议 Layout 优先，影响所有页面）
-**为啥重要**：现在只有 Notebook 是双语；其他页面切到 en 时仍是中文，体验断裂
+### 选项 A''''' · i18n P2-a 续：QA + AssetDirectoryPanel + AnswerContent（C 工作流，~1 小时）
+**做**：QA 是 i18n P2-a 剩下大头，~100+ key
+**关键点**：会话列表 / 推荐问 / Hero / 复合输入器（输入框 / 检索范围 select / 联网检索 toggle / 附图按钮 / 终止+发送）/ SSE error 三档 / 引用面板 / 资产目录面板
+
+### 选项 A'''''' · i18n P2-b: Spaces / Ingest / Assets / Mcp（C 工作流，~3 小时）
+**做**：~942 行 CJK，4 大模块。Ingest 最大，需要拆几个 commit
+
+### 选项 A''''''' · i18n P3 / P4 / P5（多 session 持续）
+**做**：见 apps/web/src/i18n/README.md
+
+### ~~选项 A'''' · i18n P1~~ 已完成（commit ⑯ bc1c414）
 
 ### 选项 A''' · N-008 macOS 真机验收（V-2..V-6，~15 分钟）
 **做**：在 macOS 上点一遍 N-008 UI 流程
@@ -489,7 +525,9 @@ must_pass: 5/5（V-3 三跑稳定）
 - `7ff13ae` fix(web): NotebookDetail 错误状态拆分（C 工作流，commit ⑫）
 - `fc427f4` docs: N-007 archive sign-off + V-* 全过（B-5，commit ⑬）
 - `dde115d` feat(notebook): N-008 用户自定义模板 Execute + archive（commit ⑭）
-- `43da800` feat(web): i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit ⑮，本次新增）
+- `43da800` feat(web): i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit ⑮）
+- `bc1c414` feat(i18n): P1 模块（Layout / Nav / Login / Overview / components，commit ⑯，本次新增）
+- `6170d86` feat(i18n): P2-a Search（commit ⑰，本次新增）
 
 激活 i18n（用户 macOS 必跑）:
 

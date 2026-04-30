@@ -64,32 +64,72 @@ en            ──>  zh-CN
 
 ## 迁移路线图（按优先级）
 
-### P0（本次完成）
-- ✅ 基础设施 + 5 语言骨架
+### P0 ✅ 完成
+- ✅ 基础设施 + 5 语言骨架（zh/en 完整 + ja/ko/vi 骨架）
 - ✅ 顶部 Topbar 语言切换 widget
 - ✅ Notebook 模块全量（N-006/7/8）：index.tsx / Detail.tsx / TemplateHintCard / CreateTemplateModal / MyTemplateActions
 
-### P1（下次 session 候选）
-- [ ] Layout / KnowledgeTabs / sidebar nav（顶层导航）
-- [ ] Login / RequireAuth / ChangePasswordModal（auth 流）
-- [ ] Overview（首页）
-- [ ] QA（最高频访问的页面之一）
+### P1 ✅ 完成（commit bc1c414）
+- ✅ Layout / KnowledgeTabs / sidebar nav 全套（顶层导航）
+- ✅ LanguageSwitcher widget
+- ✅ Login（标题 / 表单 / 三档错误）
+- ✅ Overview（标题 + 4 个 KPI metric card + 三块面板 + empty state + API down 错误页）
+- ✅ components 共用件：ConfidenceBadge（4 档 + tooltip 插值）/ RewriteBadge / MarkdownView 图片 fallback
 
-### P2
-- [ ] Search / KG / Agent / Governance
-- [ ] Spaces / Ingest / Assets / Mcp
-- [ ] Insights / Eval
+### P2-a 🔵 进行中
+- ✅ Search 全量（commit 6170d86）—— filters 语义化 enum / 5 种 state / 预览面板含 typeLabel/bookPrefix/chapterPrefix 插值
+- [ ] **QA**（102 行 CJK · 高频高复杂）—— index.tsx 主组件 + AssetDirectoryPanel + AnswerContent
+  - 会话列表 / 推荐问 / Hero / 复合输入器 / SSE error 三档 / 引用面板 / 资产目录面板
+  - 估计 ~100 个 key
 
-### P3
-- [ ] Notebook 子组件深入：SourcesPanel / ChatPanel / StudioPanel / ShareModal（本次未覆盖，因为 N-006 时间紧没改）
-- [ ] **System 模板 label / desc / starterQuestions i18n**（这是数据层 i18n，需要前端字典覆盖 + 一个 useLocalizedTemplates hook，本次先用原文）
-- [ ] 错误页 / 404 / 500
-- [ ] 表单错误的后端错误信息归一化（很多后端中文 error 直接透传，多语言下需要 mapping）
+### P2-b 待做
+- [ ] Spaces (241 行 CJK / 14 文件 · 包含 SpaceTree / SpaceSourceTreePage)
+- [ ] Ingest (411 行 / 19 文件 · 最大模块；含 IngestJob detail)
+- [ ] Assets (198 行 / 5 文件 · catalog + Detail)
+- [ ] Mcp (92 行 / 1 文件)
 
-### P4
+### P3 待做
+- [ ] Governance (191 行 / 11 文件 · tags / duplicates / quality / auditLog)
+- [ ] Iam (270 行 / 8 文件)
+- [ ] Insights (86 行 / 8 文件)
+- [ ] Eval (138 行 / 3 文件 · DatasetDetail / RunDetail)
+- [ ] KnowledgeGraph (54 行 / 4 文件)
+- [ ] Agent (45 行 / 2 文件)
+
+### P4 待做
+- [ ] auth/ 5 文件（38 行 · ChangePasswordModal / RequireAuth / RequirePermission 等）
+- [ ] api/ 12 文件（83 行 · axios error message 透传，主要是 console / debug 文案；有部分用户可见）
+- [ ] _shared/ 2 文件（50 行）
+- [ ] Notebook 子组件深入：SourcesPanel / ChatPanel / StudioPanel / ShareModal（前次只覆盖了 5 个组件）
+- [ ] IngestJob (7 行) / 各 *.test.tsx 中 describe/it 中文（不必动，dev-only）
+
+### P5 数据层 i18n
+- [ ] **System 模板 label / desc / starterQuestions i18n**：前端 useLocalizedTemplates hook 按 source==='system' + 当前语言用本地字典覆盖；长期方案 DB schema 加 label_i18n JSONB 列
+- [ ] N-007 注册表 ARTIFACT_REGISTRY 中文 label
+- [ ] 后端透传错误信息归一化（很多 4xx/5xx 的 error 是中文字面量，多语言下应改 i18n key 由前端翻译）
+
+### P6 通用 i18n 完善
 - [ ] 翻译 ja / ko / vi（先用 LLM 机器翻译初版，再人工校）
-- [ ] 日期 / 数字 i18n（dayjs / Intl.NumberFormat）
+- [ ] 日期 / 数字 i18n（dayjs / Intl.NumberFormat / 货币 / 单位）
 - [ ] RTL 支持（如未来加阿拉伯语）
+- [ ] 错误页 / 404 / 500
+- [ ] PageTitle hook（document.title 跟随语言）
+
+## 当前进度统计
+
+| 阶段 | 文件 | CJK 行 | 状态 |
+|---|---|---|---|
+| 基础设施 | 6 | — | ✅ |
+| Notebook | 5 | ~200 | ✅ |
+| P1 | 8 | ~200 | ✅ |
+| P2-a Search | 1 | 46 | ✅ |
+| P2-a QA | 3 | 147 | ⏳ |
+| P2-b | 39 | ~942 | ⏳ |
+| P3 | 38 | ~784 | ⏳ |
+| P4 | ~25 | ~290 | ⏳ |
+| P5 数据层 | — | ~80 | ⏳ |
+
+**总进度：约 25-30% 全量完成**（已迁 ~500/2000 CJK 行）。剩余按 P2 → P3 → P4 → P5 → P6 顺序推。
 
 ## 现已知 limitation
 
