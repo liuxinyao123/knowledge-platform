@@ -175,5 +175,687 @@
     },
     "loadFailedHint": "読み込みに失敗しました。再度お試しください",
     "tilesBlocked": "このモジュールにアクセスする権限がありません"
+  },
+  "components": {
+    "confidence": {
+      "high": "高関連",
+      "medium": "中関連",
+      "weak": "弱関連",
+      "none": "ほぼ無関連",
+      "tooltip": "関連性スコア：{{score}}"
+    },
+    "rewriteBadge": {
+      "tooltip": "システムが高速 LLM で質問を自己完結的なクエリに書き換え、検索精度を向上させます"
+    },
+    "markdown": {
+      "copyCode": "コードをコピー",
+      "copied": "コピー済み",
+      "imageLoadFailed": "画像の読み込みに失敗しました"
+    }
+  },
+  "search": {
+    "title": "統合検索",
+    "subtitle": "全文 / タグ / 著者 / 時間でフィルタリングし、ヒット箇所をプレビューできます",
+    "backToOverview": "概要へ戻る",
+    "heroPlaceholder": "検索: 例「MCP 接続」「成長レビュー」「ガバナンス指標」",
+    "filters": {
+      "all": "すべてのスペース",
+      "doc": "ドキュメント",
+      "minutes": "議事録",
+      "faq": "FAQ",
+      "web": "Web ページ"
+    },
+    "panels": {
+      "results": "結果",
+      "preview": "プレビュー",
+      "openOriginal": "↗ 原文を開く"
+    },
+    "states": {
+      "promptSearch": "キーワードを入力して検索を開始",
+      "searching": "検索中…",
+      "noMatch": "一致する結果がありません。より広いキーワードを試すか、フィルターを解除してください。",
+      "selectResult": "左側で結果を選択してプレビュー"
+    },
+    "preview": {
+      "typeLabel": "種別: {{label}}",
+      "bookPrefix": "ブック #{{id}}",
+      "chapterPrefix": "章 #{{id}}",
+      "favorited": "保存済み",
+      "favorite": "保存",
+      "copyRef": "⛓ 参照をコピー",
+      "copySuccess": "参照をコピーしました",
+      "copyFail": "コピーに失敗しました（クリップボード権限？）",
+      "noSnippet": "（プレビューなし）",
+      "tags": "タグ",
+      "errorBlob": "（このドキュメントは取り込みエラーのためプレビューできません）"
+    },
+    "typeLabels": {
+      "bookshelf": "棚",
+      "book": "ブック",
+      "chapter": "章",
+      "page": "ページ"
+    }
+  },
+  "notebook": {
+    "list": {
+      "title": "ノートブック",
+      "subtitle": "研究タスクごとに 1 つの notebook を作成し、資料を選んでスコープ内でチャット / ブリーフィング",
+      "newButton": "+ 新しいノートブック",
+      "backToOverview": "概要へ戻る",
+      "ownedHeading": "自分のもの（{{count}}）",
+      "sharedHeading": "共有されたもの（{{count}}）",
+      "emptyOwned": "まだノートブックがありません — 右上の「+ 新しいノートブック」から始めてください",
+      "emptyShared": "あなたに共有されたノートブックはありません",
+      "deleteConfirm": "ノートブック「{{name}}」を削除しますか？すべての資料・対話・ブリーフィングが削除されます。",
+      "untitled": "（未命名 · #{{id}}）",
+      "accessOwner": "自分",
+      "accessEditor": "編集可",
+      "accessReader": "閲覧のみ"
+    },
+    "card": {
+      "sources": "{{count}} 資料",
+      "messages": "{{count}} メッセージ"
+    },
+    "createModal": {
+      "title": "新しいノートブック",
+      "templateSection": "テンプレートを選択（任意）",
+      "createMyTemplate": "+ マイテンプレートを作成",
+      "blankIcon": "📄",
+      "blankLabel": "空白",
+      "blankDesc": "ゼロから作成",
+      "nameLabel": "名前",
+      "namePlaceholder": "例: 温度補償の調査",
+      "descLabel": "説明（任意）",
+      "descPlaceholder": "このノートブックは何を解決しますか？",
+      "errors": {
+        "nameRequired": "名前を入力してください"
+      }
+    },
+    "templateOption": {
+      "sourceMine": "マイ",
+      "sourceCommunity": "コミュニティ"
+    },
+    "templateModal": {
+      "createTitle": "+ マイテンプレートを作成",
+      "editTitle": "✎ テンプレートを編集",
+      "fieldLabel": "名前",
+      "fieldLabelHint": "≤ 10 文字",
+      "fieldLabelPlaceholder": "例: 週報ドラフト",
+      "fieldIcon": "アイコン",
+      "fieldIconHint": "絵文字、1-2 文字",
+      "fieldDescription": "説明",
+      "fieldDescriptionHint": "≤ 60 文字",
+      "fieldDescriptionPlaceholder": "このテンプレートの目的を一文で",
+      "fieldHint": "資料ヒント",
+      "fieldHintHint": "≤ 40 文字",
+      "fieldHintPlaceholder": "例: 週次会議メモ / プロジェクトステータス文書をアップロード",
+      "fieldKinds": "推奨生成",
+      "fieldKindsHint": "0-3 個",
+      "fieldQuestions": "スターター質問",
+      "fieldQuestionsHint": "1-3 件、各 ≤ 50 文字",
+      "questionPlaceholder": "{{index}} 件目…",
+      "removeQuestion": "{{index}} 件目を削除",
+      "errors": {
+        "labelMaxChars": "≤ 10 文字",
+        "iconMaxChars": "≤ 2 文字",
+        "descriptionMaxChars": "≤ 60 文字",
+        "hintMaxChars": "≤ 40 文字",
+        "kindsMax": "最大 3 個",
+        "questionsRange": "{{min}}-{{max}} 件",
+        "questionMaxChars": "各 ≤ 50 文字"
+      }
+    },
+    "myTemplateActions": {
+      "edit": "編集",
+      "delete": "削除",
+      "deleteConfirm": "テンプレート「{{label}}」を削除しますか？\n\n既にこのテンプレートを使用しているノートブックには影響しません（template_id は保持）。"
+    },
+    "templateHint": {
+      "titleSuffix": "テンプレート",
+      "closeButton": "今後表示しない（per-notebook 記憶）",
+      "closeButtonAriaLabel": "テンプレートヒントを閉じる",
+      "recommendedKindsLabel": "推奨生成",
+      "starterQuestionsLabel": "スターター質問",
+      "kindTooltip": "{{kind}} を生成（Studio パネルで進捗確認）",
+      "starterTooltip": "クリックして下の入力欄に挿入"
+    },
+    "detail": {
+      "clearChat": "対話をクリア",
+      "clearChatConfirm": "現在の対話をクリアしますか？すべてのメッセージが削除されます。",
+      "shareButton": "🔗 共有",
+      "backButton": "← 戻る",
+      "invalidId": "不正な notebook id",
+      "actionToastClose": "通知を閉じる",
+      "triggerArtifactFailed": "{{kind}} の生成に失敗：{{message}}",
+      "noSourcesError": "ノートブックに資料がありません — まず資料を追加してください",
+      "columns": {
+        "sources": "資料",
+        "chat": "対話",
+        "studio": "Studio"
+      }
+    }
+  },
+  "qa": {
+    "title": "質問する",
+    "subtitle": "シナリオを一文で説明してください。引用付きの回答のみを採用するのが安心です。右側で出典を確認できます。",
+    "scopeAll": "範囲：すべてのスペース",
+    "scopeOnly": "限定：{{name}}",
+    "spacePillFallback": "スペース",
+    "sessions": {
+      "ariaLabel": "質問：セッションと履歴",
+      "headTitle": "セッション履歴",
+      "headHint": "スペース検索や資料探しは左側のメインメニューを使ってください。ここでは現在のセッションのスレッドのみ切り替えます。",
+      "newSession": "+ 新しいセッション",
+      "emptyHint": "履歴がありません。上の「+ 新しいセッション」をクリックして開始。",
+      "deleteAriaLabel": "セッションを削除",
+      "deleteConfirm": "このセッションと履歴を削除しますか？元に戻せません。",
+      "defaultTitle": "新しいセッション",
+      "legacyTitle": "マイセッション",
+      "groupToday": "今日",
+      "groupWeek": "過去 7 日",
+      "groupEarlier": "それ以前"
+    },
+    "hero": {
+      "h1Main": "ナレッジベースに基づく質問応答",
+      "h1Suffix": "— AI Q&A",
+      "subPrimary": "ナレッジアシスタントに質問し、引用付きの正確な回答を取得",
+      "subSecondary": "現在のスペース内のドキュメントとベクトル化コンテンツに基づいて回答。Web 検索、推論強度、モデルを設定可能。",
+      "hint": "こんな質問ができます"
+    },
+    "samples": [
+      "ドキュメント「テストドキュメント.docx」の内容は何ですか？",
+      "ホームページ文書のビジョンと目標部分を編集する方法は？",
+      "知識ガバナンスはどの指標から始めるべき？",
+      "ナレッジベースにドキュメントをアップロードする方法は？"
+    ],
+    "bubble": {
+      "thinking": "考え中...",
+      "userLabel": "あなた",
+      "aiLabel": "アシスタント",
+      "expandTrace": "検索トレースを表示",
+      "collapseTrace": "検索トレースを隠す",
+      "traceFiltered": "検索 {{initial}} 件 → 保持 {{kept}} 件",
+      "rewriteHyDe": "クエリ書き換え：HyDE（仮説回答）",
+      "rewriteStepBack": "クエリ書き換え：Step-Back（一般化）",
+      "errorDefault": "リクエストに失敗しました。後でもう一度お試しください。"
+    },
+    "hint": {
+      "empty": "上の「サンプル質問」をクリックすると入力欄に挿入されます。送信後、対話が上にスクロール表示されます。",
+      "active": "Shift + Enter で改行、Enter で送信。"
+    },
+    "composer": {
+      "mustCite": "引用必須",
+      "mustCiteTitle": "引用必須：回答は検索結果に基づく必要があります",
+      "spacePillTitle": "現在のスコープスペース",
+      "removeSpace": "スコープを解除",
+      "inputLabel": "質問入力",
+      "inputPlaceholder": "質問を入力。例：「重複ナレッジを減らすには？」",
+      "imageAttached": "🖼 添付：",
+      "removeImage": "削除",
+      "scopeSelect": "検索スコープ",
+      "scopeAllOption": "すべてのスペース",
+      "webSearchOn": "Web 検索：ON（クリックで OFF）",
+      "webSearchOff": "Web 検索：OFF（クリックで ON）",
+      "imageHasTitle": "添付：{{name}}（クリックで再選択）",
+      "imageEmptyTitle": "画像を添付（マルチモーダル QA · Qwen2.5-VL）",
+      "imageTooLarge": "画像が大きすぎます（{{mb}}MB）。上限 6MB",
+      "abortTitle": "生成を停止",
+      "abortAria": "停止",
+      "sendTitle": "送信",
+      "sendAria": "送信"
+    },
+    "rightPanel": {
+      "title": "サイドパネル",
+      "tabCitations": "引用",
+      "tabCitationsCount": "引用 {{count}}",
+      "tabAssets": "アセットカタログ",
+      "emptyCitations": "質問後、ここに引用元が表示されます"
+    },
+    "errors": {
+      "network": "ネットワークエラー。後でお試しください。",
+      "401": "未ログインまたはセッション期限切れです。再度サインインしてください。",
+      "403": "QA インターフェースへのアクセス権がありません。管理者にお問い合わせください。",
+      "generic": "リクエストに失敗しました。"
+    },
+    "assetPanel": {
+      "sourceLabel": "データソース",
+      "statusUpdated": "状態 {{status}} · 更新 {{time}}",
+      "syncBtn": "BookStack から同期",
+      "syncing": "同期中…",
+      "refreshLinks": "ベクトルマッピングを更新",
+      "refreshingLinks": "更新中…",
+      "enrichSummary": "要約 (10 件)",
+      "enriching": "生成中…",
+      "backToList": "← 一覧へ戻る",
+      "tabRag": "RAG / 要約",
+      "tabGraph": "ナレッジグラフ",
+      "rag": {
+        "pageId": "BookStack ページ ID：{{id}}",
+        "chunkCount": "ベクトルチャンク数：{{count}}",
+        "indexed": "インデックス済み：{{yes}}",
+        "linkStatus": "ベクトルマッピング：{{status}}",
+        "summaryStatus": "要約状態：{{status}}",
+        "noSummary": "（要約なし。後続の前処理パイプラインで書き込まれます）"
+      },
+      "graph": {
+        "notConnected": "グラフ未接続"
+      },
+      "loading": "アセット読み込み中…",
+      "empty": "アセットがありません。上から同期してください",
+      "totalLine": "合計 {{total}} 件（表示 {{current}} 件）",
+      "errors": {
+        "loadSources": "データソースの読み込みに失敗",
+        "loadList": "読み込み失敗",
+        "loadDetail": "詳細の読み込みに失敗",
+        "syncFailed": "同期に失敗",
+        "refreshLinksFailed": "更新に失敗",
+        "enrichFailed": "要約生成に失敗"
+      },
+      "yes": "はい",
+      "no": "いいえ"
+    },
+    "answerContent": {
+      "imageAlt": "回答画像",
+      "loadFailed": "[画像の読み込みに失敗：{{url}}]"
+    }
+  },
+  "mcp": {
+    "title": "データ統合層",
+    "subtitle": "MCP クエリ層 · ドキュメントアクセス Skill 層 · ベクトル検索 + グラフクエリの接続状態",
+    "testConn": "接続テスト",
+    "testing": "確認中…",
+    "connOk": "● qa-service 正常",
+    "connError": "● 接続失敗",
+    "errors": {
+      "qaServiceDown": "qa-service が応答しません（:3001）",
+      "connectFailed": "接続失敗",
+      "queryFailed": "クエリ失敗",
+      "loadFailed": "読み込み失敗",
+      "statsShape": "/api/mcp/stats が想定外の形式を返しました"
+    },
+    "kpi": {
+      "assetsLabel": "接続アセット",
+      "assetsDetail": "総アセット数（マージ済み除外）",
+      "chunksLabel": "ベクトルチャンク",
+      "chunksDetail": "埋め込み済 / 総 {{total}}",
+      "ingest24hLabel": "取り込み (24h)",
+      "ingest24hDetail": "過去 7 日合計 {{total}}",
+      "qa24hLabel": "QA (24h)",
+      "qa24hDetail": "前回 {{ago}}",
+      "loading": "読み込み中…"
+    },
+    "sources": {
+      "panelTitle": "📚 非構造化データソース · BookStack + pgvector",
+      "realDataPill": "● 実データ",
+      "assetsCount": "接続アセット数",
+      "chunksEmbedded": "埋め込みチャンク",
+      "totalChunks": "/ {{total}} 総チャンク",
+      "lastIndex": "最終インデックス",
+      "ragNote": "📌 現在のベクトル検索は BookStack プロキシ + pgvector の埋め込み経由で、意味的に RAGFlow の検索層と等価です。今後のバージョンで RAGFlow のオーケストレーション層へシームレスに切り替えできます。"
+    },
+    "tools": {
+      "panelTitle": "🛠 MCP Tools 一覧",
+      "list": {
+        "search_knowledge": "棚をまたいだ意味検索。スニペットと出典を返します。",
+        "query_pg_asset": "構造化アセットカタログとメタデータ（PG + pgvector）。",
+        "debug_sql": "読み取り専用 SELECT のデバッグ。行レベルフィルタ + マスキング付き。",
+        "graph_cypher": "Cypher クエリ · 現在はサンプルモード（実際のグラフ DB 未接続。UI 動作は本番と同じ）。"
+      }
+    },
+    "sql": {
+      "panelTitle": "🧪 構造化 SQL デバッグ",
+      "panelSub": "読み取り専用 SELECT · 認可チェーンデモ付き",
+      "run": "実行",
+      "running": "実行中…",
+      "authPass": "✓ 認可通過",
+      "authBlock": "✗ 認可ブロック",
+      "rowFilter": "行レベルフィルタ：",
+      "maskedFields": "マスクフィールド："
+    },
+    "actions7d": {
+      "panelTitle": "⚙️ 過去 7 日のアクション呼び出し",
+      "realDataPill": "● 実データ",
+      "subtitle": "audit_log より；30 秒ごとに自動更新",
+      "loading": "読み込み中…",
+      "empty": "過去 7 日のアクション記録なし。質問 / アップロード / ルール編集を試してから戻ってください。",
+      "colName": "アクション名",
+      "colCode": "action code",
+      "colCount": "7 日呼び出し",
+      "colLast": "最終",
+      "actionLabels": {
+        "qa_ask": "QA（呼び出し）",
+        "qa_answered": "QA（完了）",
+        "qa_intent_classified": "意図分類",
+        "ingest_done": "取り込み完了",
+        "ingest_failed": "取り込み失敗",
+        "ingest_started": "取り込み開始",
+        "bookstack_page_create": "BookStack ページ作成",
+        "asset_register": "アセット登録",
+        "login_success": "サインイン成功",
+        "login_failed": "サインイン失敗",
+        "logout": "サインアウト",
+        "user_register": "ユーザー作成",
+        "user_updated": "ユーザー更新",
+        "user_deleted": "ユーザー削除",
+        "user_password_changed": "パスワード自己変更",
+        "user_password_reset_by_admin": "管理者によるパスワードリセット",
+        "acl_rule_create": "ACL ルール作成",
+        "acl_rule_update": "ACL ルール更新",
+        "acl_rule_delete": "ACL ルール削除"
+      }
+    },
+    "cypher": {
+      "panelTitle": "🕸 Neo4j Cypher デバッグ",
+      "samplePill": "サンプルモード",
+      "sampleNote": "📌 現在はサンプルモード。実際のグラフ DB 未接続。実行するとサンプルグラフ結果を返し、UI 動作は本番と同じです。",
+      "run": "Cypher 実行",
+      "running": "実行中…",
+      "result": "{{ms}}ms · ノード {{nodes}} 件 / エッジ {{edges}} 件"
+    },
+    "timeAgo": {
+      "justNow": "たった今",
+      "minutes": "{{n}} 分前",
+      "hours": "{{n}} 時間前",
+      "days": "{{n}} 日前"
+    }
+  },
+  "assets": {
+    "title": "アセットカタログ",
+    "subtitle": "データソース / ドキュメントライブラリ / オンライン文書などの統一ビュー",
+    "backToOverview": "概要へ戻る",
+    "newSource": "+ 新しいデータソース",
+    "subtabs": {
+      "governance": "ガバナンス",
+      "assets": "アセットカタログ",
+      "iam": "データ権限"
+    },
+    "search": {
+      "placeholder": "アセット名 / タグで検索…",
+      "spaceAll": "すべてのスペース",
+      "clear": "クリア"
+    },
+    "typeFilters": {
+      "all": "すべて",
+      "structured": "構造化",
+      "document": "ファイル",
+      "online": "オンライン文書",
+      "fallbackDash": "—"
+    },
+    "status": {
+      "ok": "正常",
+      "pending": "インデックス待ち"
+    },
+    "list": {
+      "loading": "読み込み中…",
+      "loadFailed": "読み込み失敗",
+      "retry": "再試行",
+      "empty": "現在の条件に該当するアセットがありません",
+      "clearFilters": "フィルターをクリア"
+    },
+    "card": {
+      "type": "種別",
+      "updated": "更新時刻",
+      "scale": "規模",
+      "scaleChunks": "{{count}} チャンク",
+      "scaleImagesSuffix": " · {{count}} 画像",
+      "deleteTitle": "このアセットを完全削除（元に戻せません）",
+      "deleteAria": "アセット {{name}} を削除",
+      "deleteConfirm": "アセット「{{name}}」を削除しますか？\n\n{{chunks}} 個のチャンク{{imagesPart}}が削除されます。元に戻せません。",
+      "deleteImagesPart": " · {{count}} 枚の画像",
+      "deleteFailed": "削除失敗",
+      "deleteFailedAlert": "削除失敗：{{msg}}"
+    },
+    "time": {
+      "notIndexed": "未インデックス",
+      "justNow": "たった今",
+      "minutes": "{{n}} 分前",
+      "hours": "{{n}} 時間前",
+      "days": "{{n}} 日前"
+    },
+    "detail": {
+      "title": "アセット詳細",
+      "loading": "読み込み中…",
+      "back": "← 一覧へ戻る",
+      "backToList": "カタログへ戻る",
+      "permButton": "🔒 権限設定",
+      "permButtonTitle": "このアセットの権限ドロワーを開く（V2 · F-2）",
+      "deleteAssetBtn": "🗑 アセットを削除",
+      "deleting": "削除中…",
+      "deleteAssetTitle": "このアセットを完全削除（チャンクと画像を含む。元に戻せません）",
+      "deleteAssetConfirm": "アセット「{{name}}」を削除しますか？\n\n以下が実行されます：\n  · アセットカタログから削除\n  · すべてのベクトルチャンクを削除（{{chunks}} 件）\n  · 関連画像を削除（{{images}} 枚）\n\n元に戻せません。",
+      "deleteFailedAlert": "削除失敗：{{msg}}",
+      "tabAssets": "アセット一覧",
+      "tabRagflow": "RAGFlow 要約",
+      "tabGraph": "ナレッジグラフ",
+      "fields": {
+        "type": "種別",
+        "source": "出典",
+        "spaceId": "スペース ID",
+        "indexedAt": "インデックス日時",
+        "chunks": "チャンク数",
+        "images": "画像数",
+        "tags": "タグ",
+        "summary": "要約",
+        "noSummary": "（要約なし）"
+      },
+      "banner": {
+        "overview": "アセット概要",
+        "metaLine": "種別：{{type}} · 状態：{{status}} · 更新時刻：{{time}}",
+        "chunksSuffix": " · チャンク {{count}}",
+        "imagesSuffix": " · 画像 {{count}}",
+        "sourceSuffix": " · 出典：{{name}}",
+        "extractor": "抽出器：",
+        "chunkBreakdown": "チャンク分類：",
+        "warningsSummary": "⚠ {{count}} 件の警告（ホバーで確認）",
+        "warningsToggle": "{{count}} 件の抽出警告を表示",
+        "tagPrefix": "タグ：{{tag}}"
+      },
+      "loadFailed": "読み込み失敗"
+    },
+    "graph": {
+      "title": "エンティティ / 関係グラフ",
+      "empty": "グラフデータなし",
+      "loading": "ナレッジグラフの近傍を読み込み中…",
+      "loadFailed": "グラフの読み込みに失敗",
+      "nodes": "ノード {{count}}",
+      "edges": "エッジ {{count}}",
+      "selfDegree": "アセット次数 {{n}}",
+      "mockBanner": "📌 Mock グラフ（schema FK / logical）。Apache AGE にこのアセットの近傍はまだありません — 取り込み / QA を重ねると自動的に表示されます。",
+      "realBanner": "🧠 実グラフ",
+      "tooltip": {
+        "degree": "{{kindLabel}} · 次数 {{deg}}",
+        "count": " · 数 {{count}}",
+        "idLabel": "ID："
+      },
+      "kindLabels": {
+        "asset": "アセット",
+        "entity": "エンティティ",
+        "source": "データソース",
+        "space": "スペース",
+        "tag": "タグ",
+        "question": "質問",
+        "template": "テンプレート"
+      },
+      "legend": {
+        "mockEntity": "エンティティ（テーブル）",
+        "mockTemplate": "業務テンプレート",
+        "mockFk": "外部キー FK",
+        "mockLogical": "論理リンク"
+      }
+    },
+    "ragflow": {
+      "panelTitle": "RAGFlow 状態",
+      "notConnected": "RAGFlow 未接続",
+      "previewTitle": "セマンティック要約プレビュー",
+      "previewMeta": "{{total}} チャンク · 先頭 10 件を表示",
+      "previewSample": "（サンプルビュー）",
+      "regenerate": "再生成",
+      "sourceOverview": "データソース概要",
+      "summary": "このアセット「{{name}}」は {{source}}（{{connector}}）に属します。現在 {{chunks}} チャンクをインデックス済み、画像 {{images}} 枚。タグ：{{tags}}。",
+      "noTags": "（タグなし）",
+      "unknownSource": "不明な出典",
+      "tagSeparator": "、",
+      "pillChunks": "{{total}} チャンク",
+      "pillType": "種別: {{type}}",
+      "pillUpdated": "最終更新 {{date}}",
+      "chunksHeader": "ナレッジチャンク",
+      "noChunks": "📭 利用可能なチャンクがありません",
+      "chunkPage": "page {{page}}",
+      "vectorized": "ベクトル化済 · {{kind}}"
+    },
+    "chunks": {
+      "empty": "🗂 このアセットには構造化チャンクがありません。プレーンテキストや画像のみの可能性があります — 「RAGFlow 要約」タブで本文を確認してください。",
+      "totalLabel": "合計 {{count}} チャンク",
+      "showingPart": "· 先頭 {{shown}} / 計 {{total}} 段",
+      "expand": "展開",
+      "collapse": "折りたたむ",
+      "kinds": {
+        "heading": "見出し",
+        "paragraph": "段落",
+        "table": "表",
+        "image_caption": "キャプション",
+        "generic": "本文"
+      },
+      "cols": {
+        "page": "ページ",
+        "kind": "種別",
+        "content": "内容",
+        "headingPath": "階層パス"
+      }
+    }
+  },
+  "spaces": {
+    "title": "マイスペース",
+    "subtitle": "左側でナレッジベースを選択し、右側でドキュメントとメンバーを確認。「自分 / チーム共有 / 購読中」でグループ化されています。",
+    "backToOverview": "概要へ戻る",
+    "newSpace": "+ 新しいナレッジベース",
+    "importKnowledge": "ナレッジを取り込む",
+    "detailTitleFallback": "スペース詳細",
+    "myRolePrefix": "私は",
+    "roleLabels": {
+      "owner": "オーナー",
+      "admin": "管理者",
+      "editor": "編集者",
+      "viewer": "閲覧者"
+    },
+    "loading": "読み込み中…",
+    "selectHint": "左側からスペースを選ぶか、「新しいスペース」をクリック",
+    "list": {
+      "loading": "読み込み中…",
+      "empty": "まだスペースがありません",
+      "newBtn": "+ 新しいナレッジベース",
+      "groupOwned": "自分",
+      "groupShared": "チーム共有",
+      "groupSubscribed": "購読中",
+      "search": "スペースを検索…",
+      "private": "プライベート",
+      "team": "チーム",
+      "public": "公開"
+    },
+    "info": {
+      "title": "スペース情報",
+      "fieldName": "名前",
+      "fieldDescription": "説明",
+      "fieldVisibility": "可視性",
+      "fieldOwner": "オーナー",
+      "fieldCreated": "作成日時",
+      "fieldUpdated": "更新日時",
+      "edit": "編集",
+      "delete": "スペースを削除",
+      "deleteConfirm": "スペース「{{name}}」を削除しますか？元に戻せません。"
+    },
+    "members": {
+      "title": "メンバーと権限",
+      "invite": "+ メンバーを招待",
+      "loading": "読み込み中…",
+      "empty": "メンバーなし",
+      "colSubject": "対象",
+      "colRole": "役割",
+      "colAddedAt": "参加日時",
+      "colActions": "操作",
+      "subjectUser": "ユーザー",
+      "subjectTeam": "チーム",
+      "removeBtn": "削除",
+      "removeConfirm": "「{{name}}」を削除しますか？",
+      "saveRole": "保存",
+      "saveFailed": "保存失敗",
+      "addUser": "ユーザーを追加",
+      "addTeam": "チームを追加",
+      "addPlaceholder": "メールまたは team id を入力",
+      "submit": "追加"
+    },
+    "directory": {
+      "title": "ディレクトリ構造",
+      "browseTree": "アセットツリーを開く",
+      "attachSource": "+ データソースを関連付け",
+      "empty": "アセット未関連付け",
+      "loading": "読み込み中…",
+      "removeAsset": "削除",
+      "removeConfirm": "スペースから「{{name}}」を削除しますか？アセット自体は削除されません。"
+    },
+    "create": {
+      "title": "新しいスペース",
+      "fieldName": "名前",
+      "namePlaceholder": "例: 管理内部統制スペース",
+      "fieldSlug": "slug（URL に適合、英小文字 / 数字 / ハイフン）",
+      "fieldDescription": "説明（任意）",
+      "descPlaceholder": "このスペースには何を入れますか？",
+      "fieldVisibility": "可視範囲",
+      "visibilityOrg": "組織内",
+      "visibilityPrivate": "プライベート",
+      "ownerNote": "作成後、現在のアカウントが自動的にオーナーになります。組織内スペースは既定で全サインインユーザーに表示されます。",
+      "submit": "作成",
+      "submitting": "作成中…",
+      "errorRequired": "名前は必須です",
+      "errorSlug": "slug は英小文字 / 数字 / ハイフンである必要があります"
+    },
+    "editModal": {
+      "title": "スペースを編集",
+      "submit": "保存",
+      "submitting": "保存中…"
+    },
+    "createSource": {
+      "title": "新しいデータソース",
+      "fieldName": "ソース名",
+      "fieldType": "種別",
+      "fieldConnector": "コネクタ",
+      "fieldConfig": "設定（JSON）",
+      "submit": "作成",
+      "submitting": "作成中…",
+      "errorRequired": "名前は必須です"
+    },
+    "attachSource": {
+      "title": "既存ソースを関連付け",
+      "search": "ソースを検索…",
+      "empty": "関連付け可能なソースがありません",
+      "alreadyAttached": "このスペースに関連付け済み",
+      "attach": "関連付け",
+      "attaching": "関連付け中…",
+      "loading": "読み込み中…",
+      "loadFailed": "読み込み失敗"
+    },
+    "preview": {
+      "title": "プレビュー",
+      "selectAsset": "左側でアセットを選択してプレビュー",
+      "loading": "読み込み中…",
+      "loadFailed": "読み込み失敗",
+      "openOriginal": "↗ 原文を開く",
+      "noContent": "（プレビュー可能な内容なし）",
+      "tabAssets": "アセット",
+      "tabContent": "内容",
+      "tabRag": "RAG"
+    },
+    "sourceTreePage": {
+      "title": "{{name}} · アセットツリー",
+      "loading": "読み込み中…",
+      "loadFailed": "読み込み失敗",
+      "back": "← スペースへ戻る",
+      "empty": "アセットなし"
+    },
+    "errors": {
+      "loadFailed": "読み込み失敗",
+      "deleteFailed": "削除失敗",
+      "saveFailed": "保存失敗"
+    }
   }
 }
