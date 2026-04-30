@@ -12,6 +12,9 @@
       "share": "Share",
       "submit": "Submit",
       "retry": "Retry",
+      "search": "Search",
+      "refresh": "Refresh",
+      "open": "Open",
       "addOne": "+ Add another"
     },
     "states": {
@@ -40,6 +43,154 @@
       "atMost_other": "at most {{count}} items",
       "atLeastChars": "at least {{count}} chars",
       "atMostChars": "at most {{count}} chars"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "Knowledge Platform",
+    "brandShort": "Knowledge",
+    "newTaskCta": "Ask anything",
+    "sidebarSearchPlaceholder": "Search tasks / knowledge…",
+    "sectionPrimary": "Workspace",
+    "sectionManage": "Manage & Data",
+    "sectionExtra": "More tools",
+    "sectionAdmin": "Admin",
+    "tabs": {
+      "qa": "💬 QA",
+      "search": "🔎 Search",
+      "spaces": "🗂 Spaces",
+      "ingest": "⬆️ Ingest",
+      "overview": "🏠 Overview",
+      "agent": "🤖 Agent",
+      "governance": "🛡 Governance",
+      "assets": "📦 Assets",
+      "mcp": "🔌 Connectors"
+    },
+    "labels": {
+      "qa": "Ask",
+      "search": "Search",
+      "spaces": "My spaces",
+      "ingest": "Upload & ingest",
+      "overview": "Overview",
+      "insights": "Insights",
+      "knowledgeGraph": "Knowledge graph",
+      "governance": "Content governance",
+      "assets": "Asset catalog",
+      "mcp": "Connectors",
+      "agent": "Agent",
+      "notebooks": "Notebooks",
+      "eval": "Evaluation",
+      "iam": "Identity & Access"
+    },
+    "tabsAriaLabel": "Knowledge platform modules",
+    "topbarQuickCreate": "Quick action (ask)",
+    "topbarAssetsBtn": "Asset catalog"
+  },
+  "auth": {
+    "login": {
+      "title": "Knowledge Platform",
+      "subtitle": "Sign in to your workspace",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "errorInvalid": "Invalid email or password",
+      "errorNoSecret": "Server not configured (AUTH_HS256_SECRET missing)",
+      "errorNetwork": "Sign in failed"
+    },
+    "userArea": {
+      "changePassword": "Change",
+      "changePasswordTitle": "Change password",
+      "changePasswordDevTooltip": "Password change disabled in DEV mode",
+      "logout": "Sign out",
+      "logoutTitle": "Sign out",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Save",
+      "submitting": "Saving…",
+      "cancel": "Cancel",
+      "errorMismatch": "Passwords do not match",
+      "errorWrongCurrent": "Current password is incorrect",
+      "successTitle": "Password updated"
+    }
+  },
+  "overview": {
+    "title": "Overview",
+    "subtitle": "Start with intent: ask, find, ingest. KPIs are for those tracking the system.",
+    "actions": {
+      "askQuestion": "Ask a question",
+      "search": "Search",
+      "newSpace": "+ New space",
+      "importKnowledge": "Import knowledge"
+    },
+    "quickStart": {
+      "skipHeading": "Not sure where to start? Pick one of the common tasks below.",
+      "ariaLabel": "Quick start",
+      "qaTitle": "Ask",
+      "qaDesc": "Natural-language questions with cited snippets and sources — great for 'what does the policy say' and 'any precedent'.",
+      "searchTitle": "Search",
+      "searchDesc": "Find docs, notes and web clips by keyword, tag or semantics — locate the source yourself.",
+      "ingestTitle": "Upload & Ingest",
+      "ingestDesc": "Add files, links or clipboard content into a searchable knowledge base for everyone to reuse."
+    },
+    "kpiSection": "Space & data health (for admins / owners)",
+    "kpi": {
+      "documents": "Documents",
+      "documentsSub": "Includes: docs, FAQs, meeting notes, web clips",
+      "documentsRecent": "+{{count}} last 7d",
+      "recentDays": "last 7d",
+      "spaces": "Knowledge spaces",
+      "spacesSub": "Cross-team shared + private spaces",
+      "spacesPill": "I manage {{count}}",
+      "ingestPending": "Pending ingest",
+      "ingestPendingSub": "Chunking / parsing / vectorizing",
+      "ingestProcessing": "Processing",
+      "ingestAllDone": "All ingested",
+      "anomaly": "Anomaly / Low quality",
+      "anomalySub": "Duplicate, stale, missing fields",
+      "anomalyNeedsReview": "Needs review",
+      "anomalyNoIssue": "All good"
+    },
+    "panels": {
+      "recentUpdates": "Recent updates",
+      "myFavorites": "My favorites",
+      "activeSpaces": "Top 5 active spaces",
+      "goSearch": "Go to search ›",
+      "goSearchPlain": "Go to search",
+      "bookPrefix": "Book #{{id}}",
+      "spaceBooksCount": "{{count}} books"
+    },
+    "empty": {
+      "noDocs": "No documents yet — go import some",
+      "noFavorites": "No favorites yet — go bookmark from the search page",
+      "noShelves": "No space data yet"
+    },
+    "errors": {
+      "apiDown": "API unreachable. Make sure BookStack (:6875) and qa-service (:3001) are running and the server has the BookStack token configured."
+    },
+    "loadFailedHint": "Failed to load, please retry",
+    "tilesBlocked": "Permission denied for this module"
+  },
+  "components": {
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "weak": "Weak",
+      "none": "Irrelevant",
+      "tooltip": "Relevance score: {{score}}"
+    },
+    "rewriteBadge": {
+      "tooltip": "Your question was rewritten by a fast LLM into a self-contained query for better retrieval"
+    },
+    "markdown": {
+      "copyCode": "Copy code",
+      "copied": "Copied",
+      "imageLoadFailed": "Image failed to load"
     }
   },
   "notebook": {

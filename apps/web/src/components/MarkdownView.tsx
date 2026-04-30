@@ -15,6 +15,7 @@
  * 这些需要正经 markdown 库（marked/react-markdown）—— 后续按需升级。
  */
 import { Fragment, type ReactNode } from 'react'
+import i18n from '@/i18n'
 
 interface Props {
   source: string
@@ -411,7 +412,7 @@ function renderInline(input: string): ReactNode {
                   // 加载失败时降级为 alt 文本，避免破图
                   const img = e.currentTarget
                   const fallback = document.createElement('span')
-                  fallback.textContent = `🖼 ${t.alt || '(图片加载失败)'}`
+                  fallback.textContent = `🖼 ${t.alt || `(${i18n.t('components:markdown.imageLoadFailed')})`}`
                   fallback.style.color = 'var(--muted)'
                   fallback.style.fontSize = '12px'
                   img.replaceWith(fallback)
