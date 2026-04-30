@@ -300,6 +300,106 @@
       "loadFailed": "[Image failed to load: {{url}}]"
     }
   },
+  "mcp": {
+    "title": "Data integration",
+    "subtitle": "MCP query layer · Document access skills · Vector & graph connectivity",
+    "testConn": "Test connection",
+    "testing": "Checking…",
+    "connOk": "● qa-service OK",
+    "connError": "● Connection failed",
+    "errors": {
+      "qaServiceDown": "qa-service unreachable (:3001)",
+      "connectFailed": "Connection failed",
+      "queryFailed": "Query failed",
+      "loadFailed": "Load failed",
+      "statsShape": "/api/mcp/stats returned an unexpected shape"
+    },
+    "kpi": {
+      "assetsLabel": "Connected assets",
+      "assetsDetail": "Total assets (merged ones not counted)",
+      "chunksLabel": "Vector chunks",
+      "chunksDetail": "Embedded / total {{total}}",
+      "ingest24hLabel": "Ingest (24h)",
+      "ingest24hDetail": "Last 7 days: {{total}}",
+      "qa24hLabel": "QA (24h)",
+      "qa24hDetail": "Last {{ago}}",
+      "loading": "Loading…"
+    },
+    "sources": {
+      "panelTitle": "📚 Unstructured sources · BookStack + pgvector",
+      "realDataPill": "● Live data",
+      "assetsCount": "Connected assets",
+      "chunksEmbedded": "Embedded chunks",
+      "totalChunks": "/ {{total}} total",
+      "lastIndex": "Last indexed",
+      "ragNote": "📌 Vector retrieval currently uses the native BookStack proxy + pgvector path, which is semantically equivalent to the RAGFlow retrieval layer. Future versions can switch transparently to RAGFlow's orchestration layer."
+    },
+    "tools": {
+      "panelTitle": "🛠 MCP Tools",
+      "list": {
+        "search_knowledge": "Semantic search across shelves; returns snippets and sources.",
+        "query_pg_asset": "Structured asset catalog and metadata (PG + pgvector).",
+        "debug_sql": "Read-only SELECT debug with row-level filter and masking.",
+        "graph_cypher": "Cypher queries · currently in sample mode (real graph DB not connected; UI behavior matches prod)."
+      }
+    },
+    "sql": {
+      "panelTitle": "🧪 Structured SQL debug",
+      "panelSub": "Read-only SELECT · with authorization demo",
+      "run": "Run",
+      "running": "Running…",
+      "authPass": "✓ Authorized",
+      "authBlock": "✗ Blocked",
+      "rowFilter": "Row filter:",
+      "maskedFields": "Masked fields:"
+    },
+    "actions7d": {
+      "panelTitle": "⚙️ Action calls (last 7d)",
+      "realDataPill": "● Live data",
+      "subtitle": "From audit_log; refreshed every 30s",
+      "loading": "Loading…",
+      "empty": "No action records in the last 7 days. Try a QA / upload / rule edit and check back.",
+      "colName": "Action name",
+      "colCode": "action code",
+      "colCount": "7d calls",
+      "colLast": "Last",
+      "actionLabels": {
+        "qa_ask": "QA (called)",
+        "qa_answered": "QA (completed)",
+        "qa_intent_classified": "Intent classified",
+        "ingest_done": "Ingest done",
+        "ingest_failed": "Ingest failed",
+        "ingest_started": "Ingest started",
+        "bookstack_page_create": "BookStack page created",
+        "asset_register": "Asset registered",
+        "login_success": "Sign in success",
+        "login_failed": "Sign in failed",
+        "logout": "Sign out",
+        "user_register": "User created",
+        "user_updated": "User updated",
+        "user_deleted": "User deleted",
+        "user_password_changed": "Password self-changed",
+        "user_password_reset_by_admin": "Password reset by admin",
+        "acl_rule_create": "ACL rule created",
+        "acl_rule_update": "ACL rule updated",
+        "acl_rule_delete": "ACL rule deleted"
+      }
+    },
+    "cypher": {
+      "panelTitle": "🕸 Neo4j Cypher debug",
+      "samplePill": "Sample mode",
+      "sampleNote": "📌 Currently in sample mode; real graph DB not connected. Runs return sample graph results, UI matches prod behavior.",
+      "run": "Run Cypher",
+      "running": "Running…",
+      "result": "{{ms}}ms · {{nodes}} nodes / {{edges}} edges"
+    },
+    "timeAgo": {
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    }
+  },
   "search": {
     "title": "Search",
     "subtitle": "Full-text / tag / author / time filters with snippet preview",
