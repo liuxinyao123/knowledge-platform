@@ -298,6 +298,171 @@
       "loadFailed": "[图片加载失败: {{url}}]"
     }
   },
+  "assets": {
+    "title": "资产目录",
+    "subtitle": "数据源 / 文档库 / 在线文档等资产统一视图",
+    "backToOverview": "返回运行概览",
+    "newSource": "+ 新增数据源",
+    "subtabs": {
+      "governance": "知识治理",
+      "assets": "资产目录",
+      "iam": "数据权限"
+    },
+    "search": {
+      "placeholder": "搜索资产名、标签…",
+      "spaceAll": "所有空间",
+      "clear": "清除"
+    },
+    "typeFilters": {
+      "all": "全部",
+      "structured": "结构化",
+      "document": "文件型",
+      "online": "在线文档",
+      "fallbackDash": "—"
+    },
+    "status": {
+      "ok": "正常",
+      "pending": "待索引"
+    },
+    "list": {
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "retry": "重试",
+      "empty": "当前条件下无资产",
+      "clearFilters": "清除筛选"
+    },
+    "card": {
+      "type": "类型",
+      "updated": "更新时间",
+      "scale": "规模",
+      "scaleChunks": "{{count}} 切片",
+      "scaleImagesSuffix": " · {{count}} 图",
+      "deleteTitle": "永久删除该资产（不可恢复）",
+      "deleteAria": "删除资产 {{name}}",
+      "deleteConfirm": "确认删除资产「{{name}}」？\n\n会清除 {{chunks}} 个切片{{imagesPart}}，不可恢复。",
+      "deleteImagesPart": "、{{count}} 张图",
+      "deleteFailed": "删除失败",
+      "deleteFailedAlert": "删除失败：{{msg}}"
+    },
+    "time": {
+      "notIndexed": "未索引",
+      "justNow": "刚刚",
+      "minutes": "{{n}} 分钟前",
+      "hours": "{{n}} 小时前",
+      "days": "{{n}} 天前"
+    },
+    "detail": {
+      "title": "资产详情",
+      "loading": "加载中…",
+      "back": "← 返回列表",
+      "backToList": "返回目录",
+      "permButton": "🔒 权限设置",
+      "permButtonTitle": "打开该资产的权限抽屉（V2 · F-2）",
+      "deleteAssetBtn": "🗑 删除资产",
+      "deleting": "删除中…",
+      "deleteAssetTitle": "永久删除该资产（含切片和图片，不可恢复）",
+      "deleteAssetConfirm": "确认删除资产「{{name}}」？\n\n此操作会：\n  · 从资产目录移除该条目\n  · 清除所有向量切片（{{chunks}} 条）\n  · 清除关联图片（{{images}} 张）\n\n删除后不可恢复。",
+      "deleteFailedAlert": "删除失败：{{msg}}",
+      "tabAssets": "资产列表",
+      "tabRagflow": "RAGFlow 摘要",
+      "tabGraph": "知识图谱",
+      "fields": {
+        "type": "类型",
+        "source": "来源",
+        "spaceId": "空间 ID",
+        "indexedAt": "入库时间",
+        "chunks": "切片数",
+        "images": "图片数",
+        "tags": "标签",
+        "summary": "摘要",
+        "noSummary": "（暂无摘要）"
+      },
+      "banner": {
+        "overview": "资产概览",
+        "metaLine": "类型：{{type}} · 状态：{{status}} · 更新时间：{{time}}",
+        "chunksSuffix": " · 切片 {{count}}",
+        "imagesSuffix": " · 图 {{count}}",
+        "sourceSuffix": " · 来源：{{name}}",
+        "extractor": "提取器：",
+        "chunkBreakdown": "切片分类：",
+        "warningsSummary": "⚠ {{count}} 条警告（悬停查看）",
+        "warningsToggle": "查看 {{count}} 条提取警告",
+        "tagPrefix": "标签：{{tag}}"
+      },
+      "loadFailed": "加载失败"
+    },
+    "graph": {
+      "title": "实体 / 关系图谱",
+      "empty": "暂无图谱数据",
+      "loading": "正在加载知识图谱邻域…",
+      "loadFailed": "加载图谱失败",
+      "nodes": "节点 {{count}}",
+      "edges": "边 {{count}}",
+      "selfDegree": "本资产度 {{n}}",
+      "mockBanner": "📌 Mock 图（schema FK / logical）。Apache AGE 暂无该资产邻域 — 入库 / 问答积累后会自动浮现。",
+      "realBanner": "🧠 真实图谱",
+      "tooltip": {
+        "degree": "{{kindLabel}} · 度数 {{deg}}",
+        "count": " · 计数 {{count}}",
+        "idLabel": "ID："
+      },
+      "kindLabels": {
+        "asset": "资产",
+        "entity": "实体",
+        "source": "数据源",
+        "space": "空间",
+        "tag": "标签",
+        "question": "问题",
+        "template": "模板"
+      },
+      "legend": {
+        "mockEntity": "实体（表）",
+        "mockTemplate": "业务模板",
+        "mockFk": "外键 FK",
+        "mockLogical": "业务关联"
+      }
+    },
+    "ragflow": {
+      "panelTitle": "RAGFlow 状态",
+      "notConnected": "尚未接入 RAGFlow",
+      "previewTitle": "语义摘要预览",
+      "previewMeta": "共 {{total}} 切片 · 当前展示前 10 条",
+      "previewSample": "（示例视图）",
+      "regenerate": "重新生成",
+      "sourceOverview": "数据源概述",
+      "summary": "本资产「{{name}}」隶属于 {{source}}（{{connector}}）；当前已索引 {{chunks}} 个切片，包含 {{images}} 张图片。主题标签：{{tags}}。",
+      "noTags": "（暂无标签）",
+      "unknownSource": "未知来源",
+      "tagSeparator": "、",
+      "pillChunks": "共 {{total}} 切片",
+      "pillType": "类型: {{type}}",
+      "pillUpdated": "最近更新 {{date}}",
+      "chunksHeader": "知识切片（Chunks）",
+      "noChunks": "📭 当前没有可用切片",
+      "chunkPage": "page {{page}}",
+      "vectorized": "已向量化 · {{kind}}"
+    },
+    "chunks": {
+      "empty": "🗂 当前资产没有结构化切片；可能是平文本或图片型，请到「RAGFlow 摘要」看正文",
+      "totalLabel": "共 {{count}} 个切片",
+      "showingPart": "· 显示前 {{shown}} / 共 {{total}} 段",
+      "expand": "展开",
+      "collapse": "收起",
+      "kinds": {
+        "heading": "标题",
+        "paragraph": "段落",
+        "table": "表格",
+        "image_caption": "图注",
+        "generic": "正文"
+      },
+      "cols": {
+        "page": "页",
+        "kind": "类型",
+        "content": "内容",
+        "headingPath": "层级路径"
+      }
+    }
+  },
   "mcp": {
     "title": "数据接入层",
     "subtitle": "MCP 查询层 · 文档访问 Skill 层 · 向量检索与图查询连接状态",

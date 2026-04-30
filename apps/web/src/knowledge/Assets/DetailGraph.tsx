@@ -14,6 +14,7 @@
  *   · 悬停节点高亮邻边 + 暗化非邻居
  */
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { PgAssetDetail } from '@/api/assetDirectory'
 import { getAssetNeighbors, type KgNeighborhood } from '@/api/kg'
 
@@ -45,14 +46,15 @@ const KIND_COLOR: Record<DisplayNode['kind'], string> = {
   template: '#fb923c',  // 橙 · 模板（mock）
 }
 
-const KIND_LABEL: Record<DisplayNode['kind'], string> = {
-  asset:    '资产',
-  entity:   '实体',
-  source:   '数据源',
-  space:    '空间',
-  tag:      '标签',
-  question: '问题',
-  template: '模板',
+/** kind → i18n key（label 由调用方按当前语言翻译） */
+const KIND_LABEL_KEY: Record<DisplayNode['kind'], string> = {
+  asset:    'graph.kindLabels.asset',
+  entity:   'graph.kindLabels.entity',
+  source:   'graph.kindLabels.source',
+  space:    'graph.kindLabels.space',
+  tag:      'graph.kindLabels.tag',
+  question: 'graph.kindLabels.question',
+  template: 'graph.kindLabels.template',
 }
 
 /** 按 edge.kind 分色 + 形态（实/虚） */
@@ -68,6 +70,7 @@ function edgeStyle(kind: string, isLogical: boolean | undefined): { color: strin
 }
 
 export default function DetailGraph({ detail }: { detail: PgAssetDetail }) {
+  const { t } = useTranslation('assets')
   const assetId = detail.asset?.id ?? 0
   const [kg, setKg] = useState<KgNeighborhood | null>(null)
   const [loading, setLoading] = useState(true)
@@ -156,20 +159,20 @@ export default function DetailGraph({ detail }: { detail: PgAssetDetail }) {
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         {loading ? (
-          <>⏳ 正在加载知识图谱邻域…</>
+          <>⏳ {t('graph.loading')}</>
         ) : useMock ? (
-          <>📌 <strong>Mock 图（schema FK / logical）</strong>。Apache AGE 暂无该资产邻域 — 入库 / 问答积累后会自动浮现。</>
+          <>{t('graph.mockBanner')}</>
         ) : (
           <>
-            🧠 <strong>真实图谱</strong>
+            <strong>{t('graph.realBanner')}</strong>
             <span style={{ opacity: 0.7 }}>·</span>
-            节点 {displayNodes.length}
+            {t('graph.nodes', { count: displayNodes.length })}
             <span style={{ opacity: 0.7 }}>·</span>
-            边 {displayEdges.length}
+            {t('graph.edges', { count: displayEdges.length })}
             {degreeMap.get(selfId) != null && (
               <>
                 <span style={{ opacity: 0.7 }}>·</span>
-                本资产度 {degreeMap.get(selfId)}
+                {t('graph.selfDegree', { n: degreeMap.get(selfId) })}
               </>
             )}
           </>
@@ -184,20 +187,21 @@ export default function DetailGraph({ detail }: { detail: PgAssetDetail }) {
       }}>
         {useMock ? (
           <>
-            <Legend color={KIND_COLOR.entity} shape="circle" label="实体（表）" />
-            <Legend color={KIND_COLOR.template} shape="square" label="业务模板" />
+            <Legend color={KIND_COLOR.entity} shape="circle" label={t('graph.legend.mockEntity')} />
+            <Legend color={KIND_COLOR.template} shape="square" label={t('graph.legend.mockTemplate')} />
             <span style={{ flex: 1 }} />
-            <Legend color="#16a34a" shape="line" label="外键 FK" />
-            <Legend color="#9ca3af" shape="dashed" label="业务关联" />
+            <Legend color="#16a34a" shape="line" label={t('graph.legend.mockFk')} />
+            <Legend color="#9ca3af" shape="dashed" label={t('graph.legend.mockLogical')} />
           </>
         ) : (
           <>
-            <Legend color={KIND_COLOR.asset}    shape="circle" label="资产" />
-            <Legend color={KIND_COLOR.source}   shape="circle" label="数据源" />
-            <Legend color={KIND_COLOR.tag}      shape="circle" label="标签" />
-            <Legend color={KIND_COLOR.space}    shape="circle" label="空间" />
-            <Legend color={KIND_COLOR.question} shape="circle" label="问题" />
+            <Legend color={KIND_COLOR.asset}    shape="circle" label={t('graph.kindLabels.asset')} />
+            <Legend color={KIND_COLOR.source}   shape="circle" label={t('graph.kindLabels.source')} />
+            <Legend color={KIND_COLOR.tag}      shape="circle" label={t('graph.kindLabels.tag')} />
+            <Legend color={KIND_COLOR.space}    shape="circle" label={t('graph.kindLabels.space')} />
+            <Legend color={KIND_COLOR.question} shape="circle" label={t('graph.kindLabels.question')} />
             <span style={{ flex: 1 }} />
+            {/* HAS_TAG / CONTAINS / CITED / CO_CITED 是 Cypher 关系名，作为 schema 关键字不翻译 */}
             <Legend color="#60a5fa" shape="line"   label="HAS_TAG" />
             <Legend color="#a78bfa" shape="line"   label="CONTAINS" />
             <Legend color="#16a34a" shape="line"   label="CITED" />
@@ -352,11 +356,11 @@ export default function DetailGraph({ detail }: { detail: PgAssetDetail }) {
                   display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
                   background: KIND_COLOR[node.kind], marginRight: 6, verticalAlign: 'middle',
                 }} />
-                {KIND_LABEL[node.kind]} · 度数 {deg}
-                {typeof node.count === 'number' ? ` · 计数 ${node.count}` : ''}
+                {t('graph.tooltip.degree', { kindLabel: t(KIND_LABEL_KEY[node.kind]), deg })}
+                {typeof node.count === 'number' ? t('graph.tooltip.count', { count: node.count }) : ''}
               </div>
               <div style={{ color: 'var(--muted)', fontSize: 11, marginTop: 4 }}>
-                ID：<code>{node.id}</code>
+                {t('graph.tooltip.idLabel')}<code>{node.id}</code>
               </div>
             </div>
           )

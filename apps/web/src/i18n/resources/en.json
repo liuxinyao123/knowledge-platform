@@ -300,6 +300,171 @@
       "loadFailed": "[Image failed to load: {{url}}]"
     }
   },
+  "assets": {
+    "title": "Asset catalog",
+    "subtitle": "Unified view of data sources / document libraries / online docs",
+    "backToOverview": "Back to overview",
+    "newSource": "+ New data source",
+    "subtabs": {
+      "governance": "Governance",
+      "assets": "Asset catalog",
+      "iam": "Data permissions"
+    },
+    "search": {
+      "placeholder": "Search by name or tag…",
+      "spaceAll": "All spaces",
+      "clear": "Clear"
+    },
+    "typeFilters": {
+      "all": "All",
+      "structured": "Structured",
+      "document": "Files",
+      "online": "Online docs",
+      "fallbackDash": "—"
+    },
+    "status": {
+      "ok": "OK",
+      "pending": "Pending index"
+    },
+    "list": {
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "retry": "Retry",
+      "empty": "No assets match the current filter",
+      "clearFilters": "Clear filters"
+    },
+    "card": {
+      "type": "Type",
+      "updated": "Updated",
+      "scale": "Size",
+      "scaleChunks": "{{count}} chunks",
+      "scaleImagesSuffix": " · {{count}} images",
+      "deleteTitle": "Permanently delete this asset (cannot be undone)",
+      "deleteAria": "Delete asset {{name}}",
+      "deleteConfirm": "Delete asset \"{{name}}\"?\n\n{{chunks}} chunks{{imagesPart}} will be removed, cannot be undone.",
+      "deleteImagesPart": " and {{count}} images",
+      "deleteFailed": "Delete failed",
+      "deleteFailedAlert": "Delete failed: {{msg}}"
+    },
+    "time": {
+      "notIndexed": "not indexed",
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    },
+    "detail": {
+      "title": "Asset detail",
+      "loading": "Loading…",
+      "back": "← Back to list",
+      "backToList": "Back to catalog",
+      "permButton": "🔒 Permissions",
+      "permButtonTitle": "Open permissions drawer for this asset (V2 · F-2)",
+      "deleteAssetBtn": "🗑 Delete asset",
+      "deleting": "Deleting…",
+      "deleteAssetTitle": "Permanently delete this asset (chunks and images included, cannot be undone)",
+      "deleteAssetConfirm": "Delete asset \"{{name}}\"?\n\nThis will:\n  · Remove from asset catalog\n  · Drop all vector chunks ({{chunks}})\n  · Drop linked images ({{images}})\n\nCannot be undone.",
+      "deleteFailedAlert": "Delete failed: {{msg}}",
+      "tabAssets": "Assets",
+      "tabRagflow": "RAGFlow summary",
+      "tabGraph": "Knowledge graph",
+      "fields": {
+        "type": "Type",
+        "source": "Source",
+        "spaceId": "Space ID",
+        "indexedAt": "Indexed at",
+        "chunks": "Chunks",
+        "images": "Images",
+        "tags": "Tags",
+        "summary": "Summary",
+        "noSummary": "(no summary)"
+      },
+      "banner": {
+        "overview": "Overview",
+        "metaLine": "Type: {{type}} · Status: {{status}} · Updated: {{time}}",
+        "chunksSuffix": " · {{count}} chunks",
+        "imagesSuffix": " · {{count}} images",
+        "sourceSuffix": " · Source: {{name}}",
+        "extractor": "Extractor:",
+        "chunkBreakdown": "Chunk types:",
+        "warningsSummary": "⚠ {{count}} warnings (hover to view)",
+        "warningsToggle": "View {{count}} extraction warnings",
+        "tagPrefix": "Tag: {{tag}}"
+      },
+      "loadFailed": "Load failed"
+    },
+    "graph": {
+      "title": "Entities & relations",
+      "empty": "No graph data",
+      "loading": "Loading neighborhood…",
+      "loadFailed": "Failed to load graph",
+      "nodes": "{{count}} nodes",
+      "edges": "{{count}} edges",
+      "selfDegree": "Asset degree {{n}}",
+      "mockBanner": "📌 Mock graph (schema FK / logical). Apache AGE has no neighborhood for this asset yet — it will appear as ingest / QA accumulate.",
+      "realBanner": "🧠 Real graph",
+      "tooltip": {
+        "degree": "{{kindLabel}} · degree {{deg}}",
+        "count": " · count {{count}}",
+        "idLabel": "ID: "
+      },
+      "kindLabels": {
+        "asset": "Asset",
+        "entity": "Entity",
+        "source": "Source",
+        "space": "Space",
+        "tag": "Tag",
+        "question": "Question",
+        "template": "Template"
+      },
+      "legend": {
+        "mockEntity": "Entity (table)",
+        "mockTemplate": "Business template",
+        "mockFk": "Foreign key",
+        "mockLogical": "Logical link"
+      }
+    },
+    "ragflow": {
+      "panelTitle": "RAGFlow status",
+      "notConnected": "RAGFlow not connected",
+      "previewTitle": "Semantic summary preview",
+      "previewMeta": "{{total}} chunks · showing first 10",
+      "previewSample": "(sample view)",
+      "regenerate": "Regenerate",
+      "sourceOverview": "Source overview",
+      "summary": "This asset \"{{name}}\" belongs to {{source}} ({{connector}}); currently indexed {{chunks}} chunks and {{images}} images. Tags: {{tags}}.",
+      "noTags": "(no tags)",
+      "unknownSource": "unknown source",
+      "tagSeparator": ", ",
+      "pillChunks": "{{total}} chunks",
+      "pillType": "Type: {{type}}",
+      "pillUpdated": "Updated {{date}}",
+      "chunksHeader": "Knowledge chunks",
+      "noChunks": "📭 No chunks available",
+      "chunkPage": "page {{page}}",
+      "vectorized": "Vectorized · {{kind}}"
+    },
+    "chunks": {
+      "empty": "🗂 No structured chunks for this asset; may be plain text or image-only — see the RAGFlow summary tab for the body.",
+      "totalLabel": "{{count}} chunks total",
+      "showingPart": "· showing {{shown}} / {{total}}",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "kinds": {
+        "heading": "Heading",
+        "paragraph": "Paragraph",
+        "table": "Table",
+        "image_caption": "Caption",
+        "generic": "Body"
+      },
+      "cols": {
+        "page": "Page",
+        "kind": "Type",
+        "content": "Content",
+        "headingPath": "Heading path"
+      }
+    }
+  },
   "mcp": {
     "title": "Data integration",
     "subtitle": "MCP query layer · Document access skills · Vector & graph connectivity",
