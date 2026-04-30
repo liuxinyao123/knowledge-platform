@@ -1,5 +1,5 @@
 /**
- * services/notebookTemplates.ts —— Notebook 模板系统（N-006 → N-007）
+ * services/notebookTemplates.ts —— Notebook 模板系统（N-006 → N-007 → N-008）
  *
  * 6 个内置模板（研究综述 / 会议准备 / 竞品分析 / 学习辅助 / 项目复盘 / 翻译解释），
  * 每个模板承载：场景说明 + 推荐 sources 类型 + 推荐 artifact 套件（复用 N-002
@@ -10,12 +10,16 @@
  *   - N-006：模板内容存代码注册表，DB 只存 template_id
  *   - N-007：把模板搬到 DB 表 notebook_template；source = system | community | user
  *           用于支持 N-008 用户自定义模板。代码常量保留作 seed 数据源 + 类型 narrowing
+ *   - N-008：开放用户自定义模板 CRUD；source='user' + owner_user_id 限定可见性；
+ *           不级联清空 notebook.template_id（dangling reference 由前端 graceful handle）
  *   - 提示卡可 dismiss（前端 localStorage 记忆）
  *
  * 详见：
- *   - openspec/changes/notebook-public-templates/{proposal,design,specs/template-pool-spec,tasks}.md
+ *   - openspec/changes/notebook-public-templates/...（N-007）
+ *   - openspec/changes/notebook-user-templates/...（N-008）
  *   - apps/qa-service/src/migrations/002-notebook-template-table.sql
  */
+import { randomBytes } from 'node:crypto'
 import type { ArtifactKind } from './artifactGenerator.ts'
 import { isArtifactKind } from './artifactGenerator.ts'
 import { getPgPool } from './pgDb.ts'
@@ -359,4 +363,312 @@ export async function seedSystemTemplatesIfMissing(): Promise<{ seeded: number }
     console.warn('[notebookTemplates] seedSystemTemplatesIfMissing failed (skipped):', err)
   }
   return { seeded }
+}
+
+// ── N-008: 用户自定义模板 CRUD ────────────────────────────────────────────────
+
+/**
+ * env 守卫：USER_TEMPLATES_ENABLED，默认 true。识别 false / 0 / off / no 关闭。
+ * 关闭时所有 4 个 API 返 404；前端入口隐藏（API meta 端点暴露此 flag）。
+ */
+export function isUserTemplatesEnabled(): boolean {
+  const v = (process.env.USER_TEMPLATES_ENABLED ?? '').toLowerCase().trim()
+  if (v === 'false' || v === '0' || v === 'off' || v === 'no') return false
+  return true
+}
+
+export interface CreateUserTemplateInput {
+  label: string
+  icon: string
+  description: string
+  recommendedSourceHint: string
+  recommendedArtifactKinds: ArtifactKind[]
+  starterQuestions: string[]
+}
+
+export type ValidateUserTemplateResult =
+  | { ok: true; data: CreateUserTemplateInput }
+  | { ok: false; errors: Record<string, string> }
+
+/**
+ * 校验用户自定义模板 input。
+ *
+ * 字段约束（与 design.md / spec 同步）：
+ *   - label                     1..10 chars
+ *   - icon                      1..2 chars (单 emoji；不严格校验 grapheme 因 emoji
+ *                                   多字节，仅控制 length 上限)
+ *   - description               1..60 chars
+ *   - recommendedSourceHint     1..40 chars
+ *   - recommendedArtifactKinds  0..3, 每个 ∈ ARTIFACT_REGISTRY
+ *   - starterQuestions          1..3, 每条 1..50 chars
+ *
+ * @param partial 是否允许部分缺省（PATCH 用），默认 false（POST 用，全字段必填）
+ */
+export function validateUserTemplateInput(
+  input: unknown,
+  partial = false,
+): ValidateUserTemplateResult {
+  const errors: Record<string, string> = {}
+  if (typeof input !== 'object' || input === null) {
+    return { ok: false, errors: { _: 'body must be object' } }
+  }
+  const o = input as Record<string, unknown>
+
+  // forbid 改 source / template_key / owner_user_id（PATCH 时 input 可能含这些字段）
+  for (const k of ['source', 'template_key', 'owner_user_id', 'id'] as const) {
+    if (k in o) errors[k] = `字段 ${k} 不允许由用户设置/修改`
+  }
+
+  function checkStr(field: keyof CreateUserTemplateInput, min: number, max: number) {
+    const v = o[field]
+    if (v === undefined) {
+      if (!partial) errors[field] = `${field} 必填`
+      return undefined
+    }
+    if (typeof v !== 'string') {
+      errors[field] = `${field} 必须是 string`
+      return undefined
+    }
+    const t = v.trim()
+    if (t.length < min) errors[field] = `${field} 至少 ${min} 字`
+    else if (t.length > max) errors[field] = `${field} 最多 ${max} 字`
+    return t
+  }
+
+  const label = checkStr('label', 1, 10)
+  const icon = checkStr('icon', 1, 2)
+  const description = checkStr('description', 1, 60)
+  const recommendedSourceHint = checkStr('recommendedSourceHint', 1, 40)
+
+  let recommendedArtifactKinds: ArtifactKind[] | undefined
+  if (o.recommendedArtifactKinds === undefined) {
+    if (!partial) errors.recommendedArtifactKinds = 'recommendedArtifactKinds 必填（可空数组）'
+  } else if (!Array.isArray(o.recommendedArtifactKinds)) {
+    errors.recommendedArtifactKinds = 'recommendedArtifactKinds 必须是数组'
+  } else if (o.recommendedArtifactKinds.length > 3) {
+    errors.recommendedArtifactKinds = 'recommendedArtifactKinds 最多 3 个'
+  } else {
+    const bad: string[] = []
+    const cleaned: ArtifactKind[] = []
+    for (const k of o.recommendedArtifactKinds) {
+      if (typeof k !== 'string' || !isArtifactKind(k)) {
+        bad.push(typeof k === 'string' ? k : '<non-string>')
+      } else {
+        cleaned.push(k)
+      }
+    }
+    if (bad.length > 0) {
+      errors.recommendedArtifactKinds = `不识别的 artifact kind: ${bad.join(', ')}`
+    } else {
+      recommendedArtifactKinds = cleaned
+    }
+  }
+
+  let starterQuestions: string[] | undefined
+  if (o.starterQuestions === undefined) {
+    if (!partial) errors.starterQuestions = 'starterQuestions 必填（1-3 条）'
+  } else if (!Array.isArray(o.starterQuestions)) {
+    errors.starterQuestions = 'starterQuestions 必须是数组'
+  } else if (o.starterQuestions.length < 1 || o.starterQuestions.length > 3) {
+    errors.starterQuestions = 'starterQuestions 必须 1-3 条'
+  } else {
+    const cleaned: string[] = []
+    let bad = false
+    for (const q of o.starterQuestions) {
+      if (typeof q !== 'string') { bad = true; break }
+      const t = q.trim()
+      if (t.length < 1 || t.length > 50) { bad = true; break }
+      cleaned.push(t)
+    }
+    if (bad) {
+      errors.starterQuestions = '每条 starterQuestion 必须 1-50 字 string'
+    } else {
+      starterQuestions = cleaned
+    }
+  }
+
+  if (Object.keys(errors).length > 0) return { ok: false, errors }
+
+  // 构造干净 data（缺失字段在 partial 模式下不出现）
+  const data: Partial<CreateUserTemplateInput> = {}
+  if (label !== undefined) data.label = label
+  if (icon !== undefined) data.icon = icon
+  if (description !== undefined) data.description = description
+  if (recommendedSourceHint !== undefined) data.recommendedSourceHint = recommendedSourceHint
+  if (recommendedArtifactKinds !== undefined) data.recommendedArtifactKinds = recommendedArtifactKinds
+  if (starterQuestions !== undefined) data.starterQuestions = starterQuestions
+
+  return { ok: true, data: data as CreateUserTemplateInput }
+}
+
+/** 生成用户模板 key：`user_<userId>_<8 hex>`，碰撞概率 1/2^32 */
+function generateUserTemplateKey(userId: number): string {
+  const suffix = randomBytes(4).toString('hex')   // 8 hex chars
+  return `user_${userId}_${suffix}`
+}
+
+/**
+ * 用户创建自己的模板。
+ *
+ * - 调用方需先 validate → ok
+ * - INSERT source='user', owner_user_id=userId
+ * - DB 返完整行 → 返 NotebookTemplateSpec
+ *
+ * unique 冲突（极小概率 nanoid 撞）→ 重试 1 次
+ */
+export async function createUserTemplate(
+  userId: number,
+  input: CreateUserTemplateInput,
+): Promise<NotebookTemplateSpec> {
+  if (!Number.isFinite(userId) || userId <= 0) {
+    throw new Error('createUserTemplate: invalid userId')
+  }
+  const pool = getPgPool()
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const key = generateUserTemplateKey(userId)
+    try {
+      const { rows } = await pool.query<NotebookTemplateRow>(
+        `INSERT INTO notebook_template
+           (template_key, source, owner_user_id, label, icon, description,
+            recommended_source_hint, recommended_artifact_kinds, starter_questions)
+         VALUES ($1, 'user', $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb)
+         RETURNING id, template_key, source, owner_user_id, label, icon, description,
+                   recommended_source_hint, recommended_artifact_kinds, starter_questions`,
+        [
+          key, userId,
+          input.label, input.icon, input.description,
+          input.recommendedSourceHint,
+          JSON.stringify(input.recommendedArtifactKinds),
+          JSON.stringify(input.starterQuestions),
+        ],
+      )
+      return rowToSpec(rows[0])
+    } catch (err) {
+      // 23505 = PG unique violation；唯一冲突时重试
+      const code = (err as { code?: string })?.code
+      if (code === '23505' && attempt === 0) {
+        // eslint-disable-next-line no-console
+        console.warn('[notebookTemplates] template_key collision, retry')
+        continue
+      }
+      throw err
+    }
+  }
+  // 两次都撞了 — 不可能（4 字节随机 = 1/2^32 概率），但抛
+  throw new Error('createUserTemplate: failed after 2 retries')
+}
+
+/**
+ * 编辑用户自定义模板。
+ *
+ * - lookup → 不存在 / null
+ * - 不允许改 source ≠ 'user'：抛 ForbiddenError
+ * - owner ≠ userId 且 ¬isAdmin：抛 ForbiddenError
+ * - 仅 patch 提供的字段；updated_at = NOW()
+ */
+export async function updateUserTemplate(opts: {
+  key: string
+  userId: number
+  isAdmin: boolean
+  patch: Partial<CreateUserTemplateInput>
+}): Promise<{ ok: true; spec: NotebookTemplateSpec }
+         | { ok: false; reason: 'not_found' | 'forbidden' | 'system_or_community_immutable' }> {
+  if (typeof opts.key !== 'string' || opts.key.length === 0) {
+    return { ok: false, reason: 'not_found' }
+  }
+  const pool = getPgPool()
+  const { rows: existing } = await pool.query<NotebookTemplateRow>(
+    `SELECT id, template_key, source, owner_user_id, label, icon, description,
+            recommended_source_hint, recommended_artifact_kinds, starter_questions
+     FROM notebook_template WHERE template_key = $1 LIMIT 1`,
+    [opts.key],
+  )
+  if (existing.length === 0) return { ok: false, reason: 'not_found' }
+  const row = existing[0]
+
+  // 不许改 system / community 模板（即便 admin 想改也不行：避免误改 seed）
+  if (row.source !== 'user') {
+    return { ok: false, reason: 'system_or_community_immutable' }
+  }
+  // 普通用户只能改自己的
+  if (!opts.isAdmin && row.owner_user_id !== opts.userId) {
+    return { ok: false, reason: 'forbidden' }
+  }
+
+  const sets: string[] = []
+  const params: unknown[] = []
+  function bind(col: string, val: unknown) {
+    params.push(val)
+    sets.push(`${col} = $${params.length}`)
+  }
+  if (opts.patch.label !== undefined) bind('label', opts.patch.label)
+  if (opts.patch.icon !== undefined) bind('icon', opts.patch.icon)
+  if (opts.patch.description !== undefined) bind('description', opts.patch.description)
+  if (opts.patch.recommendedSourceHint !== undefined) {
+    bind('recommended_source_hint', opts.patch.recommendedSourceHint)
+  }
+  if (opts.patch.recommendedArtifactKinds !== undefined) {
+    params.push(JSON.stringify(opts.patch.recommendedArtifactKinds))
+    sets.push(`recommended_artifact_kinds = $${params.length}::jsonb`)
+  }
+  if (opts.patch.starterQuestions !== undefined) {
+    params.push(JSON.stringify(opts.patch.starterQuestions))
+    sets.push(`starter_questions = $${params.length}::jsonb`)
+  }
+  if (sets.length === 0) {
+    // 啥都没 patch：直接返当前 spec（friendlier than 400）
+    return { ok: true, spec: rowToSpec(row) }
+  }
+  sets.push('updated_at = NOW()')
+  params.push(opts.key)
+
+  const { rows } = await pool.query<NotebookTemplateRow>(
+    `UPDATE notebook_template SET ${sets.join(', ')}
+     WHERE template_key = $${params.length}
+     RETURNING id, template_key, source, owner_user_id, label, icon, description,
+               recommended_source_hint, recommended_artifact_kinds, starter_questions`,
+    params,
+  )
+  if (rows.length === 0) return { ok: false, reason: 'not_found' }
+  return { ok: true, spec: rowToSpec(rows[0]) }
+}
+
+/**
+ * 删除用户自定义模板。
+ *
+ * - 不存在 → { deleted: false, reason: 'not_found' }
+ * - source != 'user' → { deleted: false, reason: 'system_or_community_immutable' }
+ * - 非 owner 且 非 admin → { deleted: false, reason: 'forbidden' }
+ * - DELETE → { deleted: true }
+ *
+ * 注意：notebook.template_id 不级联清空（dangling reference 由前端 graceful 渲染）
+ */
+export async function deleteUserTemplate(opts: {
+  key: string
+  userId: number
+  isAdmin: boolean
+}): Promise<{ deleted: true } | { deleted: false; reason: 'not_found' | 'forbidden' | 'system_or_community_immutable' }> {
+  if (typeof opts.key !== 'string' || opts.key.length === 0) {
+    return { deleted: false, reason: 'not_found' }
+  }
+  const pool = getPgPool()
+  const { rows } = await pool.query<{ source: NotebookTemplateSource; owner_user_id: number | null }>(
+    `SELECT source, owner_user_id FROM notebook_template
+     WHERE template_key = $1 LIMIT 1`,
+    [opts.key],
+  )
+  if (rows.length === 0) return { deleted: false, reason: 'not_found' }
+  const row = rows[0]
+  if (row.source !== 'user') {
+    return { deleted: false, reason: 'system_or_community_immutable' }
+  }
+  if (!opts.isAdmin && row.owner_user_id !== opts.userId) {
+    return { deleted: false, reason: 'forbidden' }
+  }
+  await pool.query(
+    `DELETE FROM notebook_template WHERE template_key = $1`,
+    [opts.key],
+  )
+  return { deleted: true }
 }

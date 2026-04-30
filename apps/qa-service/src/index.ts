@@ -11,6 +11,7 @@ import { ingestRouter } from './routes/ingest.ts'
 import { ingestJobsRouter } from './routes/ingestJobs.ts'
 import { evalRouter } from './routes/eval.ts'
 import { notebooksRouter } from './routes/notebooks.ts'
+import { templatesRouter } from './routes/templates.ts'
 import { teamsRouter } from './routes/teams.ts'
 import { iamAclRouter } from './routes/iamAcl.ts'
 import { assetDirectoryRouter } from './routes/assetDirectory.ts'
@@ -74,6 +75,7 @@ app.use('/api/ingest', ingestRouter)
 app.use('/api/ingest/jobs', ingestJobsRouter)
 app.use('/api/eval', evalRouter)
 app.use('/api/notebooks', notebooksRouter)
+app.use('/api/templates', templatesRouter)
 app.use('/api/iam/teams', teamsRouter)
 app.use('/api/iam/acl', iamAclRouter)
 app.use('/api/asset-directory', assetDirectoryRouter)

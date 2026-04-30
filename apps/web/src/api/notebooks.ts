@@ -140,6 +140,54 @@ export async function listTemplates(): Promise<NotebookTemplateSpec[]> {
   return data.templates
 }
 
+// ── N-008：用户自定义模板 CRUD ──────────────────────────────────────────────
+// 跟后端 routes/templates.ts 同步
+//
+// 使用专门的 templatesClient（baseURL=/api/templates）而不是 client（/api/notebooks），
+// 端点完全独立。
+
+const templatesClient = axios.create({ baseURL: '/api/templates' })
+
+/** N-008 用户自定义模板 input（创建用 / patch 用） */
+export interface CreateUserTemplateInput {
+  label: string
+  icon: string
+  description: string                       // ← 后端 service 字段名为 description（不是 desc）
+  recommendedSourceHint: string
+  recommendedArtifactKinds: ArtifactKind[]
+  starterQuestions: string[]
+}
+
+export interface UserTemplatesMeta {
+  enabled: boolean
+}
+
+/** GET /api/templates/_meta —— 暴露 USER_TEMPLATES_ENABLED flag */
+export async function getUserTemplatesMeta(): Promise<UserTemplatesMeta> {
+  const { data } = await templatesClient.get<UserTemplatesMeta>('/_meta')
+  return data
+}
+
+/** POST /api/templates */
+export async function createUserTemplate(input: CreateUserTemplateInput): Promise<NotebookTemplateSpec> {
+  const { data } = await templatesClient.post<NotebookTemplateSpec>('/', input)
+  return data
+}
+
+/** PATCH /api/templates/:key */
+export async function updateUserTemplate(
+  key: string,
+  patch: Partial<CreateUserTemplateInput>,
+): Promise<NotebookTemplateSpec> {
+  const { data } = await templatesClient.patch<NotebookTemplateSpec>(`/${encodeURIComponent(key)}`, patch)
+  return data
+}
+
+/** DELETE /api/templates/:key */
+export async function deleteUserTemplate(key: string): Promise<void> {
+  await templatesClient.delete(`/${encodeURIComponent(key)}`)
+}
+
 export async function getNotebook(id: number): Promise<{
   notebook: NotebookSummary
   sources: NotebookSource[]

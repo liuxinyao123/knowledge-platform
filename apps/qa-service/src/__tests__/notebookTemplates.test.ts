@@ -2,7 +2,7 @@
  * notebookTemplates · N-006 注册表完整性 + 守卫 + 跟 N-002 ARTIFACT_REGISTRY 对接
  *                  · N-007 PT-1..PT-8 DB 层 acceptance（mock pgPool）
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // PT-1..PT-6 / DB 层测试要 mock getPgPool；放在 import 顶部以确保 hoisting
 vi.mock('../services/pgDb.ts', () => {
@@ -22,7 +22,13 @@ import {
   loadTemplatesFromDb,
   getTemplateByKey,
   seedSystemTemplatesIfMissing,
+  isUserTemplatesEnabled,
+  validateUserTemplateInput,
+  createUserTemplate,
+  updateUserTemplate,
+  deleteUserTemplate,
   type NotebookTemplateId,
+  type CreateUserTemplateInput,
 } from '../services/notebookTemplates.ts'
 import { isArtifactKind } from '../services/artifactGenerator.ts'
 
@@ -314,5 +320,292 @@ describe('N-007 · loadTemplatesFromDb / getTemplateByKey / seed', () => {
     queryMock.mockRejectedValueOnce(new Error('PG down'))
     const r = await getTemplateByKey({ key: 'no_such_key', userId: 7 })
     expect(r).toBeNull()
+  })
+})
+
+// ── N-008 acceptance（UT-1..UT-14）─────────────────────────────────────────
+
+describe('N-008 · isUserTemplatesEnabled env 守卫', () => {
+  const KEY = 'USER_TEMPLATES_ENABLED'
+  const original = process.env[KEY]
+  beforeEach(() => { delete process.env[KEY] })
+  afterEach(() => {
+    if (original === undefined) delete process.env[KEY]
+    else process.env[KEY] = original
+  })
+
+  it('未设置 → true', () => {
+    expect(isUserTemplatesEnabled()).toBe(true)
+  })
+  it('false / 0 / off / no → false', () => {
+    for (const v of ['false', '0', 'off', 'no', 'FALSE', 'Off']) {
+      process.env[KEY] = v
+      expect(isUserTemplatesEnabled()).toBe(false)
+    }
+  })
+  it('其它任意值 → true', () => {
+    for (const v of ['true', '1', 'yes', 'on', 'anything']) {
+      process.env[KEY] = v
+      expect(isUserTemplatesEnabled()).toBe(true)
+    }
+  })
+})
+
+describe('N-008 · validateUserTemplateInput', () => {
+  function goodInput(): CreateUserTemplateInput {
+    return {
+      label: '我的研究',
+      icon: '🧪',
+      description: '我自定义的模板',
+      recommendedSourceHint: '上传相关资料',
+      recommendedArtifactKinds: ['briefing'],
+      starterQuestions: ['这份资料的核心是什么'],
+    }
+  }
+
+  it('合法 input → ok', () => {
+    const r = validateUserTemplateInput(goodInput())
+    expect(r.ok).toBe(true)
+  })
+
+  it('UT-2a label 超 10 字 → 400', () => {
+    const r = validateUserTemplateInput({ ...goodInput(), label: '一二三四五六七八九十一' })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.label).toMatch(/最多 10/)
+  })
+
+  it('UT-2b label 缺失（POST 模式）→ 400', () => {
+    const x: Partial<CreateUserTemplateInput> = goodInput()
+    delete x.label
+    const r = validateUserTemplateInput(x)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.label).toMatch(/必填/)
+  })
+
+  it('UT-2c label 缺失（PATCH 模式）→ ok（partial）', () => {
+    const x: Partial<CreateUserTemplateInput> = { description: '改一下描述' }
+    const r = validateUserTemplateInput(x, true)
+    expect(r.ok).toBe(true)
+  })
+
+  it('UT-13 recommendedArtifactKinds 含未注册 → 400', () => {
+    const r = validateUserTemplateInput({ ...goodInput(), recommendedArtifactKinds: ['briefing', 'foobar'] })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.recommendedArtifactKinds).toMatch(/foobar/)
+  })
+
+  it('UT-13b recommendedArtifactKinds > 3 → 400', () => {
+    const r = validateUserTemplateInput({
+      ...goodInput(),
+      recommendedArtifactKinds: ['briefing', 'faq', 'mindmap', 'outline'],
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.recommendedArtifactKinds).toMatch(/最多 3/)
+  })
+
+  it('UT-14a starterQuestions 0 条 → 400', () => {
+    const r = validateUserTemplateInput({ ...goodInput(), starterQuestions: [] })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.starterQuestions).toMatch(/1-3/)
+  })
+
+  it('UT-14b starterQuestions 4 条 → 400', () => {
+    const r = validateUserTemplateInput({
+      ...goodInput(),
+      starterQuestions: ['a', 'b', 'c', 'd'],
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.starterQuestions).toMatch(/1-3/)
+  })
+
+  it('UT-14c starterQuestions 含 51 字 → 400', () => {
+    const r = validateUserTemplateInput({
+      ...goodInput(),
+      starterQuestions: ['x'.repeat(51)],
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.starterQuestions).toMatch(/1-50/)
+  })
+
+  it('UT-8 试图改 source / owner_user_id / template_key → 400', () => {
+    const r1 = validateUserTemplateInput({ ...goodInput(), source: 'system' })
+    expect(r1.ok).toBe(false)
+    if (!r1.ok) expect(r1.errors.source).toMatch(/不允许/)
+    const r2 = validateUserTemplateInput({ ...goodInput(), owner_user_id: 99 })
+    expect(r2.ok).toBe(false)
+    if (!r2.ok) expect(r2.errors.owner_user_id).toMatch(/不允许/)
+    const r3 = validateUserTemplateInput({ ...goodInput(), template_key: 'forced_key' })
+    expect(r3.ok).toBe(false)
+    if (!r3.ok) expect(r3.errors.template_key).toMatch(/不允许/)
+  })
+
+  it('input 不是 object → 400', () => {
+    expect(validateUserTemplateInput(null).ok).toBe(false)
+    expect(validateUserTemplateInput('foo').ok).toBe(false)
+    expect(validateUserTemplateInput(42).ok).toBe(false)
+  })
+})
+
+describe('N-008 · createUserTemplate / updateUserTemplate / deleteUserTemplate', () => {
+  beforeEach(() => { queryMock.mockReset() })
+
+  function fakeRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 100,
+      template_key: 'user_7_aabbccdd',
+      source: 'user',
+      owner_user_id: 7,
+      label: '我的研究',
+      icon: '🧪',
+      description: '我自定义',
+      recommended_source_hint: '上传相关',
+      recommended_artifact_kinds: ['briefing'],
+      starter_questions: ['核心是什么'],
+      ...overrides,
+    }
+  }
+
+  function goodInput(): CreateUserTemplateInput {
+    return {
+      label: '我的研究',
+      icon: '🧪',
+      description: '我自定义',
+      recommendedSourceHint: '上传相关',
+      recommendedArtifactKinds: ['briefing'],
+      starterQuestions: ['核心是什么'],
+    }
+  }
+
+  it('UT-1 createUserTemplate 合法 → spec', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow()] })
+    const spec = await createUserTemplate(7, goodInput())
+    expect(spec.id).toBe('user_7_aabbccdd')
+    expect(spec.source).toBe('user')
+    expect(spec.label).toBe('我的研究')
+    // SQL 应是 INSERT + source='user' + owner=$2
+    const [sql, params] = queryMock.mock.calls[0]
+    expect(sql).toMatch(/INSERT INTO notebook_template/)
+    expect(sql).toMatch(/'user'/)
+    expect(params[1]).toBe(7)
+  })
+
+  it('UT-12 createUserTemplate template_key 形如 user_<id>_<8hex>', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow()] })
+    await createUserTemplate(42, goodInput())
+    const [, params] = queryMock.mock.calls[0]
+    expect(params[0]).toMatch(/^user_42_[a-f0-9]{8}$/)
+  })
+
+  it('UT-12b createUserTemplate unique 冲突时重试一次', async () => {
+    const dupErr: Error & { code?: string } = new Error('dup')
+    dupErr.code = '23505'
+    queryMock.mockRejectedValueOnce(dupErr)
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow()] })
+    const spec = await createUserTemplate(7, goodInput())
+    expect(spec).toBeDefined()
+    expect(queryMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('UT-5 updateUserTemplate 自己的 user 模板 → ok + spec', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow()] })   // SELECT existing
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow({ label: '改了' })] })  // UPDATE
+    const r = await updateUserTemplate({
+      key: 'user_7_aabbccdd',
+      userId: 7,
+      isAdmin: false,
+      patch: { label: '改了' },
+    })
+    expect(r.ok).toBe(true)
+    if (r.ok) expect(r.spec.label).toBe('改了')
+  })
+
+  it('UT-6 updateUserTemplate 别人的 user 模板（普通用户）→ forbidden', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow({ owner_user_id: 99 })] })
+    const r = await updateUserTemplate({
+      key: 'user_99_xxxxxxxx',
+      userId: 7,
+      isAdmin: false,
+      patch: { label: '改' },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toBe('forbidden')
+  })
+
+  it('UT-6b updateUserTemplate admin 改别人的 → ok', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow({ owner_user_id: 99 })] })
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow({ owner_user_id: 99, label: '改了' })] })
+    const r = await updateUserTemplate({
+      key: 'user_99_xxxxxxxx',
+      userId: 7,
+      isAdmin: true,
+      patch: { label: '改了' },
+    })
+    expect(r.ok).toBe(true)
+  })
+
+  it('UT-7 updateUserTemplate system 模板（即便 admin）→ system_or_community_immutable', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow({ source: 'system', owner_user_id: null })] })
+    const r = await updateUserTemplate({
+      key: 'research_review',
+      userId: 7,
+      isAdmin: true,
+      patch: { label: '改' },
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toBe('system_or_community_immutable')
+  })
+
+  it('UT updateUserTemplate not_found → reason not_found', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const r = await updateUserTemplate({
+      key: 'nope', userId: 7, isAdmin: false, patch: {},
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toBe('not_found')
+  })
+
+  it('UT updateUserTemplate empty patch → 直接返当前 spec', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [fakeRow()] })
+    const r = await updateUserTemplate({
+      key: 'user_7_aabbccdd', userId: 7, isAdmin: false, patch: {},
+    })
+    expect(r.ok).toBe(true)
+    // 仅一次 SELECT，没 UPDATE
+    expect(queryMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('UT-9 deleteUserTemplate 自己的 user 模板 → deleted', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ source: 'user', owner_user_id: 7 }] })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const r = await deleteUserTemplate({ key: 'user_7_aabbccdd', userId: 7, isAdmin: false })
+    expect(r.deleted).toBe(true)
+  })
+
+  it('UT-10 deleteUserTemplate system 模板（即便 admin）→ system_or_community_immutable', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ source: 'system', owner_user_id: null }] })
+    const r = await deleteUserTemplate({ key: 'research_review', userId: 7, isAdmin: true })
+    expect(r.deleted).toBe(false)
+    if (!r.deleted) expect(r.reason).toBe('system_or_community_immutable')
+  })
+
+  it('UT-11 deleteUserTemplate admin 删别人的 user 模板 → deleted', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ source: 'user', owner_user_id: 99 }] })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const r = await deleteUserTemplate({ key: 'user_99_xxxxxxxx', userId: 7, isAdmin: true })
+    expect(r.deleted).toBe(true)
+  })
+
+  it('UT-11b deleteUserTemplate 别人的（普通用户）→ forbidden', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ source: 'user', owner_user_id: 99 }] })
+    const r = await deleteUserTemplate({ key: 'user_99_xxxxxxxx', userId: 7, isAdmin: false })
+    expect(r.deleted).toBe(false)
+    if (!r.deleted) expect(r.reason).toBe('forbidden')
+  })
+
+  it('UT deleteUserTemplate not_found → reason not_found', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const r = await deleteUserTemplate({ key: 'nope', userId: 7, isAdmin: false })
+    expect(r.deleted).toBe(false)
+    if (!r.deleted) expect(r.reason).toBe('not_found')
   })
 })

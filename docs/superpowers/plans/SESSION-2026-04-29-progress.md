@@ -1,12 +1,48 @@
 # Session Progress · 2026-04-29 → 2026-04-30
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute（B-3）+ V-* 全过 + archive（B-5）** + 顺手清 N-006 UI 债 + Detail.tsx UX bug fix
-> 下一站待选：N-008 Execute（B 工作流，前置 N-007 已 verified）/ D-002.7 重新设计 factual_lookup prompt
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute + archive** + 顺手清 N-006 UI 债 + Detail.tsx UX bug fix → **落地 N-008 Execute + archive**
+> 下一站待选：D-002.7 重新设计 factual_lookup prompt / D-003 评测集扩到 60 case / N-008 macOS 真机 V-2..V-6 验收
 
 ---
 
 ## 本次完成（按提交分组）
+
+### Commit ⑭ · N-008 用户自定义模板 Execute + archive（2026-04-30，B 工作流 B-3..B-5）
+
+**新增**：
+- `apps/qa-service/src/routes/templates.ts`（~115 行）—— 4 个端点 + env 守卫 middleware
+- `apps/web/src/knowledge/Notebooks/CreateTemplateModal.tsx`（~250 行）—— 创建 + 编辑共用 modal，inline 校验 + ArtifactKind chip 多选 + 起手问题动态 1-3 行
+- `apps/web/src/knowledge/Notebooks/MyTemplateActions.tsx`（~60 行）—— hover ✎/× 按钮，二级 confirm
+
+**修改**：
+- `apps/qa-service/src/services/notebookTemplates.ts`（+~340 / -2）—— `isUserTemplatesEnabled` / `validateUserTemplateInput` (含 partial PATCH 模式) / `createUserTemplate` (含 unique 重试) / `updateUserTemplate` / `deleteUserTemplate`
+- `apps/qa-service/src/index.ts`（+2）—— mount `/api/templates`
+- `apps/qa-service/src/__tests__/notebookTemplates.test.ts`（+260）—— UT-1..UT-14（28 case，含 env 守卫 / validate 9 / CRUD 13）
+- `apps/web/src/api/notebooks.ts`（+50）—— `getUserTemplatesMeta` / `createUserTemplate` / `updateUserTemplate` / `deleteUserTemplate` SDK，独立 `templatesClient`
+- `apps/web/src/knowledge/Notebooks/index.tsx`（~+90）—— CreateNotebookModal 集成 N-008：`+ 创建我的模板` 按钮（仅 enabled 时）+ user 模板 hover MyTemplateActions + source 角标（"我的"/"社区"）
+
+**Archive**：
+- `docs/superpowers/specs/notebook-user-templates/` → `docs/superpowers/archive/notebook-user-templates/`
+- `openspec/changes/notebook-user-templates/tasks.md` 全 B-3..B-5 打勾
+
+**API 契约**：
+- `GET    /api/templates/_meta` → `{ enabled: boolean }` （前端用来判断是否显示 + 创建入口）
+- `POST   /api/templates`（auth + env on）→ 201 + spec / 400 errors
+- `PATCH  /api/templates/:key` → 200 + updated / 404 / 403
+- `DELETE /api/templates/:key` → 200 / 404 / 403
+
+**约束实现要点**：
+- `template_key = "user_<userId>_<8 hex>"`，碰撞概率 1/2^32；DB unique 冲突重试 1 次
+- `source/template_key/owner_user_id` 不允许由 PATCH body 修改（validate 层拦）
+- `source != 'user'` 即便 admin 也不能改/删（system / community 模板 immutable）
+- 删除模板**不**级联清空 `notebook.template_id`（dangling reference 由 listTemplates 不返此 key + TemplateHintCard 读不到 spec 自动 hide 实现 graceful handle）
+- `USER_TEMPLATES_ENABLED=false` 时 4 个 mutating endpoint 直接返 404（伪装不存在），`_meta` 仍可访以让前端隐藏入口
+
+**验证（沙箱 Linux）**：
+- vitest 124/124（notebookTemplates 58 + accessibility 15 + answerIntent 51）
+- tsc qa-service / web 双向 exit 0
+- macOS 真机 V-2..V-6 / V-1 真 PG 端到端验收待用户跑
 
 ### Commit ⑬ · N-007 archive sign-off（2026-04-30，B 工作流 B-5 Archive）
 **移动**：`docs/superpowers/specs/notebook-public-templates/` → `docs/superpowers/archive/notebook-public-templates/`
@@ -305,6 +341,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #72 | **N-008 用户自定义模板 Execute + archive（B 工作流 B-3..B-5，2026-04-30，commit ⑭）** |
 | #71 | **N-007 archive sign-off（B 工作流 B-5，2026-04-30）** |
 | #70 | NotebookDetail UX bug fix: setErr 拆分（C 工作流，commit 7ff13ae）|
 | #69 | TemplateHintCard 视觉重写（C 工作流，commit 6d7b9d6）|
@@ -326,10 +363,16 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A'' · N-008 用户自定义模板 Execute（B 工作流，~1 小时）
-**做**：基于 N-007 已 verified 的 schema 实现 4 个 CRUD API + CreateTemplateModal + MyTemplateActions hover 按钮 + source 角标 + env 守卫
-**前置**：N-007 已 archive ✅；spec 已 lock 在 `openspec/changes/notebook-user-templates/`
-**为啥重要**：把模板系统从"管理员配置"扩成"用户共创"
+### 选项 A''' · N-008 macOS 真机验收（V-2..V-6，~15 分钟）
+**做**：在 macOS 上点一遍 N-008 UI 流程
+- V-2 + 创建我的模板 → 模态填字段 → 创建 → 选择器立即可见
+- V-3 hover ✎ → 编辑 → 字段更新
+- V-4 hover × → 二级 confirm → 删除 → 选择器消失
+- 顺手测：dangling reference（用刚创再删的 template_id 老 notebook 不崩）
+- V-5 cURL `PATCH /api/templates/research_review` → 403 system_or_community_immutable
+- V-6 在 .env 设 `USER_TEMPLATES_ENABLED=false` 重启 → `/_meta` 返 enabled: false → 前端入口消失 / 4 个 mutating API 404
+
+### ~~选项 A'' · N-008 Execute~~（已做，2026-04-30 commit ⑭）
 
 ### 选项 B · D-002.7 重新设计 factual_lookup prompt（B 工作流，~1 小时）
 **做**：基于 D-002.6 v1 反直觉发现重新设计严格 prompt（few-shot / chain-of-extract / system-user 解耦三选一）
@@ -395,7 +438,8 @@ must_pass: 5/5（V-3 三跑稳定）
 - `b44cb95` docs(session): N-007 Execute 进度归档（包在第一次更新内）
 - `6d7b9d6` feat(web): TemplateHintCard 视觉重写（C 工作流，commit ⑪）
 - `7ff13ae` fix(web): NotebookDetail 错误状态拆分（C 工作流，commit ⑫）
-- `<archive commit>` docs: N-007 archive sign-off + tasks 全打勾（B-5，commit ⑬，本次新增）
+- `fc427f4` docs: N-007 archive sign-off + V-* 全过（B-5，commit ⑬）
+- `<n008 commit>` feat(notebook): N-008 用户自定义模板 Execute + archive（B-3..B-5，commit ⑭，本次新增）
 
 随时 push：
 
