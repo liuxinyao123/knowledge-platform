@@ -10,6 +10,7 @@
  */
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   getNotebook, clearMessages, generateArtifact,
   type NotebookSummary, type NotebookSource, type NotebookMessage,
@@ -25,6 +26,7 @@ export default function NotebookDetail() {
   const { id } = useParams<{ id: string }>()
   const notebookId = Number(id)
   const navigate = useNavigate()
+  const { t } = useTranslation('notebook')
   const [notebook, setNotebook] = useState<NotebookSummary | null>(null)
   const [sources, setSources] = useState<NotebookSource[]>([])
   const [messages, setMessages] = useState<NotebookMessage[]>([])
@@ -57,7 +59,7 @@ export default function NotebookDetail() {
   useEffect(() => { void reload() }, [reload])
 
   if (!Number.isFinite(notebookId)) {
-    return <div className="page-body"><div style={{ color: '#b91c1c' }}>非法 notebook id</div></div>
+    return <div className="page-body"><div style={{ color: '#b91c1c' }}>{t('detail.invalidId')}</div></div>
   }
 
   return (
@@ -73,24 +75,24 @@ export default function NotebookDetail() {
         <div>
           <div className="page-title">
             {loadErr
-              ? '加载失败'
+              ? t('common:states.loadFailed')
               : notebook === null
-                ? '加载中…'
-                : (notebook.name?.trim() || `（未命名笔记本 · #${notebookId}）`)}
+                ? t('common:states.loading')
+                : (notebook.name?.trim() || t('list.untitled', { id: notebookId }))}
           </div>
           {notebook?.description && (
             <div className="page-sub">{notebook.description}</div>
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/notebooks')}>← 返回</button>
+          <button className="btn" onClick={() => navigate('/notebooks')}>{t('detail.backButton')}</button>
           <button className="btn"
                   onClick={async () => {
                     if (messages.length === 0) return
-                    if (!confirm('清空当前对话？所有消息会被删除。')) return
+                    if (!confirm(t('detail.clearChatConfirm'))) return
                     await clearMessages(notebookId); void reload()
-                  }}>清空对话</button>
-          <button className="btn primary" onClick={() => setShareOpen(true)}>🔗 共享</button>
+                  }}>{t('detail.clearChat')}</button>
+          <button className="btn primary" onClick={() => setShareOpen(true)}>{t('detail.shareButton')}</button>
         </div>
       </div>
 
@@ -111,7 +113,7 @@ export default function NotebookDetail() {
           <span>{actionErr}</span>
           <button
             type="button"
-            aria-label="关闭提示"
+            aria-label={t('detail.actionToastClose')}
             onClick={() => setActionErr(null)}
             style={{
               background: 'transparent', border: 'none', cursor: 'pointer',
@@ -133,12 +135,12 @@ export default function NotebookDetail() {
               // 不自动 reload；StudioPanel 自己 1.5s 轮询会拿到
             } catch (e) {
               // 用 actionErr 而不是 loadErr，避免把页面标题伪装成"加载失败"
-              const msg = e instanceof Error ? e.message : '触发 artifact 失败'
+              const msg = e instanceof Error ? e.message : ''
               // axios 把 4xx 包成 "Request failed with status code N"，
-              // 尽量从 response.data.error 中取后端的中文消息
+              // 尽量从 response.data.error 中取后端原文消息
               const apiErr =
                 (e as { response?: { data?: { error?: string } } })?.response?.data?.error
-              setActionErr(apiErr ?? `触发 ${kind} 失败：${msg}`)
+              setActionErr(apiErr ?? t('detail.triggerArtifactFailed', { kind, message: msg }))
             }
           }}
           onPickStarter={(q) => setChatPrefill(q)}

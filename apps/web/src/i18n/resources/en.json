@@ -1,0 +1,144 @@
+{
+  "common": {
+    "actions": {
+      "create": "Create",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm": "Confirm",
+      "close": "Close",
+      "back": "Back",
+      "share": "Share",
+      "submit": "Submit",
+      "retry": "Retry",
+      "addOne": "+ Add another"
+    },
+    "states": {
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "creating": "Creating…",
+      "saving": "Saving…",
+      "empty": "No data yet",
+      "required": "required",
+      "optional": "optional"
+    },
+    "errors": {
+      "generic": "Something went wrong, please retry",
+      "createFailed": "Failed to create",
+      "saveFailed": "Failed to save",
+      "deleteFailed": "Failed to delete",
+      "loadFailed": "Failed to load"
+    },
+    "language": {
+      "switchTitle": "Switch language"
+    },
+    "validation": {
+      "atLeast_one": "at least {{count}} item",
+      "atLeast_other": "at least {{count}} items",
+      "atMost_one": "at most {{count}} item",
+      "atMost_other": "at most {{count}} items",
+      "atLeastChars": "at least {{count}} chars",
+      "atMostChars": "at most {{count}} chars"
+    }
+  },
+  "notebook": {
+    "list": {
+      "title": "Notebooks",
+      "subtitle": "One notebook per research task — pick sources then chat / brief within scope",
+      "newButton": "+ New notebook",
+      "backToOverview": "Back to overview",
+      "ownedHeading": "Mine ({{count}})",
+      "sharedHeading": "Shared with me ({{count}})",
+      "emptyOwned": "No notebooks yet — click + New notebook in the top right to start",
+      "emptyShared": "No one has shared a notebook with you yet",
+      "deleteConfirm": "Delete notebook \"{{name}}\"? All sources, chats and briefs will be removed.",
+      "untitled": "(Untitled notebook · #{{id}})",
+      "accessOwner": "Mine",
+      "accessEditor": "Editor",
+      "accessReader": "Reader"
+    },
+    "card": {
+      "sources": "{{count}} sources",
+      "messages": "{{count}} messages"
+    },
+    "createModal": {
+      "title": "New notebook",
+      "templateSection": "Choose a template (optional)",
+      "createMyTemplate": "+ Create my template",
+      "blankIcon": "📄",
+      "blankLabel": "Blank",
+      "blankDesc": "Start from scratch",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Liftgate temperature compensation study",
+      "descLabel": "Description (optional)",
+      "descPlaceholder": "What is this notebook trying to figure out?",
+      "errors": {
+        "nameRequired": "Please enter a name"
+      }
+    },
+    "templateOption": {
+      "sourceMine": "Mine",
+      "sourceCommunity": "Community"
+    },
+    "templateModal": {
+      "createTitle": "+ Create my template",
+      "editTitle": "✎ Edit template",
+      "fieldLabel": "Name",
+      "fieldLabelHint": "≤ 10 chars",
+      "fieldLabelPlaceholder": "e.g. Weekly draft",
+      "fieldIcon": "Icon",
+      "fieldIconHint": "emoji, 1-2 chars",
+      "fieldDescription": "Description",
+      "fieldDescriptionHint": "≤ 60 chars",
+      "fieldDescriptionPlaceholder": "One line about what this template is for",
+      "fieldHint": "Source hint",
+      "fieldHintHint": "≤ 40 chars",
+      "fieldHintPlaceholder": "e.g. Upload weekly meeting notes / project status",
+      "fieldKinds": "Recommended artifacts",
+      "fieldKindsHint": "0-3",
+      "fieldQuestions": "Starter questions",
+      "fieldQuestionsHint": "1-3 items, ≤ 50 chars each",
+      "questionPlaceholder": "Item {{index}}…",
+      "removeQuestion": "Remove item {{index}}",
+      "errors": {
+        "labelMaxChars": "≤ 10 chars",
+        "iconMaxChars": "≤ 2 chars",
+        "descriptionMaxChars": "≤ 60 chars",
+        "hintMaxChars": "≤ 40 chars",
+        "kindsMax": "max 3",
+        "questionsRange": "{{min}}-{{max}} items",
+        "questionMaxChars": "≤ 50 chars each"
+      }
+    },
+    "myTemplateActions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Delete template \"{{label}}\"?\n\nNotebooks already using it stay intact (template_id is preserved)."
+    },
+    "templateHint": {
+      "titleSuffix": "template",
+      "closeButton": "Don't show again (per-notebook)",
+      "closeButtonAriaLabel": "Close template hint",
+      "recommendedKindsLabel": "Generate",
+      "starterQuestionsLabel": "Starters",
+      "kindTooltip": "Trigger {{kind}} generation (see Studio for progress)",
+      "starterTooltip": "Click to prefill the input below"
+    },
+    "detail": {
+      "clearChat": "Clear chat",
+      "clearChatConfirm": "Clear the current chat? All messages will be deleted.",
+      "shareButton": "🔗 Share",
+      "backButton": "← Back",
+      "invalidId": "Invalid notebook id",
+      "actionToastClose": "Close notice",
+      "triggerArtifactFailed": "Failed to trigger {{kind}}: {{message}}",
+      "noSourcesError": "Notebook has no sources — please add some first",
+      "columns": {
+        "sources": "Sources",
+        "chat": "Chat",
+        "studio": "Studio"
+      }
+    }
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "common": {
+    "actions": {
+      "create": "创建",
+      "cancel": "取消",
+      "save": "保存",
+      "edit": "编辑",
+      "delete": "删除",
+      "confirm": "确认",
+      "close": "关闭",
+      "back": "返回",
+      "share": "共享",
+      "submit": "提交",
+      "retry": "重试",
+      "addOne": "+ 加一条"
+    },
+    "states": {
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "creating": "创建中…",
+      "saving": "保存中…",
+      "empty": "暂无数据",
+      "required": "必填",
+      "optional": "选填"
+    },
+    "errors": {
+      "generic": "出错了，请重试",
+      "createFailed": "创建失败",
+      "saveFailed": "保存失败",
+      "deleteFailed": "删除失败",
+      "loadFailed": "加载失败"
+    },
+    "language": {
+      "switchTitle": "切换语言"
+    },
+    "validation": {
+      "atLeast_one": "至少 {{count}} 条",
+      "atMost_one": "最多 {{count}} 条",
+      "atLeastChars": "至少 {{count}} 字",
+      "atMostChars": "最多 {{count}} 字"
+    }
+  },
+  "notebook": {
+    "list": {
+      "title": "笔记本",
+      "subtitle": "为每个研究任务建一个 notebook，挑入资料后做 scope 内的对话与简报",
+      "newButton": "+ 新建笔记本",
+      "backToOverview": "返回总览",
+      "ownedHeading": "我的（{{count}}）",
+      "sharedHeading": "共享给我的（{{count}}）",
+      "emptyOwned": "还没有笔记本，点右上 + 新建笔记本 开始",
+      "emptyShared": "还没有人把笔记本共享给你",
+      "deleteConfirm": "删除笔记本「{{name}}」？所有资料、对话、简报都会被一并删除。",
+      "untitled": "（未命名笔记本 · #{{id}}）",
+      "accessOwner": "我的",
+      "accessEditor": "可编辑",
+      "accessReader": "只读"
+    },
+    "card": {
+      "sources": "{{count}} 资料",
+      "messages": "{{count}} 消息"
+    },
+    "createModal": {
+      "title": "新建笔记本",
+      "templateSection": "选择模板（可选）",
+      "createMyTemplate": "+ 创建我的模板",
+      "blankIcon": "📄",
+      "blankLabel": "空白",
+      "blankDesc": "从零开始",
+      "nameLabel": "名称",
+      "namePlaceholder": "如：举升门温度补偿调研",
+      "descLabel": "描述（选填）",
+      "descPlaceholder": "这个笔记本要解决什么问题",
+      "errors": {
+        "nameRequired": "请输入名称"
+      }
+    },
+    "templateOption": {
+      "sourceMine": "我的",
+      "sourceCommunity": "社区"
+    },
+    "templateModal": {
+      "createTitle": "+ 创建我的模板",
+      "editTitle": "✎ 编辑模板",
+      "fieldLabel": "名称",
+      "fieldLabelHint": "≤ 10 字",
+      "fieldLabelPlaceholder": "如：周报草稿",
+      "fieldIcon": "图标",
+      "fieldIconHint": "emoji，1-2 字符",
+      "fieldDescription": "描述",
+      "fieldDescriptionHint": "≤ 60 字",
+      "fieldDescriptionPlaceholder": "一句话说这个模板用来干嘛",
+      "fieldHint": "资料提示",
+      "fieldHintHint": "≤ 40 字",
+      "fieldHintPlaceholder": "如：上传周会议纪要 / 项目状态文档",
+      "fieldKinds": "推荐生成",
+      "fieldKindsHint": "0-3 个",
+      "fieldQuestions": "起手提问",
+      "fieldQuestionsHint": "1-3 条，每条 ≤ 50 字",
+      "questionPlaceholder": "第 {{index}} 条...",
+      "removeQuestion": "删除第 {{index}} 条",
+      "errors": {
+        "labelMaxChars": "最多 10 字",
+        "iconMaxChars": "最多 2 字符",
+        "descriptionMaxChars": "最多 60 字",
+        "hintMaxChars": "最多 40 字",
+        "kindsMax": "最多 3 个",
+        "questionsRange": "{{min}}-{{max}} 条",
+        "questionMaxChars": "每条最多 50 字"
+      }
+    },
+    "myTemplateActions": {
+      "edit": "编辑",
+      "delete": "删除",
+      "deleteConfirm": "删除模板「{{label}}」？\n\n已使用此模板的 notebook 不会受影响（template_id 仍保留）。"
+    },
+    "templateHint": {
+      "titleSuffix": "模板",
+      "closeButton": "不再显示这条提示（per-notebook 记忆）",
+      "closeButtonAriaLabel": "关闭模板提示",
+      "recommendedKindsLabel": "推荐生成",
+      "starterQuestionsLabel": "起手提问",
+      "kindTooltip": "触发生成 {{kind}}（去 Studio 面板看进度）",
+      "starterTooltip": "点击预填到下方输入框"
+    },
+    "detail": {
+      "clearChat": "清空对话",
+      "clearChatConfirm": "清空当前对话？所有消息会被删除。",
+      "shareButton": "🔗 共享",
+      "backButton": "← 返回",
+      "invalidId": "非法 notebook id",
+      "actionToastClose": "关闭提示",
+      "triggerArtifactFailed": "触发 {{kind}} 失败：{{message}}",
+      "noSourcesError": "notebook 无任何 source；请先添加资料",
+      "columns": {
+        "sources": "资料",
+        "chat": "对话",
+        "studio": "Studio"
+      }
+    }
+  }
+}

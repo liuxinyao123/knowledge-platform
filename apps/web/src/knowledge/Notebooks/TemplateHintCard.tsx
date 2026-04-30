@@ -15,6 +15,7 @@
  */
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listTemplates, type NotebookTemplateSpec,
   type ArtifactKind,
@@ -39,6 +40,7 @@ const PRIMARY_BORDER = 'rgba(108, 71, 255, 0.22)' // 22% alpha 主紫，做主�
 export default function TemplateHintCard({
   notebookId, templateId, onTriggerArtifact, onPickStarter,
 }: Props) {
+  const { t } = useTranslation('notebook')
   const [spec, setSpec] = useState<NotebookTemplateSpec | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [hoverChip, setHoverChip] = useState<string | null>(null)
@@ -64,12 +66,12 @@ export default function TemplateHintCard({
       <div style={headerRow}>
         <div style={titleStyle}>
           <span style={iconStyle}>{spec.icon}</span>
-          <span>{spec.label} 模板</span>
+          <span>{spec.label} {t('templateHint.titleSuffix')}</span>
         </div>
         <button
           type="button"
-          title="不再显示这条提示（per-notebook 记忆）"
-          aria-label="关闭模板提示"
+          title={t('templateHint.closeButton')}
+          aria-label={t('templateHint.closeButtonAriaLabel')}
           onClick={() => {
             localStorage.setItem(dismissKey(notebookId), '1')
             setDismissed(true)
@@ -94,7 +96,7 @@ export default function TemplateHintCard({
       {/* 推荐生成 + 起手问题 一栏陈列（label + chip 行） */}
       {spec.recommendedArtifactKinds.length > 0 && (
         <div style={sectionStyle}>
-          <span style={sectionLabel}>推荐生成</span>
+          <span style={sectionLabel}>{t('templateHint.recommendedKindsLabel')}</span>
           <div style={chipRow}>
             {spec.recommendedArtifactKinds.map((kind) => {
               const k = `art:${kind}`
@@ -106,7 +108,7 @@ export default function TemplateHintCard({
                   onClick={() => onTriggerArtifact(kind)}
                   onMouseEnter={() => setHoverChip(k)}
                   onMouseLeave={() => setHoverChip(null)}
-                  title={`触发生成 ${kind}（去 Studio 面板看进度）`}
+                  title={t('templateHint.kindTooltip', { kind })}
                   style={chipStyle(hov, true)}
                 >{kind}</button>
               )
@@ -116,7 +118,7 @@ export default function TemplateHintCard({
       )}
 
       <div style={sectionStyle}>
-        <span style={sectionLabel}>起手提问</span>
+        <span style={sectionLabel}>{t('templateHint.starterQuestionsLabel')}</span>
         <div style={chipRow}>
           {spec.starterQuestions.map((q, i) => {
             const k = `q:${i}`
@@ -128,7 +130,7 @@ export default function TemplateHintCard({
                 onClick={() => onPickStarter(q)}
                 onMouseEnter={() => setHoverChip(k)}
                 onMouseLeave={() => setHoverChip(null)}
-                title="点击预填到下方输入框"
+                title={t('templateHint.starterTooltip')}
                 style={chipStyle(hov, false)}
               >{q}</button>
             )

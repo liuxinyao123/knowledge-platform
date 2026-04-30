@@ -15,6 +15,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import RequirePermission from '@/auth/RequirePermission'
 import { useAuth } from '@/auth/AuthContext'
 import ChangePasswordModal from '@/auth/ChangePasswordModal'
+import LanguageSwitcher from './LanguageSwitcher'
 
 interface NavEntry {
   to: string
@@ -285,6 +286,8 @@ function Topbar() {
           <path d="M7.5 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM7.5 5v2.5L9 9" />
         </svg>
       </button>
+      {/* i18n 语言切换 —— 顶栏右侧 */}
+      <LanguageSwitcher />
     </header>
   )
 }

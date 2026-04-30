@@ -6,6 +6,7 @@
  */
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import {
   listNotebooks, createNotebook, deleteNotebook, listTemplates,
@@ -17,6 +18,7 @@ import MyTemplateActions from './MyTemplateActions'
 
 export default function NotebooksPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('notebook')
   const [items, setItems] = useState<NotebookSummary[] | null>(null)
   const [shared, setShared] = useState<NotebookSummary[]>([])
   const [createOpen, setCreateOpen] = useState(false)
@@ -44,14 +46,14 @@ export default function NotebooksPage() {
         gap: 10, flexWrap: 'wrap',
       }}>
         <div>
-          <div className="page-title">笔记本</div>
+          <div className="page-title">{t('list.title')}</div>
           <div className="page-sub">
-            为每个研究任务建一个 notebook，挑入资料后做 scope 内的对话与简报
+            {t('list.subtitle')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/overview')}>返回总览</button>
-          <button className="btn primary" onClick={() => setCreateOpen(true)}>+ 新建笔记本</button>
+          <button className="btn" onClick={() => navigate('/overview')}>{t('list.backToOverview')}</button>
+          <button className="btn primary" onClick={() => setCreateOpen(true)}>{t('list.newButton')}</button>
         </div>
       </div>
 
@@ -65,22 +67,23 @@ export default function NotebooksPage() {
       )}
 
       {items == null ? (
-        <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)' }}>加载中…</div>
+        <div style={{ padding: 30, textAlign: 'center', color: 'var(--muted)' }}>
+          {t('common:states.loading')}
+        </div>
       ) : items.length === 0 ? (
         <div style={{
           padding: '40px 20px', textAlign: 'center', color: 'var(--muted)',
           background: '#fafafa', border: '1px dashed var(--border)', borderRadius: 8,
         }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>📓</div>
-          <div style={{ fontSize: 14, marginBottom: 4 }}>还没有任何笔记本</div>
-          <div style={{ fontSize: 12 }}>点右上角「+ 新建笔记本」开始</div>
+          <div style={{ fontSize: 14, marginBottom: 4 }}>{t('list.emptyOwned')}</div>
         </div>
       ) : (
         <>
           <div style={{
             fontSize: 12, color: 'var(--muted)', margin: '14px 4px 6px',
             textTransform: 'uppercase', letterSpacing: 0.4,
-          }}>我的（{items.length}）</div>
+          }}>{t('list.ownedHeading', { count: items.length })}</div>
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: 14,
@@ -90,7 +93,7 @@ export default function NotebooksPage() {
                 key={nb.id} nb={nb}
                 onOpen={() => navigate(`/notebooks/${nb.id}`)}
                 onDelete={async () => {
-                  if (!confirm(`删除「${nb.name}」？所有 sources / chat / 简报都会一起删除。`)) return
+                  if (!confirm(t('list.deleteConfirm', { name: nb.name }))) return
                   await deleteNotebook(nb.id)
                   void reload()
                 }}
@@ -103,7 +106,7 @@ export default function NotebooksPage() {
               <div style={{
                 fontSize: 12, color: 'var(--muted)', margin: '24px 4px 6px',
                 textTransform: 'uppercase', letterSpacing: 0.4,
-              }}>共享给我的（{shared.length}）</div>
+              }}>{t('list.sharedHeading', { count: shared.length })}</div>
               <div style={{
                 display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
                 gap: 14,
@@ -131,20 +134,26 @@ export default function NotebooksPage() {
 }
 
 /** 兜底：name 为空 / 只含空白 时给一个可视化占位 */
-function displayName(nb: NotebookSummary): string {
-  const n = (nb.name ?? '').trim()
-  return n || `（未命名 · #${nb.id}）`
+function useDisplayName() {
+  const { t } = useTranslation('notebook')
+  return (nb: NotebookSummary): string => {
+    const n = (nb.name ?? '').trim()
+    return n || t('list.untitled', { id: nb.id })
+  }
 }
 
 function NotebookCard({ nb, onOpen, onDelete }: {
   nb: NotebookSummary; onOpen: () => void; onDelete?: () => void
 }) {
+  const { t } = useTranslation('notebook')
+  const displayName = useDisplayName()
   // BUG-15 守护：updated_at_ms 缺失 / NaN 时不要渲染 "NaN/NaN NaN:NaN"
   const updated = nb.updated_at_ms ? new Date(nb.updated_at_ms) : null
   const hasValidTime = updated !== null && !Number.isNaN(updated.getTime())
   const accessTone = nb.access === 'owner' ? null
-    : nb.access === 'editor' ? { bg: 'rgba(108,71,255,0.1)', color: 'var(--p,#6C47FF)', label: '可编辑' }
-    : { bg: '#f3f4f6', color: 'var(--muted)', label: '只读' }
+    : nb.access === 'editor'
+      ? { bg: 'rgba(108,71,255,0.1)', color: 'var(--p,#6C47FF)', label: t('list.accessEditor') }
+      : { bg: '#f3f4f6', color: 'var(--muted)', label: t('list.accessReader') }
   return (
     <div
       style={{
@@ -171,7 +180,7 @@ function NotebookCard({ nb, onOpen, onDelete }: {
               background: 'transparent', border: 'none', color: 'var(--muted)',
               cursor: 'pointer', fontSize: 14, padding: '0 4px',
             }}
-            title="删除"
+            title={t('common:actions.delete')}
           >×</button>
         )}
       </div>
@@ -186,8 +195,8 @@ function NotebookCard({ nb, onOpen, onDelete }: {
         display: 'flex', gap: 12, fontSize: 11, color: 'var(--muted)',
         paddingTop: 8, borderTop: '1px dashed var(--border)',
       }}>
-        <span>📎 {nb.source_count} 资料</span>
-        <span>💬 {nb.message_count} 消息</span>
+        <span>📎 {t('card.sources', { count: nb.source_count })}</span>
+        <span>💬 {t('card.messages', { count: nb.message_count })}</span>
         <span style={{ marginLeft: 'auto' }}>
           {hasValidTime
             ? `${updated!.getMonth() + 1}/${updated!.getDate()} ${String(updated!.getHours()).padStart(2, '0')}:${String(updated!.getMinutes()).padStart(2, '0')}`
@@ -201,6 +210,7 @@ function NotebookCard({ nb, onOpen, onDelete }: {
 function CreateNotebookModal({ open, onClose, onCreated }: {
   open: boolean; onClose: () => void; onCreated: (id: number) => void
 }) {
+  const { t } = useTranslation('notebook')
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
   const [busy, setBusy] = useState(false)
@@ -238,7 +248,7 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
 
   async function submit() {
     const trimmed = name.trim()
-    if (!trimmed) { setErr('请输入名称'); return }
+    if (!trimmed) { setErr(t('createModal.errors.nameRequired')); return }
     setBusy(true); setErr(null)
     try {
       const r = await createNotebook({
@@ -248,7 +258,7 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
       })
       onCreated(r.id)
     } catch (e) {
-      setErr(e instanceof Error ? e.message : '创建失败')
+      setErr(e instanceof Error ? e.message : t('common:errors.createFailed'))
       setBusy(false)
     }
   }
@@ -265,13 +275,13 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
         boxShadow: '0 12px 32px rgba(0,0,0,0.16)',
       }}>
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 16 }}>
-          新建笔记本
+          {t('createModal.title')}
         </div>
 
         {/* N-006/N-007/N-008：模板选择器（"📄 空白" + 6 system + community + 自己的 user）*/}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <Label>选择模板（可选）</Label>
+            <Label>{t('createModal.templateSection')}</Label>
             {userTplEnabled && (
               <button type="button"
                       onClick={() => { setTplEditing(undefined); setTplModalOpen(true) }}
@@ -279,7 +289,7 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
                         marginLeft: 'auto', fontSize: 11, padding: '2px 10px',
                         border: '1px dashed var(--border)', background: 'transparent',
                         color: 'var(--p, #6C47FF)', borderRadius: 999, cursor: 'pointer',
-                      }}>+ 创建我的模板</button>
+                      }}>{t('createModal.createMyTemplate')}</button>
             )}
           </div>
           <div style={{
@@ -287,26 +297,28 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
             gap: 8, marginTop: 6,
           }}>
             <TemplateOption
-              icon="📄" label="空白" desc="从零开始"
+              icon={t('createModal.blankIcon')}
+              label={t('createModal.blankLabel')}
+              desc={t('createModal.blankDesc')}
               picked={pickedTemplate === null}
               source={null}
               onClick={() => setPickedTemplate(null)}
             />
-            {templates.map((t) => {
-              const isMine = t.source === 'user'
+            {templates.map((tpl) => {
+              const isMine = tpl.source === 'user'
               return (
                 <TemplateOption
-                  key={t.id}
-                  icon={t.icon} label={t.label} desc={t.desc}
-                  picked={pickedTemplate === t.id}
-                  source={t.source}
-                  onClick={() => setPickedTemplate(t.id)}
-                  onMouseEnter={() => setHoverTplId(t.id)}
-                  onMouseLeave={() => setHoverTplId((cur) => cur === t.id ? null : cur)}
+                  key={tpl.id}
+                  icon={tpl.icon} label={tpl.label} desc={tpl.desc}
+                  picked={pickedTemplate === tpl.id}
+                  source={tpl.source}
+                  onClick={() => setPickedTemplate(tpl.id)}
+                  onMouseEnter={() => setHoverTplId(tpl.id)}
+                  onMouseLeave={() => setHoverTplId((cur) => cur === tpl.id ? null : cur)}
                   actions={isMine ? (
                     <MyTemplateActions
-                      template={t}
-                      visible={hoverTplId === t.id}
+                      template={tpl}
+                      visible={hoverTplId === tpl.id}
                       onEdit={(spec) => { setTplEditing(spec); setTplModalOpen(true) }}
                       onDelete={async (spec) => {
                         try {
@@ -316,7 +328,7 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
                         } catch (e) {
                           const msg = (e as { response?: { data?: { error?: string } } })
                             ?.response?.data?.error
-                          setErr(msg ?? (e instanceof Error ? e.message : '删除失败'))
+                          setErr(msg ?? (e instanceof Error ? e.message : t('common:errors.deleteFailed')))
                         }
                       }}
                     />
@@ -343,16 +355,16 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
         )}
 
         <div style={{ marginBottom: 12 }}>
-          <Label>名称 <span style={{ color: '#dc2626' }}>*</span></Label>
+          <Label>{t('createModal.nameLabel')} <span style={{ color: '#dc2626' }}>*</span></Label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                 placeholder="如：举升门温度补偿调研"
+                 placeholder={t('createModal.namePlaceholder')}
                  style={fieldStyle} autoFocus
                  onKeyDown={(e) => { if (e.key === 'Enter' && !busy) void submit() }} />
         </div>
         <div style={{ marginBottom: 16 }}>
-          <Label>描述（选填）</Label>
+          <Label>{t('createModal.descLabel')}</Label>
           <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
-                    rows={3} placeholder="这个笔记本要解决什么问题"
+                    rows={3} placeholder={t('createModal.descPlaceholder')}
                     style={{ ...fieldStyle, resize: 'vertical', fontFamily: 'inherit' }} />
         </div>
         {err && <div style={{
@@ -360,10 +372,12 @@ function CreateNotebookModal({ open, onClose, onCreated }: {
           borderRadius: 8, fontSize: 12,
         }}>{err}</div>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" className="btn" onClick={onClose} disabled={busy}>取消</button>
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
+            {t('common:actions.cancel')}
+          </button>
           <button type="button" className="btn primary"
                   disabled={busy || !name.trim()} onClick={() => void submit()}>
-            {busy ? '创建中…' : '创建'}
+            {busy ? t('common:states.creating') : t('common:actions.create')}
           </button>
         </div>
       </div>
@@ -384,9 +398,10 @@ function TemplateOption({
   /** N-008: hover-only 编辑/删除按钮（自己的 user 模板才传） */
   actions?: React.ReactNode
 }) {
+  const { t } = useTranslation('notebook')
   const sourceLabel =
-    source === 'user' ? '我的'
-    : source === 'community' ? '社区'
+    source === 'user' ? t('templateOption.sourceMine')
+    : source === 'community' ? t('templateOption.sourceCommunity')
     : null   // system / null 不显示角标
 
   return (
