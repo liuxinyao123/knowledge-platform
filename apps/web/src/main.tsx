@@ -1,6 +1,9 @@
 // ⚠️ 必须第一行：在任何其它模块 import axios 之前挂好 interceptors + patch axios.create
 import './api/client'
 
+// i18n init —— 在任何使用 useTranslation 的组件 import 之前
+import './i18n'
+
 // crypto.randomUUID polyfill —— 现代浏览器只在 secure context（HTTPS / localhost）
 // 暴露 crypto.randomUUID；HTTP + 私有 IP（如 http://192.168.3.21:15173 内网部署）
 // 会触发 "crypto.randomUUID is not a function"。补一个 RFC4122 v4 等价实现。

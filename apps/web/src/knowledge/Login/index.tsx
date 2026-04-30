@@ -4,12 +4,14 @@
  */
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/auth/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, user } = useAuth()
+  const { t } = useTranslation('auth')
 
   const fromParam = new URLSearchParams(location.search).get('from')
   const redirectTo = fromParam ? decodeURIComponent(fromParam) : '/overview'
@@ -37,11 +39,11 @@ export default function Login() {
       }
       const status = err?.response?.status
       if (status === 500) {
-        setErr('服务端未配置登录密钥（AUTH_HS256_SECRET 未设）')
+        setErr(t('login.errorNoSecret'))
       } else if (status === 401) {
-        setErr('邮箱或密码不正确')
+        setErr(t('login.errorInvalid'))
       } else {
-        setErr(err?.response?.data?.error || err?.message || '登录失败')
+        setErr(err?.response?.data?.error || err?.message || t('login.errorNetwork'))
       }
     } finally {
       setBusy(false)
@@ -73,12 +75,12 @@ export default function Login() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 24,
           }}>🧠</div>
-          <h1 style={{ margin: 0, fontSize: 20, color: 'var(--text)' }}>知识中台</h1>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>登录到你的工作区</div>
+          <h1 style={{ margin: 0, fontSize: 20, color: 'var(--text)' }}>{t('login.title')}</h1>
+          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--muted)' }}>{t('login.subtitle')}</div>
         </div>
 
         <label style={{ display: 'block' }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>邮箱</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{t('login.emailLabel')}</div>
           <input
             data-testid="login-email"
             type="email"
@@ -95,7 +97,7 @@ export default function Login() {
         </label>
 
         <label style={{ display: 'block' }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>密码</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>{t('login.passwordLabel')}</div>
           <input
             data-testid="login-password"
             type="password"
@@ -127,7 +129,7 @@ export default function Login() {
           className="btn primary"
           style={{ width: '100%', padding: '10px', fontSize: 14 }}
         >
-          {busy ? '登录中…' : '登录'}
+          {busy ? t('login.submitting') : t('login.submit')}
         </button>
 
       </form>

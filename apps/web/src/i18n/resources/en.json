@@ -1,0 +1,861 @@
+{
+  "common": {
+    "actions": {
+      "create": "Create",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm": "Confirm",
+      "close": "Close",
+      "back": "Back",
+      "share": "Share",
+      "submit": "Submit",
+      "retry": "Retry",
+      "search": "Search",
+      "refresh": "Refresh",
+      "open": "Open",
+      "addOne": "+ Add another"
+    },
+    "states": {
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "creating": "Creating…",
+      "saving": "Saving…",
+      "empty": "No data yet",
+      "required": "required",
+      "optional": "optional"
+    },
+    "errors": {
+      "generic": "Something went wrong, please retry",
+      "createFailed": "Failed to create",
+      "saveFailed": "Failed to save",
+      "deleteFailed": "Failed to delete",
+      "loadFailed": "Failed to load"
+    },
+    "language": {
+      "switchTitle": "Switch language"
+    },
+    "validation": {
+      "atLeast_one": "at least {{count}} item",
+      "atLeast_other": "at least {{count}} items",
+      "atMost_one": "at most {{count}} item",
+      "atMost_other": "at most {{count}} items",
+      "atLeastChars": "at least {{count}} chars",
+      "atMostChars": "at most {{count}} chars"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "Knowledge Platform",
+    "brandShort": "Knowledge",
+    "newTaskCta": "Ask anything",
+    "sidebarSearchPlaceholder": "Search tasks / knowledge…",
+    "sectionPrimary": "Workspace",
+    "sectionManage": "Manage & Data",
+    "sectionExtra": "More tools",
+    "sectionAdmin": "Admin",
+    "tabs": {
+      "qa": "💬 QA",
+      "search": "🔎 Search",
+      "spaces": "🗂 Spaces",
+      "ingest": "⬆️ Ingest",
+      "overview": "🏠 Overview",
+      "agent": "🤖 Agent",
+      "governance": "🛡 Governance",
+      "assets": "📦 Assets",
+      "mcp": "🔌 Connectors"
+    },
+    "labels": {
+      "qa": "Ask",
+      "search": "Search",
+      "spaces": "My spaces",
+      "ingest": "Upload & ingest",
+      "overview": "Overview",
+      "insights": "Insights",
+      "knowledgeGraph": "Knowledge graph",
+      "governance": "Content governance",
+      "assets": "Asset catalog",
+      "mcp": "Connectors",
+      "agent": "Agent",
+      "notebooks": "Notebooks",
+      "eval": "Evaluation",
+      "iam": "Identity & Access"
+    },
+    "tabsAriaLabel": "Knowledge platform modules",
+    "topbarQuickCreate": "Quick action (ask)",
+    "topbarAssetsBtn": "Asset catalog"
+  },
+  "auth": {
+    "login": {
+      "title": "Knowledge Platform",
+      "subtitle": "Sign in to your workspace",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "errorInvalid": "Invalid email or password",
+      "errorNoSecret": "Server not configured (AUTH_HS256_SECRET missing)",
+      "errorNetwork": "Sign in failed"
+    },
+    "userArea": {
+      "changePassword": "Change",
+      "changePasswordTitle": "Change password",
+      "changePasswordDevTooltip": "Password change disabled in DEV mode",
+      "logout": "Sign out",
+      "logoutTitle": "Sign out",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Save",
+      "submitting": "Saving…",
+      "cancel": "Cancel",
+      "errorMismatch": "Passwords do not match",
+      "errorWrongCurrent": "Current password is incorrect",
+      "successTitle": "Password updated"
+    }
+  },
+  "overview": {
+    "title": "Overview",
+    "subtitle": "Start with intent: ask, find, ingest. KPIs are for those tracking the system.",
+    "actions": {
+      "askQuestion": "Ask a question",
+      "search": "Search",
+      "newSpace": "+ New space",
+      "importKnowledge": "Import knowledge"
+    },
+    "quickStart": {
+      "skipHeading": "Not sure where to start? Pick one of the common tasks below.",
+      "ariaLabel": "Quick start",
+      "qaTitle": "Ask",
+      "qaDesc": "Natural-language questions with cited snippets and sources — great for 'what does the policy say' and 'any precedent'.",
+      "searchTitle": "Search",
+      "searchDesc": "Find docs, notes and web clips by keyword, tag or semantics — locate the source yourself.",
+      "ingestTitle": "Upload & Ingest",
+      "ingestDesc": "Add files, links or clipboard content into a searchable knowledge base for everyone to reuse."
+    },
+    "kpiSection": "Space & data health (for admins / owners)",
+    "kpi": {
+      "documents": "Documents",
+      "documentsSub": "Includes: docs, FAQs, meeting notes, web clips",
+      "documentsRecent": "+{{count}} last 7d",
+      "recentDays": "last 7d",
+      "spaces": "Knowledge spaces",
+      "spacesSub": "Cross-team shared + private spaces",
+      "spacesPill": "I manage {{count}}",
+      "ingestPending": "Pending ingest",
+      "ingestPendingSub": "Chunking / parsing / vectorizing",
+      "ingestProcessing": "Processing",
+      "ingestAllDone": "All ingested",
+      "anomaly": "Anomaly / Low quality",
+      "anomalySub": "Duplicate, stale, missing fields",
+      "anomalyNeedsReview": "Needs review",
+      "anomalyNoIssue": "All good"
+    },
+    "panels": {
+      "recentUpdates": "Recent updates",
+      "myFavorites": "My favorites",
+      "activeSpaces": "Top 5 active spaces",
+      "goSearch": "Go to search ›",
+      "goSearchPlain": "Go to search",
+      "bookPrefix": "Book #{{id}}",
+      "spaceBooksCount": "{{count}} books"
+    },
+    "empty": {
+      "noDocs": "No documents yet — go import some",
+      "noFavorites": "No favorites yet — go bookmark from the search page",
+      "noShelves": "No space data yet"
+    },
+    "errors": {
+      "apiDown": "API unreachable. Make sure BookStack (:6875) and qa-service (:3001) are running and the server has the BookStack token configured."
+    },
+    "loadFailedHint": "Failed to load, please retry",
+    "tilesBlocked": "Permission denied for this module"
+  },
+  "qa": {
+    "title": "Ask",
+    "subtitle": "Describe your scenario in one sentence; only adopt cited answers, click the right panel to verify the source.",
+    "scopeAll": "Scope: all spaces",
+    "scopeOnly": "Only: {{name}}",
+    "spacePillFallback": "Space",
+    "sessions": {
+      "ariaLabel": "Ask: sessions and history",
+      "headTitle": "Session history",
+      "headHint": "Use the main left menu to find spaces / search docs; this list only switches threads of the current session.",
+      "newSession": "+ New session",
+      "emptyHint": "No history yet. Click \"+ New session\" above to start.",
+      "deleteAriaLabel": "Delete session",
+      "deleteConfirm": "Delete this session and its history? This cannot be undone.",
+      "defaultTitle": "New session",
+      "legacyTitle": "My session",
+      "groupToday": "Today",
+      "groupWeek": "Last 7 days",
+      "groupEarlier": "Earlier"
+    },
+    "hero": {
+      "h1Main": "Ask anything about your knowledge base",
+      "h1Suffix": "— AI Q&A",
+      "subPrimary": "Ask the assistant for cited answers",
+      "subSecondary": "Answers come from documents and vectorized content in the current space; web search, reasoning level and model are configurable.",
+      "hint": "You can ask things like"
+    },
+    "samples": [
+      "What's in the document \"test-doc.docx\"?",
+      "How do I edit the Vision & Goals section in the home doc?",
+      "Which metrics should we start with for knowledge governance?",
+      "How do I upload documents to the knowledge base?"
+    ],
+    "bubble": {
+      "thinking": "Thinking...",
+      "userLabel": "You",
+      "aiLabel": "Assistant",
+      "expandTrace": "Show retrieval trace",
+      "collapseTrace": "Hide retrieval trace",
+      "traceFiltered": "Retrieved {{initial}} → kept {{kept}}",
+      "rewriteHyDe": "Query rewrite: HyDE (hypothetical answer)",
+      "rewriteStepBack": "Query rewrite: Step-Back (generalize)",
+      "errorDefault": "Request failed, please retry."
+    },
+    "hint": {
+      "empty": "Click a sample to fill the input; replies will scroll above after sending.",
+      "active": "Shift + Enter for newline; Enter to send."
+    },
+    "composer": {
+      "mustCite": "Must cite",
+      "mustCiteTitle": "Must cite: answers must be grounded in retrieved snippets",
+      "spacePillTitle": "Current space scope",
+      "removeSpace": "Remove space scope",
+      "inputLabel": "Question input",
+      "inputPlaceholder": "Type your question, e.g. \"How can we reduce duplicate knowledge?\"",
+      "imageAttached": "🖼 Attached:",
+      "removeImage": "Remove",
+      "scopeSelect": "Search scope",
+      "scopeAllOption": "All spaces",
+      "webSearchOn": "Web search: ON (click to disable)",
+      "webSearchOff": "Web search: OFF (click to enable)",
+      "imageHasTitle": "Attached: {{name}} (click to re-select)",
+      "imageEmptyTitle": "Attach image (multimodal · Qwen2.5-VL)",
+      "imageTooLarge": "Image too large ({{mb}}MB), 6MB max",
+      "abortTitle": "Stop generation",
+      "abortAria": "Stop",
+      "sendTitle": "Send",
+      "sendAria": "Send"
+    },
+    "rightPanel": {
+      "title": "Side panel",
+      "tabCitations": "Citations",
+      "tabCitationsCount": "Citations {{count}}",
+      "tabAssets": "Asset directory",
+      "emptyCitations": "Citations will appear here after asking"
+    },
+    "errors": {
+      "network": "Network error, please retry.",
+      "401": "Not signed in or session expired, please sign in again.",
+      "403": "No permission to access QA, contact admin.",
+      "generic": "Request failed."
+    },
+    "assetPanel": {
+      "sourceLabel": "Source",
+      "statusUpdated": "Status {{status}} · Updated {{time}}",
+      "syncBtn": "Sync from BookStack",
+      "syncing": "Syncing…",
+      "refreshLinks": "Refresh vector links",
+      "refreshingLinks": "Refreshing…",
+      "enrichSummary": "Summarize (10)",
+      "enriching": "Generating…",
+      "backToList": "← Back",
+      "tabRag": "RAG / Summary",
+      "tabGraph": "Knowledge graph",
+      "rag": {
+        "pageId": "BookStack page ID: {{id}}",
+        "chunkCount": "Vector chunks: {{count}}",
+        "indexed": "Indexed: {{yes}}",
+        "linkStatus": "Vector mapping: {{status}}",
+        "summaryStatus": "Summary status: {{status}}",
+        "noSummary": "(no summary yet — will be written by the preprocessing pipeline)"
+      },
+      "graph": {
+        "notConnected": "Not connected to graph"
+      },
+      "loading": "Loading assets…",
+      "empty": "No assets — click sync above",
+      "totalLine": "{{total}} total (showing {{current}})",
+      "errors": {
+        "loadSources": "Failed to load sources",
+        "loadList": "Failed to load",
+        "loadDetail": "Failed to load details",
+        "syncFailed": "Sync failed",
+        "refreshLinksFailed": "Refresh failed",
+        "enrichFailed": "Summarization failed"
+      },
+      "yes": "Yes",
+      "no": "No"
+    },
+    "answerContent": {
+      "imageAlt": "Answer image",
+      "loadFailed": "[Image failed to load: {{url}}]"
+    }
+  },
+  "assets": {
+    "title": "Asset catalog",
+    "subtitle": "Unified view of data sources / document libraries / online docs",
+    "backToOverview": "Back to overview",
+    "newSource": "+ New data source",
+    "subtabs": {
+      "governance": "Governance",
+      "assets": "Asset catalog",
+      "iam": "Data permissions"
+    },
+    "search": {
+      "placeholder": "Search by name or tag…",
+      "spaceAll": "All spaces",
+      "clear": "Clear"
+    },
+    "typeFilters": {
+      "all": "All",
+      "structured": "Structured",
+      "document": "Files",
+      "online": "Online docs",
+      "fallbackDash": "—"
+    },
+    "status": {
+      "ok": "OK",
+      "pending": "Pending index"
+    },
+    "list": {
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "retry": "Retry",
+      "empty": "No assets match the current filter",
+      "clearFilters": "Clear filters"
+    },
+    "card": {
+      "type": "Type",
+      "updated": "Updated",
+      "scale": "Size",
+      "scaleChunks": "{{count}} chunks",
+      "scaleImagesSuffix": " · {{count}} images",
+      "deleteTitle": "Permanently delete this asset (cannot be undone)",
+      "deleteAria": "Delete asset {{name}}",
+      "deleteConfirm": "Delete asset \"{{name}}\"?\n\n{{chunks}} chunks{{imagesPart}} will be removed, cannot be undone.",
+      "deleteImagesPart": " and {{count}} images",
+      "deleteFailed": "Delete failed",
+      "deleteFailedAlert": "Delete failed: {{msg}}"
+    },
+    "time": {
+      "notIndexed": "not indexed",
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    },
+    "detail": {
+      "title": "Asset detail",
+      "loading": "Loading…",
+      "back": "← Back to list",
+      "backToList": "Back to catalog",
+      "permButton": "🔒 Permissions",
+      "permButtonTitle": "Open permissions drawer for this asset (V2 · F-2)",
+      "deleteAssetBtn": "🗑 Delete asset",
+      "deleting": "Deleting…",
+      "deleteAssetTitle": "Permanently delete this asset (chunks and images included, cannot be undone)",
+      "deleteAssetConfirm": "Delete asset \"{{name}}\"?\n\nThis will:\n  · Remove from asset catalog\n  · Drop all vector chunks ({{chunks}})\n  · Drop linked images ({{images}})\n\nCannot be undone.",
+      "deleteFailedAlert": "Delete failed: {{msg}}",
+      "tabAssets": "Assets",
+      "tabRagflow": "RAGFlow summary",
+      "tabGraph": "Knowledge graph",
+      "fields": {
+        "type": "Type",
+        "source": "Source",
+        "spaceId": "Space ID",
+        "indexedAt": "Indexed at",
+        "chunks": "Chunks",
+        "images": "Images",
+        "tags": "Tags",
+        "summary": "Summary",
+        "noSummary": "(no summary)"
+      },
+      "banner": {
+        "overview": "Overview",
+        "metaLine": "Type: {{type}} · Status: {{status}} · Updated: {{time}}",
+        "chunksSuffix": " · {{count}} chunks",
+        "imagesSuffix": " · {{count}} images",
+        "sourceSuffix": " · Source: {{name}}",
+        "extractor": "Extractor:",
+        "chunkBreakdown": "Chunk types:",
+        "warningsSummary": "⚠ {{count}} warnings (hover to view)",
+        "warningsToggle": "View {{count}} extraction warnings",
+        "tagPrefix": "Tag: {{tag}}"
+      },
+      "loadFailed": "Load failed"
+    },
+    "graph": {
+      "title": "Entities & relations",
+      "empty": "No graph data",
+      "loading": "Loading neighborhood…",
+      "loadFailed": "Failed to load graph",
+      "nodes": "{{count}} nodes",
+      "edges": "{{count}} edges",
+      "selfDegree": "Asset degree {{n}}",
+      "mockBanner": "📌 Mock graph (schema FK / logical). Apache AGE has no neighborhood for this asset yet — it will appear as ingest / QA accumulate.",
+      "realBanner": "🧠 Real graph",
+      "tooltip": {
+        "degree": "{{kindLabel}} · degree {{deg}}",
+        "count": " · count {{count}}",
+        "idLabel": "ID: "
+      },
+      "kindLabels": {
+        "asset": "Asset",
+        "entity": "Entity",
+        "source": "Source",
+        "space": "Space",
+        "tag": "Tag",
+        "question": "Question",
+        "template": "Template"
+      },
+      "legend": {
+        "mockEntity": "Entity (table)",
+        "mockTemplate": "Business template",
+        "mockFk": "Foreign key",
+        "mockLogical": "Logical link"
+      }
+    },
+    "ragflow": {
+      "panelTitle": "RAGFlow status",
+      "notConnected": "RAGFlow not connected",
+      "previewTitle": "Semantic summary preview",
+      "previewMeta": "{{total}} chunks · showing first 10",
+      "previewSample": "(sample view)",
+      "regenerate": "Regenerate",
+      "sourceOverview": "Source overview",
+      "summary": "This asset \"{{name}}\" belongs to {{source}} ({{connector}}); currently indexed {{chunks}} chunks and {{images}} images. Tags: {{tags}}.",
+      "noTags": "(no tags)",
+      "unknownSource": "unknown source",
+      "tagSeparator": ", ",
+      "pillChunks": "{{total}} chunks",
+      "pillType": "Type: {{type}}",
+      "pillUpdated": "Updated {{date}}",
+      "chunksHeader": "Knowledge chunks",
+      "noChunks": "📭 No chunks available",
+      "chunkPage": "page {{page}}",
+      "vectorized": "Vectorized · {{kind}}"
+    },
+    "chunks": {
+      "empty": "🗂 No structured chunks for this asset; may be plain text or image-only — see the RAGFlow summary tab for the body.",
+      "totalLabel": "{{count}} chunks total",
+      "showingPart": "· showing {{shown}} / {{total}}",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "kinds": {
+        "heading": "Heading",
+        "paragraph": "Paragraph",
+        "table": "Table",
+        "image_caption": "Caption",
+        "generic": "Body"
+      },
+      "cols": {
+        "page": "Page",
+        "kind": "Type",
+        "content": "Content",
+        "headingPath": "Heading path"
+      }
+    }
+  },
+  "mcp": {
+    "title": "Data integration",
+    "subtitle": "MCP query layer · Document access skills · Vector & graph connectivity",
+    "testConn": "Test connection",
+    "testing": "Checking…",
+    "connOk": "● qa-service OK",
+    "connError": "● Connection failed",
+    "errors": {
+      "qaServiceDown": "qa-service unreachable (:3001)",
+      "connectFailed": "Connection failed",
+      "queryFailed": "Query failed",
+      "loadFailed": "Load failed",
+      "statsShape": "/api/mcp/stats returned an unexpected shape"
+    },
+    "kpi": {
+      "assetsLabel": "Connected assets",
+      "assetsDetail": "Total assets (merged ones not counted)",
+      "chunksLabel": "Vector chunks",
+      "chunksDetail": "Embedded / total {{total}}",
+      "ingest24hLabel": "Ingest (24h)",
+      "ingest24hDetail": "Last 7 days: {{total}}",
+      "qa24hLabel": "QA (24h)",
+      "qa24hDetail": "Last {{ago}}",
+      "loading": "Loading…"
+    },
+    "sources": {
+      "panelTitle": "📚 Unstructured sources · BookStack + pgvector",
+      "realDataPill": "● Live data",
+      "assetsCount": "Connected assets",
+      "chunksEmbedded": "Embedded chunks",
+      "totalChunks": "/ {{total}} total",
+      "lastIndex": "Last indexed",
+      "ragNote": "📌 Vector retrieval currently uses the native BookStack proxy + pgvector path, which is semantically equivalent to the RAGFlow retrieval layer. Future versions can switch transparently to RAGFlow's orchestration layer."
+    },
+    "tools": {
+      "panelTitle": "🛠 MCP Tools",
+      "list": {
+        "search_knowledge": "Semantic search across shelves; returns snippets and sources.",
+        "query_pg_asset": "Structured asset catalog and metadata (PG + pgvector).",
+        "debug_sql": "Read-only SELECT debug with row-level filter and masking.",
+        "graph_cypher": "Cypher queries · currently in sample mode (real graph DB not connected; UI behavior matches prod)."
+      }
+    },
+    "sql": {
+      "panelTitle": "🧪 Structured SQL debug",
+      "panelSub": "Read-only SELECT · with authorization demo",
+      "run": "Run",
+      "running": "Running…",
+      "authPass": "✓ Authorized",
+      "authBlock": "✗ Blocked",
+      "rowFilter": "Row filter:",
+      "maskedFields": "Masked fields:"
+    },
+    "actions7d": {
+      "panelTitle": "⚙️ Action calls (last 7d)",
+      "realDataPill": "● Live data",
+      "subtitle": "From audit_log; refreshed every 30s",
+      "loading": "Loading…",
+      "empty": "No action records in the last 7 days. Try a QA / upload / rule edit and check back.",
+      "colName": "Action name",
+      "colCode": "action code",
+      "colCount": "7d calls",
+      "colLast": "Last",
+      "actionLabels": {
+        "qa_ask": "QA (called)",
+        "qa_answered": "QA (completed)",
+        "qa_intent_classified": "Intent classified",
+        "ingest_done": "Ingest done",
+        "ingest_failed": "Ingest failed",
+        "ingest_started": "Ingest started",
+        "bookstack_page_create": "BookStack page created",
+        "asset_register": "Asset registered",
+        "login_success": "Sign in success",
+        "login_failed": "Sign in failed",
+        "logout": "Sign out",
+        "user_register": "User created",
+        "user_updated": "User updated",
+        "user_deleted": "User deleted",
+        "user_password_changed": "Password self-changed",
+        "user_password_reset_by_admin": "Password reset by admin",
+        "acl_rule_create": "ACL rule created",
+        "acl_rule_update": "ACL rule updated",
+        "acl_rule_delete": "ACL rule deleted"
+      }
+    },
+    "cypher": {
+      "panelTitle": "🕸 Neo4j Cypher debug",
+      "samplePill": "Sample mode",
+      "sampleNote": "📌 Currently in sample mode; real graph DB not connected. Runs return sample graph results, UI matches prod behavior.",
+      "run": "Run Cypher",
+      "running": "Running…",
+      "result": "{{ms}}ms · {{nodes}} nodes / {{edges}} edges"
+    },
+    "timeAgo": {
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    }
+  },
+  "spaces": {
+    "title": "My spaces",
+    "subtitle": "Pick a knowledge base on the left, then see docs and members on the right. The list is grouped into Mine / Team-shared / Subscribed.",
+    "backToOverview": "Back to overview",
+    "newSpace": "+ New space",
+    "importKnowledge": "Import knowledge",
+    "detailTitleFallback": "Space detail",
+    "myRolePrefix": "I am ",
+    "roleLabels": {
+      "owner": "owner",
+      "admin": "admin",
+      "editor": "editor",
+      "viewer": "viewer"
+    },
+    "loading": "Loading…",
+    "selectHint": "Pick a space on the left, or click \"New space\"",
+    "list": {
+      "loading": "Loading…",
+      "empty": "No spaces yet",
+      "newBtn": "+ New space",
+      "groupOwned": "Mine",
+      "groupShared": "Team-shared",
+      "groupSubscribed": "Subscribed",
+      "search": "Search spaces…",
+      "private": "Private",
+      "team": "Team",
+      "public": "Public"
+    },
+    "info": {
+      "title": "Space info",
+      "fieldName": "Name",
+      "fieldDescription": "Description",
+      "fieldVisibility": "Visibility",
+      "fieldOwner": "Owner",
+      "fieldCreated": "Created at",
+      "fieldUpdated": "Updated at",
+      "edit": "Edit",
+      "delete": "Delete space",
+      "deleteConfirm": "Delete space \"{{name}}\"? This cannot be undone."
+    },
+    "members": {
+      "title": "Members & permissions",
+      "invite": "+ Invite member",
+      "loading": "Loading…",
+      "empty": "No members",
+      "colSubject": "Subject",
+      "colRole": "Role",
+      "colAddedAt": "Joined",
+      "colActions": "Actions",
+      "subjectUser": "User",
+      "subjectTeam": "Team",
+      "removeBtn": "Remove",
+      "removeConfirm": "Remove \"{{name}}\"?",
+      "saveRole": "Save",
+      "saveFailed": "Save failed",
+      "addUser": "Add user",
+      "addTeam": "Add team",
+      "addPlaceholder": "Email or team id",
+      "submit": "Add"
+    },
+    "directory": {
+      "title": "Directory",
+      "browseTree": "Browse asset tree",
+      "attachSource": "+ Attach source",
+      "empty": "No assets attached yet",
+      "loading": "Loading…",
+      "removeAsset": "Remove",
+      "removeConfirm": "Remove \"{{name}}\" from this space? The asset itself will not be deleted."
+    },
+    "create": {
+      "title": "New space",
+      "fieldName": "Name",
+      "namePlaceholder": "e.g. Admin internal-control space",
+      "fieldSlug": "slug (URL-friendly, lowercase letters/digits/hyphens)",
+      "fieldDescription": "Description (optional)",
+      "descPlaceholder": "What goes into this space?",
+      "fieldVisibility": "Visibility",
+      "visibilityOrg": "Organization",
+      "visibilityPrivate": "Private",
+      "ownerNote": "After creation the current account becomes the owner; org-level spaces are visible to all signed-in users by default.",
+      "submit": "Create",
+      "submitting": "Creating…",
+      "errorRequired": "Name is required",
+      "errorSlug": "slug must be lowercase letters / digits / hyphens"
+    },
+    "editModal": {
+      "title": "Edit space",
+      "submit": "Save",
+      "submitting": "Saving…"
+    },
+    "createSource": {
+      "title": "New data source",
+      "fieldName": "Source name",
+      "fieldType": "Type",
+      "fieldConnector": "Connector",
+      "fieldConfig": "Config (JSON)",
+      "submit": "Create",
+      "submitting": "Creating…",
+      "errorRequired": "Name is required"
+    },
+    "attachSource": {
+      "title": "Attach existing source",
+      "search": "Search sources…",
+      "empty": "No sources available",
+      "alreadyAttached": "Already attached",
+      "attach": "Attach",
+      "attaching": "Attaching…",
+      "loading": "Loading…",
+      "loadFailed": "Load failed"
+    },
+    "preview": {
+      "title": "Preview",
+      "selectAsset": "Pick an asset on the left to preview",
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "openOriginal": "↗ Open original",
+      "noContent": "(no preview content)",
+      "tabAssets": "Assets",
+      "tabContent": "Content",
+      "tabRag": "RAG"
+    },
+    "sourceTreePage": {
+      "title": "{{name}} · Asset tree",
+      "loading": "Loading…",
+      "loadFailed": "Load failed",
+      "back": "← Back to space",
+      "empty": "No assets yet"
+    },
+    "errors": {
+      "loadFailed": "Load failed",
+      "deleteFailed": "Delete failed",
+      "saveFailed": "Save failed"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "subtitle": "Full-text / tag / author / time filters with snippet preview",
+    "backToOverview": "Back to overview",
+    "heroPlaceholder": "Search e.g. \"MCP onboarding\", \"growth retro\", \"governance KPIs\"",
+    "filters": {
+      "all": "All spaces",
+      "doc": "Docs",
+      "minutes": "Meeting notes",
+      "faq": "FAQ",
+      "web": "Web clips"
+    },
+    "panels": {
+      "results": "Results",
+      "preview": "Preview",
+      "openOriginal": "↗ Open original"
+    },
+    "states": {
+      "promptSearch": "Enter keywords to start searching",
+      "searching": "Searching…",
+      "noMatch": "No matches. Try broader keywords or remove filters.",
+      "selectResult": "Pick a result on the left to preview"
+    },
+    "preview": {
+      "typeLabel": "Type: {{label}}",
+      "bookPrefix": "Book #{{id}}",
+      "chapterPrefix": "Chapter #{{id}}",
+      "favorited": "Saved",
+      "favorite": "Save",
+      "copyRef": "⛓ Copy reference",
+      "copySuccess": "Reference copied",
+      "copyFail": "Copy failed (clipboard permission?)",
+      "noSnippet": "(no snippet)",
+      "tags": "Tags",
+      "errorBlob": "(This document had an ingest error and can't be previewed)"
+    },
+    "typeLabels": {
+      "bookshelf": "Shelf",
+      "book": "Book",
+      "chapter": "Chapter",
+      "page": "Page"
+    }
+  },
+  "components": {
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "weak": "Weak",
+      "none": "Irrelevant",
+      "tooltip": "Relevance score: {{score}}"
+    },
+    "rewriteBadge": {
+      "tooltip": "Your question was rewritten by a fast LLM into a self-contained query for better retrieval"
+    },
+    "markdown": {
+      "copyCode": "Copy code",
+      "copied": "Copied",
+      "imageLoadFailed": "Image failed to load"
+    }
+  },
+  "notebook": {
+    "list": {
+      "title": "Notebooks",
+      "subtitle": "One notebook per research task — pick sources then chat / brief within scope",
+      "newButton": "+ New notebook",
+      "backToOverview": "Back to overview",
+      "ownedHeading": "Mine ({{count}})",
+      "sharedHeading": "Shared with me ({{count}})",
+      "emptyOwned": "No notebooks yet — click + New notebook in the top right to start",
+      "emptyShared": "No one has shared a notebook with you yet",
+      "deleteConfirm": "Delete notebook \"{{name}}\"? All sources, chats and briefs will be removed.",
+      "untitled": "(Untitled notebook · #{{id}})",
+      "accessOwner": "Mine",
+      "accessEditor": "Editor",
+      "accessReader": "Reader"
+    },
+    "card": {
+      "sources": "{{count}} sources",
+      "messages": "{{count}} messages"
+    },
+    "createModal": {
+      "title": "New notebook",
+      "templateSection": "Choose a template (optional)",
+      "createMyTemplate": "+ Create my template",
+      "blankIcon": "📄",
+      "blankLabel": "Blank",
+      "blankDesc": "Start from scratch",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Liftgate temperature compensation study",
+      "descLabel": "Description (optional)",
+      "descPlaceholder": "What is this notebook trying to figure out?",
+      "errors": {
+        "nameRequired": "Please enter a name"
+      }
+    },
+    "templateOption": {
+      "sourceMine": "Mine",
+      "sourceCommunity": "Community"
+    },
+    "templateModal": {
+      "createTitle": "+ Create my template",
+      "editTitle": "✎ Edit template",
+      "fieldLabel": "Name",
+      "fieldLabelHint": "≤ 10 chars",
+      "fieldLabelPlaceholder": "e.g. Weekly draft",
+      "fieldIcon": "Icon",
+      "fieldIconHint": "emoji, 1-2 chars",
+      "fieldDescription": "Description",
+      "fieldDescriptionHint": "≤ 60 chars",
+      "fieldDescriptionPlaceholder": "One line about what this template is for",
+      "fieldHint": "Source hint",
+      "fieldHintHint": "≤ 40 chars",
+      "fieldHintPlaceholder": "e.g. Upload weekly meeting notes / project status",
+      "fieldKinds": "Recommended artifacts",
+      "fieldKindsHint": "0-3",
+      "fieldQuestions": "Starter questions",
+      "fieldQuestionsHint": "1-3 items, ≤ 50 chars each",
+      "questionPlaceholder": "Item {{index}}…",
+      "removeQuestion": "Remove item {{index}}",
+      "errors": {
+        "labelMaxChars": "≤ 10 chars",
+        "iconMaxChars": "≤ 2 chars",
+        "descriptionMaxChars": "≤ 60 chars",
+        "hintMaxChars": "≤ 40 chars",
+        "kindsMax": "max 3",
+        "questionsRange": "{{min}}-{{max}} items",
+        "questionMaxChars": "≤ 50 chars each"
+      }
+    },
+    "myTemplateActions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Delete template \"{{label}}\"?\n\nNotebooks already using it stay intact (template_id is preserved)."
+    },
+    "templateHint": {
+      "titleSuffix": "template",
+      "closeButton": "Don't show again (per-notebook)",
+      "closeButtonAriaLabel": "Close template hint",
+      "recommendedKindsLabel": "Generate",
+      "starterQuestionsLabel": "Starters",
+      "kindTooltip": "Trigger {{kind}} generation (see Studio for progress)",
+      "starterTooltip": "Click to prefill the input below"
+    },
+    "detail": {
+      "clearChat": "Clear chat",
+      "clearChatConfirm": "Clear the current chat? All messages will be deleted.",
+      "shareButton": "🔗 Share",
+      "backButton": "← Back",
+      "invalidId": "Invalid notebook id",
+      "actionToastClose": "Close notice",
+      "triggerArtifactFailed": "Failed to trigger {{kind}}: {{message}}",
+      "noSourcesError": "Notebook has no sources — please add some first",
+      "columns": {
+        "sources": "Sources",
+        "chat": "Chat",
+        "studio": "Studio"
+      }
+    }
+  }
+}

@@ -8,22 +8,18 @@
  */
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import { listPgAssets, deleteAsset, type PgAssetCard } from '@/api/assetDirectory'
 import { listSpaces, type SpaceSummary } from '@/api/spaces'
 import RequirePermission from '@/auth/RequirePermission'
 
 const TYPE_FILTERS = [
-  { id: '',           label: '全部' },
-  { id: 'structured', label: '结构化' },
-  { id: 'document',   label: '文件型' },
-  { id: 'online',     label: '在线文档' },
+  { id: '',           labelKey: 'typeFilters.all' },
+  { id: 'structured', labelKey: 'typeFilters.structured' },
+  { id: 'document',   labelKey: 'typeFilters.document' },
+  { id: 'online',     labelKey: 'typeFilters.online' },
 ] as const
-
-function statusKind(card: PgAssetCard): { cls: 'ok' | 'proc'; text: string } {
-  if (card.indexed_at) return { cls: 'ok', text: '正常' }
-  return { cls: 'proc', text: '待索引' }
-}
 
 function typeIcon(t: string): string {
   if (t === 'structured') return '🗄'
@@ -31,26 +27,34 @@ function typeIcon(t: string): string {
   return '📁'   // document / fallback
 }
 
-function typeLabel(t: string): string {
-  if (t === 'structured') return '结构化'
-  if (t === 'online')     return '在线文档'
-  if (t === 'document')   return '文件型'
-  return t || '—'
-}
-
-function fmtTime(iso: string | null): string {
-  if (!iso) return '未索引'
-  const ms = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(ms / 60000)
-  if (m < 1)  return '刚刚'
-  if (m < 60) return `${m} 分钟前`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h} 小时前`
-  return `${Math.floor(h / 24)} 天前`
-}
-
 export default function Assets() {
   const navigate = useNavigate()
+  const { t } = useTranslation('assets')
+
+  // 类型 / 状态 / 时间格式化都依赖 i18n，放在组件内
+  const typeLabel = (kind: string): string => {
+    if (kind === 'structured') return t('typeFilters.structured')
+    if (kind === 'online')     return t('typeFilters.online')
+    if (kind === 'document')   return t('typeFilters.document')
+    return kind || t('typeFilters.fallbackDash')
+  }
+
+  const statusKind = (card: PgAssetCard): { cls: 'ok' | 'proc'; text: string } => {
+    if (card.indexed_at) return { cls: 'ok', text: t('status.ok') }
+    return { cls: 'proc', text: t('status.pending') }
+  }
+
+  const fmtTime = (iso: string | null): string => {
+    if (!iso) return t('time.notIndexed')
+    const ms = Date.now() - new Date(iso).getTime()
+    const m = Math.floor(ms / 60000)
+    if (m < 1)  return t('time.justNow')
+    if (m < 60) return t('time.minutes', { n: m })
+    const h = Math.floor(m / 60)
+    if (h < 24) return t('time.hours', { n: h })
+    return t('time.days', { n: Math.floor(h / 24) })
+  }
+
   const [type, setType] = useState<string>('')
   const [kw, setKw] = useState<string>('')
   const [spaceId, setSpaceId] = useState<number | null>(null)
@@ -66,9 +70,9 @@ export default function Assets() {
       limit: 100,
     })
       .then((r) => { setItems(r.items); setErr(null) })
-      .catch((e) => setErr(e?.response?.data?.error || e?.message || '加载失败'))
+      .catch((e) => setErr(e?.response?.data?.error || e?.message || t('list.loadFailed')))
       .finally(() => setLoading(false))
-  }, [type, spaceId])
+  }, [type, spaceId, t])
   useEffect(() => { load() }, [load])
 
   // 拉空间列表给筛选器用（只拉一次）
@@ -90,12 +94,12 @@ export default function Assets() {
         gap: 10, flexWrap: 'wrap',
       }}>
         <div>
-          <div className="page-title">资产目录</div>
-          <div className="page-sub">数据源 / 文档库 / 在线文档等资产统一视图</div>
+          <div className="page-title">{t('title')}</div>
+          <div className="page-sub">{t('subtitle')}</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/overview')}>返回运行概览</button>
-          <button className="btn primary" onClick={() => navigate('/ingest')}>+ 新增数据源</button>
+          <button className="btn" onClick={() => navigate('/overview')}>{t('backToOverview')}</button>
+          <button className="btn primary" onClick={() => navigate('/ingest')}>{t('newSource')}</button>
         </div>
       </div>
 
@@ -103,9 +107,9 @@ export default function Assets() {
 
       {/* 三联 subtabs —— 治理域导航 */}
       <div className="kc-subtabs">
-        <button className="kc-subtab" onClick={() => navigate('/governance')}>知识治理</button>
-        <button className="kc-subtab active">资产目录</button>
-        <button className="kc-subtab" onClick={() => navigate('/iam')}>数据权限</button>
+        <button className="kc-subtab" onClick={() => navigate('/governance')}>{t('subtabs.governance')}</button>
+        <button className="kc-subtab active">{t('subtabs.assets')}</button>
+        <button className="kc-subtab" onClick={() => navigate('/iam')}>{t('subtabs.iam')}</button>
       </div>
 
       {/* 搜索 + 空间 + 类型筛选 */}
@@ -114,7 +118,7 @@ export default function Assets() {
           <div style={{ flex: 1, minWidth: 260 }}>
             <input
               className="field"
-              placeholder="搜索资产名、标签…"
+              placeholder={t('search.placeholder')}
               value={kw}
               onChange={(e) => setKw(e.target.value)}
             />
@@ -130,14 +134,14 @@ export default function Assets() {
               fontSize: 13, background: '#fff', minWidth: 180,
             }}
           >
-            <option value="">所有空间</option>
+            <option value="">{t('search.spaceAll')}</option>
             {spaces.map((sp) => (
               <option key={sp.id} value={sp.id}>
                 {sp.visibility === 'private' ? '🔒 ' : '📁 '}{sp.name}
               </option>
             ))}
           </select>
-          {kw && <button className="pill" onClick={() => setKw('')}>清除</button>}
+          {kw && <button className="pill" onClick={() => setKw('')}>{t('search.clear')}</button>}
         </div>
         <div style={{ height: 10 }} />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -147,7 +151,7 @@ export default function Assets() {
               onClick={() => setType(f.id)}
               className={`kc-subtab${type === f.id ? ' active' : ''}`}
             >
-              {f.label}
+              {t(f.labelKey)}
             </button>
           ))}
         </div>
@@ -155,11 +159,11 @@ export default function Assets() {
 
       {/* 资产卡网格 */}
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>加载中…</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>{t('list.loading')}</div>
       ) : err ? (
         <div style={{ padding: 20, textAlign: 'center' }}>
           <div style={{ color: 'var(--red)', marginBottom: 8 }}>⚠ {err}</div>
-          <button className="btn" onClick={load}>重试</button>
+          <button className="btn" onClick={load}>{t('list.retry')}</button>
         </div>
       ) : !filtered || filtered.length === 0 ? (
         <div className="empty-state" style={{
@@ -167,9 +171,9 @@ export default function Assets() {
           border: '1px dashed var(--border)', borderRadius: 12,
         }}>
           <div className="empty-illus">📦</div>
-          <div className="empty-text">当前条件下无资产</div>
+          <div className="empty-text">{t('list.empty')}</div>
           {(kw || type || spaceId != null) && (
-            <button className="btn" onClick={() => { setKw(''); setType(''); setSpaceId(null) }}>清除筛选</button>
+            <button className="btn" onClick={() => { setKw(''); setType(''); setSpaceId(null) }}>{t('list.clearFilters')}</button>
           )}
         </div>
       ) : (
@@ -178,9 +182,9 @@ export default function Assets() {
             const status = statusKind(card)
             const onRowDelete = async (e: React.MouseEvent) => {
               e.stopPropagation()  // 不要触发卡片的 onClick 跳转
+              const imagesPart = card.images_total ? t('card.deleteImagesPart', { count: card.images_total }) : ''
               const ok = window.confirm(
-                `确认删除资产「${card.name}」？\n\n` +
-                `会清除 ${card.chunks_total} 个切片${card.images_total ? `、${card.images_total} 张图` : ''}，不可恢复。`,
+                t('card.deleteConfirm', { name: card.name, chunks: card.chunks_total, imagesPart }),
               )
               if (!ok) return
               try {
@@ -189,8 +193,8 @@ export default function Assets() {
                 setItems((prev) => (prev ? prev.filter((c) => c.id !== card.id) : prev))
               } catch (err) {
                 const msg = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error
-                  || (err as { message?: string })?.message || '删除失败'
-                window.alert(`删除失败：${msg}`)
+                  || (err as { message?: string })?.message || t('card.deleteFailed')
+                window.alert(t('card.deleteFailedAlert', { msg }))
               }
             }
             return (
@@ -220,8 +224,8 @@ export default function Assets() {
                     <button
                       className="btn"
                       onClick={onRowDelete}
-                      title="永久删除该资产（不可恢复）"
-                      aria-label={`删除资产 ${card.name}`}
+                      title={t('card.deleteTitle')}
+                      aria-label={t('card.deleteAria', { name: card.name })}
                       data-testid={`delete-btn-card-${card.id}`}
                       style={{
                         marginLeft: 8,
@@ -237,18 +241,18 @@ export default function Assets() {
                 </div>
                 <div className="asset-meta-grid">
                   <div>
-                    <div className="asset-k">类型</div>
+                    <div className="asset-k">{t('card.type')}</div>
                     <div className="asset-v">{typeLabel(card.type)}</div>
                   </div>
                   <div>
-                    <div className="asset-k">更新时间</div>
+                    <div className="asset-k">{t('card.updated')}</div>
                     <div className="asset-v">{fmtTime(card.indexed_at)}</div>
                   </div>
                   <div>
-                    <div className="asset-k">规模</div>
+                    <div className="asset-k">{t('card.scale')}</div>
                     <div className="asset-v">
-                      {card.chunks_total.toLocaleString()} 切片
-                      {card.images_total ? ` · ${card.images_total} 图` : ''}
+                      {t('card.scaleChunks', { count: card.chunks_total })}
+                      {card.images_total ? t('card.scaleImagesSuffix', { count: card.images_total }) : ''}
                     </div>
                   </div>
                 </div>

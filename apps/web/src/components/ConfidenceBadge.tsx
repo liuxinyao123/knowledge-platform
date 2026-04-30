@@ -12,6 +12,8 @@
  * tooltip 始终展示原始分数（科学记数或三位小数，视量级）。
  */
 
+import { useTranslation } from 'react-i18next'
+
 interface Props {
   score: number | null | undefined
 }
@@ -35,28 +37,29 @@ function formatRaw(s: number | null | undefined): string {
   return n.toExponential(2)
 }
 
-const STYLES: Record<Bucket, { bg: string; fg: string; label: string }> = {
-  high:   { bg: '#D1FAE5', fg: '#065F46', label: '高相关' },
-  medium: { bg: '#DBEAFE', fg: '#1D4ED8', label: '中相关' },
-  weak:   { bg: '#F3F4F6', fg: '#6B7280', label: '弱相关' },
-  none:   { bg: '#FEE2E2', fg: '#991B1B', label: '几无相关' },
+const STYLES: Record<Bucket, { bg: string; fg: string }> = {
+  high:   { bg: '#D1FAE5', fg: '#065F46' },
+  medium: { bg: '#DBEAFE', fg: '#1D4ED8' },
+  weak:   { bg: '#F3F4F6', fg: '#6B7280' },
+  none:   { bg: '#FEE2E2', fg: '#991B1B' },
 }
 
 export default function ConfidenceBadge({ score }: Props) {
+  const { t } = useTranslation('components')
   const b = bucket(score)
   const s = STYLES[b]
   const raw = formatRaw(score)
   return (
     <span
       className="tag"
-      title={`相关性分数：${raw}`}
+      title={t('confidence.tooltip', { score: raw })}
       style={{
         background: s.bg,
         color: s.fg,
         whiteSpace: 'nowrap',
       }}
     >
-      {s.label} · {raw}
+      {t(`confidence.${b}`)} · {raw}
     </span>
   )
 }

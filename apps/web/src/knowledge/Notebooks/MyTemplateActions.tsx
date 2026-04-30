@@ -5,6 +5,7 @@
  * 鼠标 hover 整个 TemplateOption 时浮现两个圆形小按钮。
  */
 import { type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 import { type NotebookTemplateSpec } from '@/api/notebooks'
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function MyTemplateActions({ template, visible, onEdit, onDelete }: Props) {
+  const { t } = useTranslation('notebook')
   return (
     <div style={{
       ...container,
@@ -23,18 +25,18 @@ export default function MyTemplateActions({ template, visible, onEdit, onDelete 
     }}>
       <button
         type="button"
-        title="编辑"
-        aria-label="编辑模板"
+        title={t('myTemplateActions.edit')}
+        aria-label={t('myTemplateActions.edit')}
         onClick={(e) => { e.stopPropagation(); onEdit(template) }}
         style={iconBtn}
       >✎</button>
       <button
         type="button"
-        title="删除"
-        aria-label="删除模板"
+        title={t('myTemplateActions.delete')}
+        aria-label={t('myTemplateActions.delete')}
         onClick={(e) => {
           e.stopPropagation()
-          if (!confirm(`删除模板「${template.label}」？\n\n已使用此模板的 notebook 不会受影响（template_id 仍保留）。`)) {
+          if (!confirm(t('myTemplateActions.deleteConfirm', { label: template.label }))) {
             return
           }
           onDelete(template)

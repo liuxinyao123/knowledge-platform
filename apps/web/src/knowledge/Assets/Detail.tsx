@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import { getPgAssetDetail, deleteAsset, type PgAssetDetail } from '@/api/assetDirectory'
 import DetailAssets from './DetailAssets'
@@ -21,6 +22,8 @@ type Tab = 'assets' | 'ragflow' | 'graph'
 export default function AssetDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation('assets')
+  const { t: tNav } = useTranslation('nav')
   const [tab, setTab] = useState<Tab>('assets')
   const [detail, setDetail] = useState<PgAssetDetail | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -34,20 +37,19 @@ export default function AssetDetail() {
     if (!id) return
     getPgAssetDetail(Number(id))
       .then((r) => { setDetail(r); setErr(null) })
-      .catch((e) => setErr(e?.response?.data?.error || e?.message || '加载失败'))
+      .catch((e) => setErr(e?.response?.data?.error || e?.message || t('detail.loadFailed')))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
   useEffect(() => { load() }, [load])
 
   const handleDelete = useCallback(async () => {
     if (!detail) return
     const ok = window.confirm(
-      `确认删除资产「${detail.asset.name}」？\n\n` +
-      `此操作会：\n` +
-      `  · 从资产目录移除该条目\n` +
-      `  · 清除所有向量切片（${detail.chunks.total} 条）\n` +
-      `  · 清除关联图片（${detail.images.length} 张）\n\n` +
-      `删除后不可恢复。`,
+      t('detail.deleteAssetConfirm', {
+        name: detail.asset.name,
+        chunks: detail.chunks.total,
+        images: detail.images.length,
+      }),
     )
     if (!ok) return
     setDeleting(true)
@@ -56,11 +58,11 @@ export default function AssetDetail() {
       navigate('/assets')
     } catch (e) {
       const msg = (e as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error
-        || (e as { message?: string })?.message || '删除失败'
-      window.alert(`删除失败：${msg}`)
+        || (e as { message?: string })?.message || t('card.deleteFailed')
+      window.alert(t('detail.deleteFailedAlert', { msg }))
       setDeleting(false)
     }
-  }, [detail, navigate])
+  }, [detail, navigate, t])
 
   return (
     <div className="page-body">
@@ -71,27 +73,27 @@ export default function AssetDetail() {
       }}>
         <div>
           <div className="topbar-crumb" style={{ marginBottom: 8 }}>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/overview')}>知识中台</span>
+            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/overview')}>{tNav('brand')}</span>
             <span style={{ margin: '0 6px' }}>›</span>
-            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/assets')}>资产目录</span>
+            <span style={{ cursor: 'pointer' }} onClick={() => navigate('/assets')}>{t('title')}</span>
             <span style={{ margin: '0 6px' }}>›</span>
             <span className="crumb-now">{detail?.asset.name ?? '…'}</span>
           </div>
           <div className="page-title" style={{ marginBottom: 4 }}>
-            {detail?.asset.name ?? '加载中…'}
+            {detail?.asset.name ?? t('detail.loading')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/assets')}>返回目录</button>
+          <button className="btn" onClick={() => navigate('/assets')}>{t('detail.backToList')}</button>
           <RequirePermission name="iam:manage">
             <button
               className="btn primary"
               onClick={() => setPermOpen(true)}
-              title="打开该资产的权限抽屉（V2 · F-2）"
+              title={t('detail.permButtonTitle')}
               data-testid="perm-btn-asset"
               style={{ whiteSpace: 'nowrap' }}
             >
-              🔒 权限设置
+              {t('detail.permButton')}
             </button>
           </RequirePermission>
           {detail && (
@@ -100,7 +102,7 @@ export default function AssetDetail() {
                 className="btn"
                 onClick={handleDelete}
                 disabled={deleting}
-                title="永久删除该资产（含切片和图片，不可恢复）"
+                title={t('detail.deleteAssetTitle')}
                 data-testid="delete-btn-asset"
                 style={{
                   whiteSpace: 'nowrap',
@@ -108,7 +110,7 @@ export default function AssetDetail() {
                   borderColor: 'var(--red, #dc2626)',
                 }}
               >
-                {deleting ? '删除中…' : '🗑 删除资产'}
+                {deleting ? t('detail.deleting') : t('detail.deleteAssetBtn')}
               </button>
             </RequirePermission>
           )}
@@ -118,11 +120,11 @@ export default function AssetDetail() {
       <KnowledgeTabs />
 
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>加载中…</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>{t('detail.loading')}</div>
       ) : err ? (
         <div style={{ padding: 40, textAlign: 'center' }}>
           <div style={{ color: 'var(--red)', marginBottom: 8 }}>⚠ {err}</div>
-          <button className="btn" onClick={() => navigate('/assets')}>返回目录</button>
+          <button className="btn" onClick={() => navigate('/assets')}>{t('detail.backToList')}</button>
         </div>
       ) : detail ? (
         <>
@@ -133,17 +135,17 @@ export default function AssetDetail() {
 
           {/* 3 Tab */}
           <div className="kc-subtabs">
-            {[
-              { id: 'assets'  as const, label: '资产列表' },
-              { id: 'ragflow' as const, label: 'RAGFlow 摘要' },
-              { id: 'graph'   as const, label: '知识图谱' },
-            ].map((t) => (
+            {([
+              { id: 'assets'  as const, labelKey: 'detail.tabAssets' },
+              { id: 'ragflow' as const, labelKey: 'detail.tabRagflow' },
+              { id: 'graph'   as const, labelKey: 'detail.tabGraph' },
+            ]).map((sub) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`kc-subtab${tab === t.id ? ' active' : ''}`}
+                key={sub.id}
+                onClick={() => setTab(sub.id)}
+                className={`kc-subtab${tab === sub.id ? ' active' : ''}`}
               >
-                {t.label}
+                {t(sub.labelKey)}
               </button>
             ))}
           </div>
@@ -170,10 +172,11 @@ export default function AssetDetail() {
 }
 
 function Banner({ detail }: { detail: PgAssetDetail }) {
+  const { t } = useTranslation('assets')
   const a = detail.asset
-  const statusLabel = a.indexed_at ? '正常' : '待索引'
+  const statusLabel = a.indexed_at ? t('status.ok') : t('status.pending')
   const updateStr = a.indexed_at
-    ? new Date(a.indexed_at).toLocaleString('zh-CN')
+    ? new Date(a.indexed_at).toLocaleString()
     : '—'
 
   // ADR-32 · 解析诊断
@@ -184,12 +187,12 @@ function Banner({ detail }: { detail: PgAssetDetail }) {
 
   return (
     <div className="banner">
-      <div className="banner-title">资产概览</div>
+      <div className="banner-title">{t('detail.banner.overview')}</div>
       <div className="banner-sub">
-        类型：{a.type || '—'} · 状态：{statusLabel} · 更新时间：{updateStr}
-        {' · '}切片 {detail.chunks.total}
-        {detail.images.length > 0 && ` · 图 ${detail.images.length}`}
-        {detail.source.name && ` · 来源：${detail.source.name}`}
+        {t('detail.banner.metaLine', { type: a.type || '—', status: statusLabel, time: updateStr })}
+        {t('detail.banner.chunksSuffix', { count: detail.chunks.total })}
+        {detail.images.length > 0 && t('detail.banner.imagesSuffix', { count: detail.images.length })}
+        {detail.source.name && t('detail.banner.sourceSuffix', { name: detail.source.name })}
       </div>
 
       {/* ADR-32 · 解析诊断行 —— 让用户直接看到 extractorId / chunks 分类 / warnings */}
@@ -209,12 +212,12 @@ function Banner({ detail }: { detail: PgAssetDetail }) {
         >
           {a.extractor_id && (
             <span>
-              提取器：<strong style={{ fontFamily: 'monospace' }}>{a.extractor_id}</strong>
+              {t('detail.banner.extractor')}<strong style={{ fontFamily: 'monospace' }}>{a.extractor_id}</strong>
             </span>
           )}
           {breakdownEntries.length > 0 && (
             <span>
-              切片分类：{breakdownEntries.map(([k, n]) => `${k} ${n}`).join(' · ')}
+              {t('detail.banner.chunkBreakdown')}{breakdownEntries.map(([k, n]) => `${k} ${n}`).join(' · ')}
             </span>
           )}
           {a.external_path && (
@@ -227,7 +230,7 @@ function Banner({ detail }: { detail: PgAssetDetail }) {
               style={{ color: 'var(--amber, #d97706)' }}
               title={warnings.join('\n')}
             >
-              ⚠ {warnings.length} 条警告（悬停查看）
+              {t('detail.banner.warningsSummary', { count: warnings.length })}
             </span>
           )}
         </div>
@@ -236,7 +239,7 @@ function Banner({ detail }: { detail: PgAssetDetail }) {
       {warnings.length > 0 && (
         <details style={{ marginTop: 8, fontSize: 12 }}>
           <summary style={{ cursor: 'pointer', color: 'var(--amber, #d97706)' }}>
-            查看 {warnings.length} 条提取警告
+            {t('detail.banner.warningsToggle', { count: warnings.length })}
           </summary>
           <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
             {warnings.map((w, i) => (
@@ -250,9 +253,9 @@ function Banner({ detail }: { detail: PgAssetDetail }) {
 
       {(a.tags?.length ?? 0) > 0 && (
         <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {a.tags.map((t) => (
-            <span key={t} className="pill" style={{ cursor: 'default' }}>
-              标签：{t}
+          {a.tags.map((tg) => (
+            <span key={tg} className="pill" style={{ cursor: 'default' }}>
+              {t('detail.banner.tagPrefix', { tag: tg })}
             </span>
           ))}
         </div>

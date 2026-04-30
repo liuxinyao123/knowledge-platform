@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import {
   getSpace, listMembers, listSpaces,
@@ -22,6 +23,7 @@ import AttachSourceModal from './AttachSourceModal'
 
 export default function SpaceTree() {
   const navigate = useNavigate()
+  const { t } = useTranslation('spaces')
   const { id: paramId } = useParams<{ id?: string }>()
   const [spaces, setSpaces] = useState<SpaceSummary[]>([])
   const [loadingList, setLoadingList] = useState(true)
@@ -97,15 +99,15 @@ export default function SpaceTree() {
         gap: 10, flexWrap: 'wrap',
       }}>
         <div>
-          <div className="page-title">我的空间</div>
+          <div className="page-title">{t('title')}</div>
           <div className="page-sub">
-            先选知识库，再在右侧看文档与成员。左侧按「我的 / 团队共享 / 我订阅的」整理。
+            {t('subtitle')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/overview')}>返回运行概览</button>
-          <button className="btn" onClick={() => setCreating(true)}>+ 新建知识库</button>
-          <button className="btn primary" onClick={() => navigate('/ingest')}>导入知识</button>
+          <button className="btn" onClick={() => navigate('/overview')}>{t('backToOverview')}</button>
+          <button className="btn" onClick={() => setCreating(true)}>{t('newSpace')}</button>
+          <button className="btn primary" onClick={() => navigate('/ingest')}>{t('importKnowledge')}</button>
         </div>
       </div>
 
@@ -129,13 +131,13 @@ export default function SpaceTree() {
 
         <div className="surface-card split-right panel">
           <div className="panel-head">
-            <div className="title">{detail ? detail.name : '空间详情'}</div>
+            <div className="title">{detail ? detail.name : t('detailTitleFallback')}</div>
             {detail?.my_role && (
               <span style={{
                 marginLeft: 8, padding: '1px 8px', fontSize: 11, borderRadius: 10,
                 background: 'var(--p-light)', color: 'var(--p)',
               }}>
-                我是{({ owner: '所有者', admin: '管理员', editor: '编辑者', viewer: '查看者' } as const)[detail.my_role]}
+                {t('myRolePrefix')}{t(`roleLabels.${detail.my_role}`)}
               </span>
             )}
           </div>
@@ -148,11 +150,11 @@ export default function SpaceTree() {
             {!detail && !detailErr && selectedId == null && (
               <div style={{ padding: 60, textAlign: 'center', color: 'var(--muted)' }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>🗂️</div>
-                <div style={{ fontSize: 13 }}>从左侧选一个空间，或点「新建空间」</div>
+                <div style={{ fontSize: 13 }}>{t('selectHint')}</div>
               </div>
             )}
             {!detail && !detailErr && selectedId != null && (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>加载中…</div>
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>{t('loading')}</div>
             )}
             {detail && (
               <SpaceDetailPane

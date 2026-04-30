@@ -1,0 +1,179 @@
+{
+  "common": {
+    "actions": {
+      "create": "생성",
+      "cancel": "취소",
+      "save": "저장",
+      "edit": "편집",
+      "delete": "삭제",
+      "confirm": "확인",
+      "close": "닫기",
+      "back": "뒤로",
+      "share": "공유",
+      "submit": "제출",
+      "retry": "재시도",
+      "search": "검색",
+      "refresh": "새로고침",
+      "open": "열기",
+      "addOne": "+ 추가"
+    },
+    "states": {
+      "loading": "로딩 중…",
+      "loadFailed": "로드 실패",
+      "creating": "생성 중…",
+      "saving": "저장 중…",
+      "empty": "데이터 없음",
+      "required": "필수",
+      "optional": "선택"
+    },
+    "errors": {
+      "generic": "오류가 발생했습니다. 다시 시도해 주세요",
+      "createFailed": "생성에 실패했습니다",
+      "saveFailed": "저장에 실패했습니다",
+      "deleteFailed": "삭제에 실패했습니다",
+      "loadFailed": "로드에 실패했습니다"
+    },
+    "language": {
+      "switchTitle": "언어 전환"
+    },
+    "validation": {
+      "atLeast_one": "최소 {{count}}개",
+      "atLeast_other": "최소 {{count}}개",
+      "atMost_one": "최대 {{count}}개",
+      "atMost_other": "최대 {{count}}개",
+      "atLeastChars": "최소 {{count}}자",
+      "atMostChars": "최대 {{count}}자"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "지식 플랫폼",
+    "brandShort": "지식",
+    "newTaskCta": "질문하기",
+    "sidebarSearchPlaceholder": "작업 / 지식 검색…",
+    "sectionPrimary": "워크스페이스",
+    "sectionManage": "관리 및 데이터",
+    "sectionExtra": "도구",
+    "sectionAdmin": "관리",
+    "tabs": {
+      "qa": "💬 질문",
+      "search": "🔎 검색",
+      "spaces": "🗂 스페이스",
+      "ingest": "⬆️ 가져오기",
+      "overview": "🏠 개요",
+      "agent": "🤖 Agent",
+      "governance": "🛡 거버넌스",
+      "assets": "📦 자산",
+      "mcp": "🔌 커넥터"
+    },
+    "labels": {
+      "qa": "질문",
+      "search": "검색",
+      "spaces": "내 스페이스",
+      "ingest": "업로드",
+      "overview": "개요",
+      "insights": "인사이트",
+      "knowledgeGraph": "지식 그래프",
+      "governance": "콘텐츠 거버넌스",
+      "assets": "자산 카탈로그",
+      "mcp": "커넥터",
+      "agent": "Agent",
+      "notebooks": "노트북",
+      "eval": "평가",
+      "iam": "ID 및 권한"
+    },
+    "tabsAriaLabel": "지식 플랫폼 모듈",
+    "topbarQuickCreate": "빠른 작업 (질문)",
+    "topbarAssetsBtn": "자산 카탈로그"
+  },
+  "auth": {
+    "login": {
+      "title": "지식 플랫폼",
+      "subtitle": "워크스페이스에 로그인",
+      "emailLabel": "이메일",
+      "passwordLabel": "비밀번호",
+      "submit": "로그인",
+      "submitting": "로그인 중…",
+      "errorInvalid": "이메일 또는 비밀번호가 올바르지 않습니다",
+      "errorNoSecret": "서버 설정 누락 (AUTH_HS256_SECRET 미설정)",
+      "errorNetwork": "로그인 실패"
+    },
+    "userArea": {
+      "changePassword": "변경",
+      "changePasswordTitle": "비밀번호 변경",
+      "changePasswordDevTooltip": "DEV 모드에서는 비밀번호 변경 비활성화",
+      "logout": "로그아웃",
+      "logoutTitle": "로그아웃",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "비밀번호 변경",
+      "currentLabel": "현재 비밀번호",
+      "newLabel": "새 비밀번호",
+      "confirmLabel": "새 비밀번호 확인",
+      "submit": "저장",
+      "submitting": "저장 중…",
+      "cancel": "취소",
+      "errorMismatch": "비밀번호가 일치하지 않습니다",
+      "errorWrongCurrent": "현재 비밀번호가 올바르지 않습니다",
+      "successTitle": "비밀번호가 업데이트되었습니다"
+    }
+  },
+  "overview": {
+    "title": "개요",
+    "subtitle": "목적부터 시작하세요: 질문 / 검색 / 가져오기. KPI는 운영자를 위한 것입니다.",
+    "actions": {
+      "askQuestion": "질문하기",
+      "search": "검색",
+      "newSpace": "+ 새 스페이스",
+      "importKnowledge": "지식 가져오기"
+    },
+    "quickStart": {
+      "skipHeading": "어디서 시작할지 모르겠다면 아래에서 선택하세요",
+      "ariaLabel": "빠른 시작",
+      "qaTitle": "질문",
+      "qaDesc": "자연어로 질문하면 인용된 답변을 받을 수 있습니다.",
+      "searchTitle": "검색",
+      "searchDesc": "키워드 / 태그 / 의미로 문서, 노트, 웹 스크랩을 검색합니다.",
+      "ingestTitle": "업로드",
+      "ingestDesc": "파일, 링크, 클립보드 내용을 검색 가능한 지식 베이스에 추가합니다."
+    },
+    "kpiSection": "스페이스 및 데이터 상태 (관리자 / 소유자용)",
+    "kpi": {
+      "documents": "문서",
+      "documentsSub": "문서 / FAQ / 회의록 / 웹 스크랩 포함",
+      "documentsRecent": "+{{count}} 최근 7일",
+      "recentDays": "최근 7일",
+      "spaces": "지식 스페이스",
+      "spacesSub": "팀 간 공유 + 비공개 스페이스",
+      "spacesPill": "관리 중 {{count}}",
+      "ingestPending": "가져오기 대기",
+      "ingestPendingSub": "청킹 / 파싱 / 벡터화",
+      "ingestProcessing": "처리 중",
+      "ingestAllDone": "모두 완료",
+      "anomaly": "이상 / 저품질",
+      "anomalySub": "중복, 오래됨, 누락 필드",
+      "anomalyNeedsReview": "검토 필요",
+      "anomalyNoIssue": "문제 없음"
+    },
+    "panels": {
+      "recentUpdates": "최근 업데이트",
+      "myFavorites": "내 즐겨찾기",
+      "activeSpaces": "활성 스페이스 Top5",
+      "goSearch": "검색으로 ›",
+      "goSearchPlain": "검색으로",
+      "bookPrefix": "책 #{{id}}",
+      "spaceBooksCount": "{{count}}권"
+    },
+    "empty": {
+      "noDocs": "아직 문서가 없습니다 — 가져오기를 진행하세요",
+      "noFavorites": "즐겨찾기가 없습니다 — 검색 페이지에서 추가하세요",
+      "noShelves": "스페이스 데이터가 없습니다"
+    },
+    "errors": {
+      "apiDown": "API에 연결할 수 없습니다. BookStack(:6875)과 qa-service(:3001)가 실행 중이고 서버에 BookStack 토큰이 구성되었는지 확인하세요."
+    },
+    "loadFailedHint": "로드 실패, 다시 시도해 주세요",
+    "tilesBlocked": "이 모듈에 접근할 권한이 없습니다"
+  }
+}

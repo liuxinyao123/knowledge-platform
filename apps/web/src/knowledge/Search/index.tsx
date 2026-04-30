@@ -8,26 +8,21 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
 import { bsApi } from '@/api/bookstack'
 import type { BSSearchResult } from '@/types/bookstack'
 import { useDebounce } from '@/hooks/useDebounce'
 
-type TypeFilter = '全部空间' | '文档' | '会议纪要' | 'FAQ' | '网页'
+/** TypeFilter 用语义化 enum 而非展示字面量，避免和 i18n 文案耦合 */
+type TypeFilter = 'all' | 'doc' | 'minutes' | 'faq' | 'web'
 
 const TYPE_FILTER_MAP: Record<TypeFilter, BSSearchResult['type'][]> = {
-  全部空间: ['bookshelf', 'book', 'chapter', 'page'],
-  文档:     ['page'],
-  会议纪要:  ['chapter'],
-  FAQ:      ['book'],
-  网页:     ['bookshelf'],
-}
-
-const TYPE_LABEL: Record<BSSearchResult['type'], string> = {
-  bookshelf: '书架',
-  book: '图书',
-  chapter: '章节',
-  page: '页面',
+  all:      ['bookshelf', 'book', 'chapter', 'page'],
+  doc:      ['page'],
+  minutes:  ['chapter'],
+  faq:      ['book'],
+  web:      ['bookshelf'],
 }
 
 const TYPE_ICON: Record<BSSearchResult['type'], string> = {
@@ -49,7 +44,7 @@ function highlight(html: string): string {
  *
  * 根治需要 ingest 阶段过滤"顶层带 error 的 JSON body"；本修复只管 UI 暴露面。
  */
-function sanitizePreview(html: string): string {
+function sanitizePreview(html: string, errorBlobMsg: string): string {
   const stripped = html.replace(/<[^>]+>/g, '').trim()
   if (!stripped) return html
 
@@ -60,16 +55,17 @@ function sanitizePreview(html: string): string {
     /not_found_error/.test(stripped) ||
     /File not found in container/.test(stripped)
   )
-  if (looksLikeErrorJson) return '<em style="color:var(--muted)">（此文档因入库异常暂不可预览）</em>'
+  if (looksLikeErrorJson) return `<em style="color:var(--muted)">${errorBlobMsg}</em>`
   return html
 }
 
 export default function Search() {
   const navigate = useNavigate()
+  const { t } = useTranslation('search')
   // BUG-09 支撑：从 URL ?q= 读初始 query（侧栏搜索框跳过来时会传）
   const [searchParams] = useSearchParams()
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('全部空间')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [allResults, setAllResults] = useState<BSSearchResult[]>([])
   const [selected, setSelected] = useState<BSSearchResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -99,7 +95,7 @@ export default function Search() {
       .finally(() => setLoading(false))
   }, [debouncedQuery])
 
-  const filteredResults = typeFilter === '全部空间'
+  const filteredResults = typeFilter === 'all'
     ? allResults
     : allResults.filter((r) => TYPE_FILTER_MAP[typeFilter].includes(r.type))
 
@@ -127,12 +123,12 @@ export default function Search() {
     if (!selected) return
     const ref = `${selected.name} — ${selected.url}`
     navigator.clipboard?.writeText(ref)
-      .then(() => setCopyMsg('已复制引用'))
-      .catch(() => setCopyMsg('复制失败（剪贴板权限？）'))
+      .then(() => setCopyMsg(t('preview.copySuccess')))
+      .catch(() => setCopyMsg(t('preview.copyFail')))
     setTimeout(() => setCopyMsg(null), 2000)
   }
 
-  const filters: TypeFilter[] = ['全部空间', '文档', '会议纪要', 'FAQ', '网页']
+  const filters: TypeFilter[] = ['all', 'doc', 'minutes', 'faq', 'web']
 
   return (
     <div className="page-body">
@@ -142,11 +138,11 @@ export default function Search() {
         gap: 10, flexWrap: 'wrap',
       }}>
         <div>
-          <div className="page-title">统一检索</div>
-          <div className="page-sub">全文 / 标签 / 作者 / 时间过滤，支持预览命中片段</div>
+          <div className="page-title">{t('title')}</div>
+          <div className="page-sub">{t('subtitle')}</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn" onClick={() => navigate('/overview')}>返回总览</button>
+          <button className="btn" onClick={() => navigate('/overview')}>{t('backToOverview')}</button>
         </div>
       </div>
 
@@ -158,7 +154,7 @@ export default function Search() {
           type="search"
           role="searchbox"
           className="field big-search"
-          placeholder="搜索：例如「MCP 接入」「增长复盘」「治理指标」"
+          placeholder={t('heroPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -169,7 +165,7 @@ export default function Search() {
               onClick={() => setTypeFilter(f)}
               className={`pill${typeFilter === f ? ' active' : ''}`}
             >
-              {f}
+              {t(`filters.${f}`)}
             </button>
           ))}
         </div>
@@ -180,7 +176,7 @@ export default function Search() {
         {/* Left: result list */}
         <div className="surface-card split-left panel">
           <div className="panel-head">
-            <div className="title">结果</div>
+            <div className="title">{t('panels.results')}</div>
             {hasSearched && (
               <span className="pill blue" style={{ cursor: 'default' }}>
                 {filteredResults.length}
@@ -198,7 +194,7 @@ export default function Search() {
                   {!hasSearched && !showLoading && (
                     <div className="empty-state" data-testid="search-prompt">
                       <div className="empty-illus">🔎</div>
-                      <div className="empty-text">输入关键词开始搜索</div>
+                      <div className="empty-text">{t('states.promptSearch')}</div>
                     </div>
                   )}
                   {showLoading && (
@@ -206,13 +202,13 @@ export default function Search() {
                       data-testid="search-loading"
                       style={{ padding: '16px 14px', color: 'var(--muted)', fontSize: 13 }}
                     >
-                      搜索中…
+                      {t('states.searching')}
                     </div>
                   )}
                   {!showLoading && hasSearched && filteredResults.length === 0 && (
                     <div className="empty-state" data-testid="empty-state">
                       <div className="empty-illus">🔎</div>
-                      <div className="empty-text">没有匹配结果。试试更宽泛的关键词或移除筛选条件。</div>
+                      <div className="empty-text">{t('states.noMatch')}</div>
                     </div>
                   )}
                 </>
@@ -231,15 +227,15 @@ export default function Search() {
                 {r.preview_html.content && (
                   <div
                     className="result-snippet"
-                    dangerouslySetInnerHTML={{ __html: sanitizePreview(highlight(r.preview_html.content)) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizePreview(highlight(r.preview_html.content), t('preview.errorBlob')) }}
                   />
                 )}
                 {r.tags.length > 0 && (
                   <div className="tag-row">
-                    {r.tags.slice(0, 4).map((t, i) => (
-                      <span key={`${t.name}-${i}`} className="tag">{t.value || t.name}</span>
+                    {r.tags.slice(0, 4).map((tg, i) => (
+                      <span key={`${tg.name}-${i}`} className="tag">{tg.value || tg.name}</span>
                     ))}
-                    <span className="tag">{TYPE_LABEL[r.type]}</span>
+                    <span className="tag">{t(`typeLabels.${r.type}`)}</span>
                   </div>
                 )}
               </div>
@@ -250,7 +246,7 @@ export default function Search() {
         {/* Right: preview */}
         <div className="surface-card split-right panel" data-testid="preview-panel">
           <div className="panel-head">
-            <div className="title">预览</div>
+            <div className="title">{t('panels.preview')}</div>
             <div style={{ flex: 1 }} />
             {selected && (
               <a
@@ -260,7 +256,7 @@ export default function Search() {
                 className="btn"
                 style={{ textDecoration: 'none' }}
               >
-                ↗ 打开原文
+                {t('panels.openOriginal')}
               </a>
             )}
           </div>
@@ -268,7 +264,7 @@ export default function Search() {
             {!selected ? (
               <div className="empty-state">
                 <div className="empty-illus">📄</div>
-                <div className="empty-text">在左侧选择一个结果以预览</div>
+                <div className="empty-text">{t('states.selectResult')}</div>
               </div>
             ) : (
               <>
@@ -285,9 +281,9 @@ export default function Search() {
                       fontSize: 12, color: 'var(--muted)', marginTop: 6,
                       display: 'flex', gap: 10, flexWrap: 'wrap',
                     }}>
-                      <span>类型：{TYPE_LABEL[selected.type]}</span>
-                      {selected.book_id && <span>书 #{selected.book_id}</span>}
-                      {selected.chapter_id && <span>章 #{selected.chapter_id}</span>}
+                      <span>{t('preview.typeLabel', { label: t(`typeLabels.${selected.type}`) })}</span>
+                      {selected.book_id && <span>{t('preview.bookPrefix', { id: selected.book_id })}</span>}
+                      {selected.chapter_id && <span>{t('preview.chapterPrefix', { id: selected.chapter_id })}</span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -295,8 +291,8 @@ export default function Search() {
                       data-testid="btn-favorite"
                       className={`pill${isFavorited ? ' active' : ''}`}
                       onClick={handleFavorite}
-                    >⭐ {isFavorited ? '已收藏' : '收藏'}</button>
-                    <button className="pill" onClick={handleCopyRef}>⛓ 复制引用</button>
+                    >⭐ {isFavorited ? t('preview.favorited') : t('preview.favorite')}</button>
+                    <button className="pill" onClick={handleCopyRef}>{t('preview.copyRef')}</button>
                   </div>
                 </div>
 
@@ -315,18 +311,18 @@ export default function Search() {
                   lineHeight: 1.8, color: 'var(--text)', fontSize: 13.5,
                 }}>
                   <div
-                    dangerouslySetInnerHTML={{ __html: highlight(selected.preview_html.content || '（无内容片段）') }}
+                    dangerouslySetInnerHTML={{ __html: highlight(selected.preview_html.content || t('preview.noSnippet')) }}
                   />
                 </div>
 
                 {/* Tags */}
                 {selected.tags.length > 0 && (
                   <div style={{ marginTop: 12 }}>
-                    <div className="muted-2" style={{ fontWeight: 900, marginBottom: 8 }}>标签</div>
+                    <div className="muted-2" style={{ fontWeight: 900, marginBottom: 8 }}>{t('preview.tags')}</div>
                     <div className="tag-row" style={{ marginTop: 0 }}>
-                      {selected.tags.map((t, i) => (
-                        <span key={`${t.name}-${i}`} className="tag">
-                          {t.name}{t.value ? `: ${t.value}` : ''}
+                      {selected.tags.map((tg, i) => (
+                        <span key={`${tg.name}-${i}`} className="tag">
+                          {tg.name}{tg.value ? `: ${tg.value}` : ''}
                         </span>
                       ))}
                     </div>

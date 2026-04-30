@@ -16,6 +16,7 @@
  * 视觉 token 跟其他 Modal 一致：白底 / var(--border) / 主紫 var(--p, #6C47FF) 强调
  */
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ALL_ARTIFACT_KINDS,
   createUserTemplate,
@@ -39,6 +40,7 @@ interface Props {
 export default function CreateTemplateModal({
   open, mode, initial, onClose, onSaved,
 }: Props) {
+  const { t } = useTranslation('notebook')
   const [label, setLabel] = useState('')
   const [icon, setIcon] = useState('🧪')
   const [description, setDescription] = useState('')
@@ -64,10 +66,10 @@ export default function CreateTemplateModal({
     setServerErr(null); setBusy(false)
   }, [open, mode, initial])
 
-  // 内联校验 errors
-  const errors = useMemo(() => validateForm({ label, icon, description, hint, kinds, questions }), [
-    label, icon, description, hint, kinds, questions,
-  ])
+  // 内联校验 errors（依赖 t；语言切换会重新计算 errors 文案）
+  const errors = useMemo(() => validateForm(
+    { label, icon, description, hint, kinds, questions }, t,
+  ), [label, icon, description, hint, kinds, questions, t])
   const canSubmit = !busy && Object.keys(errors).length === 0
 
   if (!open) return null
@@ -88,7 +90,7 @@ export default function CreateTemplateModal({
       if (mode === 'create') {
         spec = await createUserTemplate(cleaned)
       } else {
-        if (!initial) throw new Error('edit 模式缺 initial')
+        if (!initial) throw new Error('edit mode requires initial')
         spec = await updateUserTemplate(initial.id, cleaned)
       }
       onSaved(spec)
@@ -98,7 +100,7 @@ export default function CreateTemplateModal({
       if (msg?.errors) {
         setServerErr(Object.values(msg.errors).join(' / '))
       } else {
-        setServerErr(msg?.error ?? (e instanceof Error ? e.message : '保存失败'))
+        setServerErr(msg?.error ?? (e instanceof Error ? e.message : t('common:errors.saveFailed')))
       }
       setBusy(false)
     }
@@ -109,33 +111,33 @@ export default function CreateTemplateModal({
          style={overlay}>
       <div style={modal}>
         <div style={titleStyle}>
-          {mode === 'create' ? '+ 创建我的模板' : `✎ 编辑模板`}
+          {mode === 'create' ? t('templateModal.createTitle') : t('templateModal.editTitle')}
         </div>
 
-        <Field label="名称" errMsg={errors.label} hint="≤ 10 字">
+        <Field label={t('templateModal.fieldLabel')} errMsg={errors.label} hint={t('templateModal.fieldLabelHint')}>
           <input value={label} onChange={(e) => setLabel(e.target.value)}
                  maxLength={12}  /* 多给 2 字给 UI 提示，后端仍按 10 校验 */
-                 placeholder="如：周报草稿" autoFocus style={fieldInput} />
+                 placeholder={t('templateModal.fieldLabelPlaceholder')} autoFocus style={fieldInput} />
         </Field>
 
-        <Field label="图标" errMsg={errors.icon} hint="emoji，1-2 字符">
+        <Field label={t('templateModal.fieldIcon')} errMsg={errors.icon} hint={t('templateModal.fieldIconHint')}>
           <input value={icon} onChange={(e) => setIcon(e.target.value)}
                  maxLength={4} placeholder="🧪" style={{ ...fieldInput, width: 80 }} />
         </Field>
 
-        <Field label="描述" errMsg={errors.description} hint="≤ 60 字">
+        <Field label={t('templateModal.fieldDescription')} errMsg={errors.description} hint={t('templateModal.fieldDescriptionHint')}>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                    maxLength={70} rows={2} placeholder="一句话说这个模板用来干嘛"
+                    maxLength={70} rows={2} placeholder={t('templateModal.fieldDescriptionPlaceholder')}
                     style={{ ...fieldInput, resize: 'vertical', fontFamily: 'inherit' }} />
         </Field>
 
-        <Field label="资料提示" errMsg={errors.hint} hint="≤ 40 字">
+        <Field label={t('templateModal.fieldHint')} errMsg={errors.hint} hint={t('templateModal.fieldHintHint')}>
           <input value={hint} onChange={(e) => setHint(e.target.value)}
-                 maxLength={50} placeholder="如：上传周会议纪要 / 项目状态文档"
+                 maxLength={50} placeholder={t('templateModal.fieldHintPlaceholder')}
                  style={fieldInput} />
         </Field>
 
-        <Field label="推荐生成" errMsg={errors.kinds} hint="0-3 个">
+        <Field label={t('templateModal.fieldKinds')} errMsg={errors.kinds} hint={t('templateModal.fieldKindsHint')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {ALL_ARTIFACT_KINDS.map((k) => {
               const picked = kinds.includes(k)
@@ -164,7 +166,7 @@ export default function CreateTemplateModal({
           </div>
         </Field>
 
-        <Field label="起手提问" errMsg={errors.questions} hint="1-3 条，每条 ≤ 50 字">
+        <Field label={t('templateModal.fieldQuestions')} errMsg={errors.questions} hint={t('templateModal.fieldQuestionsHint')}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {questions.map((q, i) => (
               <div key={i} style={{ display: 'flex', gap: 6 }}>
@@ -176,12 +178,12 @@ export default function CreateTemplateModal({
                     setQuestions(next)
                   }}
                   maxLength={60}
-                  placeholder={`第 ${i + 1} 条...`}
+                  placeholder={t('templateModal.questionPlaceholder', { index: i + 1 })}
                   style={fieldInput}
                 />
                 {questions.length > 1 && (
                   <button type="button"
-                          aria-label={`删除第 ${i + 1} 条`}
+                          aria-label={t('templateModal.removeQuestion', { index: i + 1 })}
                           onClick={() => setQuestions(questions.filter((_, j) => j !== i))}
                           style={smallIconBtn}>×</button>
                 )}
@@ -190,7 +192,7 @@ export default function CreateTemplateModal({
             {questions.length < 3 && (
               <button type="button"
                       onClick={() => setQuestions([...questions, ''])}
-                      style={addRowBtn}>+ 加一条</button>
+                      style={addRowBtn}>{t('common:actions.addOne')}</button>
             )}
           </div>
         </Field>
@@ -200,11 +202,13 @@ export default function CreateTemplateModal({
         )}
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-          <button type="button" className="btn" onClick={onClose} disabled={busy}>取消</button>
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
+            {t('common:actions.cancel')}
+          </button>
           <button type="button" className="btn primary"
                   disabled={!canSubmit}
                   onClick={() => void submit()}>
-            {busy ? '保存中…' : (mode === 'create' ? '创建' : '保存')}
+            {busy ? t('common:states.saving') : (mode === 'create' ? t('common:actions.create') : t('common:actions.save'))}
           </button>
         </div>
       </div>
@@ -219,25 +223,30 @@ interface FormState {
   kinds: ArtifactKind[]; questions: string[]
 }
 
-function validateForm(s: FormState): Record<string, string> {
+type TFunc = (key: string, opts?: Record<string, unknown>) => string
+
+function validateForm(s: FormState, t: TFunc): Record<string, string> {
   const e: Record<string, string> = {}
+  const required = t('common:states.required')
   const label = s.label.trim()
-  if (label.length === 0) e.label = '必填'
-  else if (label.length > 10) e.label = '最多 10 字'
+  if (label.length === 0) e.label = required
+  else if (label.length > 10) e.label = t('templateModal.errors.labelMaxChars')
   const icon = s.icon.trim()
-  if (icon.length === 0) e.icon = '必填'
-  else if (icon.length > 2) e.icon = '最多 2 字符'
+  if (icon.length === 0) e.icon = required
+  else if (icon.length > 2) e.icon = t('templateModal.errors.iconMaxChars')
   const desc = s.description.trim()
-  if (desc.length === 0) e.description = '必填'
-  else if (desc.length > 60) e.description = '最多 60 字'
+  if (desc.length === 0) e.description = required
+  else if (desc.length > 60) e.description = t('templateModal.errors.descriptionMaxChars')
   const hint = s.hint.trim()
-  if (hint.length === 0) e.hint = '必填'
-  else if (hint.length > 40) e.hint = '最多 40 字'
-  if (s.kinds.length > 3) e.kinds = '最多 3 个'
+  if (hint.length === 0) e.hint = required
+  else if (hint.length > 40) e.hint = t('templateModal.errors.hintMaxChars')
+  if (s.kinds.length > 3) e.kinds = t('templateModal.errors.kindsMax')
   const qs = s.questions.map((q) => q.trim()).filter((q) => q.length > 0)
-  if (qs.length < 1) e.questions = '至少 1 条'
-  else if (qs.length > 3) e.questions = '最多 3 条'
-  else if (qs.some((q) => q.length > 50)) e.questions = '每条最多 50 字'
+  if (qs.length < 1 || qs.length > 3) {
+    e.questions = t('templateModal.errors.questionsRange', { min: 1, max: 3 })
+  } else if (qs.some((q) => q.length > 50)) {
+    e.questions = t('templateModal.errors.questionMaxChars')
+  }
   return e
 }
 

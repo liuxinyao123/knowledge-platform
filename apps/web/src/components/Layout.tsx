@@ -12,13 +12,16 @@
  */
 import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import RequirePermission from '@/auth/RequirePermission'
 import { useAuth } from '@/auth/AuthContext'
 import ChangePasswordModal from '@/auth/ChangePasswordModal'
+import LanguageSwitcher from './LanguageSwitcher'
 
 interface NavEntry {
   to: string
-  label: string
+  /** i18n key under namespace 'nav.labels' */
+  labelKey: string
   icon: ReactNode
   perm?: string
 }
@@ -113,29 +116,29 @@ const Ico = {
 }
 
 const NAV_PRIMARY: NavEntry[] = [
-  { to: '/qa',      label: '问一问',      icon: Ico.qa },
-  { to: '/search',  label: '搜一搜',      icon: Ico.search },
-  { to: '/spaces',  label: '我的空间',    icon: Ico.spaces },
-  { to: '/ingest',  label: '上传与收录',  icon: Ico.ingest },
+  { to: '/qa',      labelKey: 'labels.qa',      icon: Ico.qa },
+  { to: '/search',  labelKey: 'labels.search',  icon: Ico.search },
+  { to: '/spaces',  labelKey: 'labels.spaces',  icon: Ico.spaces },
+  { to: '/ingest',  labelKey: 'labels.ingest',  icon: Ico.ingest },
 ]
 
 const NAV_MANAGE: NavEntry[] = [
-  { to: '/overview',        label: '运行概览',   icon: Ico.overview },
-  { to: '/insights',        label: '图谱洞察',   icon: Ico.insights },
-  { to: '/knowledge-graph', label: '知识图谱',   icon: Ico.kgGraph },
-  { to: '/governance',      label: '内容治理',   icon: Ico.govern },
-  { to: '/assets',          label: '资产目录',   icon: Ico.asset },
-  { to: '/mcp',             label: '数据接入',   icon: Ico.mcp },
+  { to: '/overview',        labelKey: 'labels.overview',       icon: Ico.overview },
+  { to: '/insights',        labelKey: 'labels.insights',       icon: Ico.insights },
+  { to: '/knowledge-graph', labelKey: 'labels.knowledgeGraph', icon: Ico.kgGraph },
+  { to: '/governance',      labelKey: 'labels.governance',     icon: Ico.govern },
+  { to: '/assets',          labelKey: 'labels.assets',         icon: Ico.asset },
+  { to: '/mcp',             labelKey: 'labels.mcp',            icon: Ico.mcp },
 ]
 
 const NAV_EXTRA: NavEntry[] = [
-  { to: '/agent',     label: 'Agent',     icon: Ico.agent },
-  { to: '/notebooks', label: '笔记本',    icon: Ico.notebook },
-  { to: '/eval',      label: '评测中心',  icon: Ico.eval },
+  { to: '/agent',     labelKey: 'labels.agent',     icon: Ico.agent },
+  { to: '/notebooks', labelKey: 'labels.notebooks', icon: Ico.notebook },
+  { to: '/eval',      labelKey: 'labels.eval',      icon: Ico.eval },
 ]
 
 const NAV_ADMIN: NavEntry[] = [
-  { to: '/iam', label: '身份与权限', icon: Ico.iam, perm: 'iam:manage' },
+  { to: '/iam', labelKey: 'labels.iam', icon: Ico.iam, perm: 'iam:manage' },
 ]
 
 /* ── Topbar 面包屑：根据当前路由匹配 nav 项 ─────────────────────── */
@@ -150,6 +153,7 @@ function useCrumb() {
 
 function SidebarSearch() {
   const navigate = useNavigate()
+  const { t } = useTranslation('nav')
   const [q, setQ] = useState('')
   return (
     <div className="search-wrap">
@@ -162,12 +166,12 @@ function SidebarSearch() {
         onChange={(e) => setQ(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
-            const t = q.trim()
-            if (!t) return
-            navigate(`/search?q=${encodeURIComponent(t)}`)
+            const trimmed = q.trim()
+            if (!trimmed) return
+            navigate(`/search?q=${encodeURIComponent(trimmed)}`)
           }
         }}
-        placeholder="搜索任务/知识…"
+        placeholder={t('sidebarSearchPlaceholder')}
         data-testid="sidebar-search"
       />
     </div>
@@ -177,13 +181,14 @@ function SidebarSearch() {
 /* ── 单个 NavLink，套 .nav-item 类 ──────────────────────────────── */
 
 function NavRow({ entry }: { entry: NavEntry }) {
+  const { t } = useTranslation('nav')
   return (
     <NavLink
       to={entry.to}
       className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
     >
       {entry.icon}
-      <span>{entry.label}</span>
+      <span>{t(entry.labelKey)}</span>
     </NavLink>
   )
 }
@@ -193,6 +198,7 @@ function NavRow({ entry }: { entry: NavEntry }) {
 function UserArea() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation('auth')
   const [pwModal, setPwModal] = useState(false)
   const initial = (user?.email ?? 'U').trim().charAt(0).toUpperCase()
   const isDev = !!user?.dev_bypass
@@ -216,7 +222,7 @@ function UserArea() {
           </div>
           <div className="user-sub">
             {user?.roles.join(',') || '—'}
-            {isDev && <span style={{ marginLeft: 4, color: '#874d00' }}> · DEV</span>}
+            {isDev && <span style={{ marginLeft: 4, color: '#874d00' }}> · {t('userArea.devSuffix')}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -230,8 +236,8 @@ function UserArea() {
               cursor: isDev ? 'not-allowed' : 'pointer',
               color: isDev ? 'var(--border)' : 'var(--muted)',
             }}
-            title={isDev ? 'DEV 模式不支持改密' : '修改密码'}
-          >改密</button>
+            title={isDev ? t('userArea.changePasswordDevTooltip') : t('userArea.changePasswordTitle')}
+          >{t('userArea.changePassword')}</button>
           <button
             data-testid="btn-logout"
             onClick={() => void handleLogout()}
@@ -240,8 +246,8 @@ function UserArea() {
               borderRadius: 6, padding: '2px 8px', fontSize: 10,
               cursor: 'pointer', color: 'var(--muted)',
             }}
-            title="登出"
-          >登出</button>
+            title={t('userArea.logoutTitle')}
+          >{t('userArea.logout')}</button>
         </div>
       </div>
       {pwModal && <ChangePasswordModal onClose={() => setPwModal(false)} />}
@@ -254,21 +260,22 @@ function UserArea() {
 function Topbar() {
   const crumb = useCrumb()
   const navigate = useNavigate()
+  const { t } = useTranslation('nav')
   return (
     <header className="topbar">
       <div className="topbar-crumb">
-        知识中台
+        {t('brand')}
         {crumb && (
           <>
             <span style={{ margin: '0 6px', color: 'var(--muted)', fontWeight: 400 }}>›</span>
-            <span className="crumb-now">{crumb.label}</span>
+            <span className="crumb-now">{t(crumb.labelKey)}</span>
           </>
         )}
       </div>
       <div className="tb-space" />
       <button
         className="tb-icon-btn"
-        title="快捷创建（去问一问）"
+        title={t('topbarQuickCreate')}
         onClick={() => navigate('/qa')}
       >
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -278,13 +285,15 @@ function Topbar() {
       </button>
       <button
         className="tb-icon-btn"
-        title="资产目录"
+        title={t('topbarAssetsBtn')}
         onClick={() => navigate('/assets')}
       >
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M7.5 2a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM7.5 5v2.5L9 9" />
         </svg>
       </button>
+      {/* i18n 语言切换 —— 顶栏右侧 */}
+      <LanguageSwitcher />
     </header>
   )
 }
@@ -293,6 +302,7 @@ function Topbar() {
 
 export default function Layout() {
   const navigate = useNavigate()
+  const { t: tNav } = useTranslation('nav')
   return (
     <div className="app">
       <aside className="sidebar">
@@ -304,7 +314,7 @@ export default function Layout() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                <span className="brand-name">知识中台</span>
+                <span className="brand-name">{tNav('brand')}</span>
                 <span className="brand-ver">v1</span>
               </div>
             </div>
@@ -322,27 +332,27 @@ export default function Layout() {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M7 2v10M2 7h10" />
             </svg>
-            <span>去问一问</span>
+            <span>{tNav('newTaskCta')}</span>
           </button>
         </div>
 
         <nav className="nav">
           {/* 知识中台 —— 用户高频入口 */}
-          <div className="nav-label">知识中台</div>
+          <div className="nav-label">{tNav('sectionPrimary')}</div>
           {NAV_PRIMARY.map((e) => (
             <NavRow key={e.to} entry={e} />
           ))}
 
           {/* 管理与数据 */}
           <div className="nav-sep" />
-          <div className="nav-label">管理与数据</div>
+          <div className="nav-label">{tNav('sectionManage')}</div>
           {NAV_MANAGE.map((e) => (
             <NavRow key={e.to} entry={e} />
           ))}
 
           {/* 辅助工具 */}
           <div className="nav-sep" />
-          <div className="nav-label">辅助工具</div>
+          <div className="nav-label">{tNav('sectionExtra')}</div>
           {NAV_EXTRA.map((e) => (
             <NavRow key={e.to} entry={e} />
           ))}
@@ -350,7 +360,7 @@ export default function Layout() {
           {/* 管理端（需权限） */}
           <RequirePermission name="iam:manage">
             <div className="nav-sep" />
-            <div className="nav-label">管理端</div>
+            <div className="nav-label">{tNav('sectionAdmin')}</div>
             {NAV_ADMIN.map((e) => (
               <NavRow key={e.to} entry={e} />
             ))}

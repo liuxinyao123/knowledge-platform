@@ -3,25 +3,27 @@
  * 每页顶部放一行，点击跳路由。
  */
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 const tabs = [
-  { id: 'overview',   to: '/overview',   label: '🏠 总览' },
-  { id: 'search',     to: '/search',     label: '🔎 检索' },
-  { id: 'spaces',     to: '/spaces',     label: '🗂 空间' },
-  { id: 'ingest',     to: '/ingest',     label: '⬆️ 入库' },
-  { id: 'qa',         to: '/qa',         label: '💬 问答' },
-  { id: 'agent',      to: '/agent',      label: '🤖 Agent' },
-  { id: 'governance', to: '/governance', label: '🛡 治理' },
-  { id: 'assets',     to: '/assets',     label: '📦 资产' },
-  { id: 'mcp',        to: '/mcp',        label: '🔌 数据接入' },
+  { id: 'overview',   to: '/overview',   labelKey: 'tabs.overview' },
+  { id: 'search',     to: '/search',     labelKey: 'tabs.search' },
+  { id: 'spaces',     to: '/spaces',     labelKey: 'tabs.spaces' },
+  { id: 'ingest',     to: '/ingest',     labelKey: 'tabs.ingest' },
+  { id: 'qa',         to: '/qa',         labelKey: 'tabs.qa' },
+  { id: 'agent',      to: '/agent',      labelKey: 'tabs.agent' },
+  { id: 'governance', to: '/governance', labelKey: 'tabs.governance' },
+  { id: 'assets',     to: '/assets',     labelKey: 'tabs.assets' },
+  { id: 'mcp',        to: '/mcp',        labelKey: 'tabs.mcp' },
 ]
 
 export default function KnowledgeTabs() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation('nav')
 
   return (
-    <div className="kc-tabs" role="tablist" aria-label="知识中台模块">
+    <div className="kc-tabs" role="tablist" aria-label={t('tabsAriaLabel')}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -31,7 +33,7 @@ export default function KnowledgeTabs() {
           onClick={() => navigate(tab.to)}
           className={`kc-tab${pathname.startsWith(tab.to) ? ' active' : ''}`}
         >
-          {tab.label}
+          {t(tab.labelKey)}
         </button>
       ))}
     </div>

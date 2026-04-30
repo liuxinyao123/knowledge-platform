@@ -3,6 +3,7 @@
  * 4 KPI（RAGFlow mock）+ SQL 调试 + Skill 一览 + RAGFlow 状态 + Neo4j Cypher 调试
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import KnowledgeTabs from '@/components/KnowledgeTabs'
@@ -14,66 +15,29 @@ function fmtNum(n: number | null | undefined): string {
   if (n == null) return '—'
   return n.toLocaleString()
 }
-function timeAgo(iso: string | null): string {
-  if (!iso) return '—'
-  const ms = Date.now() - new Date(iso).getTime()
-  if (ms < 60_000) return '刚刚'
-  const m = Math.floor(ms / 60_000)
-  if (m < 60) return `${m} 分钟前`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h} 小时前`
-  return `${Math.floor(h / 24)} 天前`
+
+/** 把 ISO 时间 → 「刚刚 / N 分钟前 / N 小时前 / N 天前」（i18n 化） */
+function useTimeAgo() {
+  const { t } = useTranslation('mcp')
+  return (iso: string | null): string => {
+    if (!iso) return '—'
+    const ms = Date.now() - new Date(iso).getTime()
+    if (ms < 60_000) return t('timeAgo.justNow')
+    const m = Math.floor(ms / 60_000)
+    if (m < 60) return t('timeAgo.minutes', { n: m })
+    const h = Math.floor(m / 60)
+    if (h < 24) return t('timeAgo.hours', { n: h })
+    return t('timeAgo.days', { n: Math.floor(h / 24) })
+  }
 }
 
 // ────────────────────────── MCP tools ──────────────────────────
-const MCP_TOOLS = [
-  {
-    name: 'search_knowledge',
-    source: 'BookStack RAG',
-    desc: '跨书架语义检索，返回文档片段与来源。',
-  },
-  {
-    name: 'query_pg_asset',
-    source: 'PG Catalog',
-    desc: '结构化资产目录与元数据（PG + pgvector）。',
-  },
-  {
-    name: 'debug_sql',
-    source: 'Structured DS',
-    desc: '只读 SELECT 调试，带行级过滤与字段脱敏。',
-  },
-  {
-    name: 'graph_cypher',
-    source: 'Neo4j',
-    desc: 'Cypher 查询 · 当前为示例模式（真实图库尚未接入，前端组件行为一致）。',
-  },
+const MCP_TOOLS: { name: string; source: string; descKey: string }[] = [
+  { name: 'search_knowledge', source: 'BookStack RAG',  descKey: 'tools.list.search_knowledge' },
+  { name: 'query_pg_asset',   source: 'PG Catalog',     descKey: 'tools.list.query_pg_asset' },
+  { name: 'debug_sql',        source: 'Structured DS',  descKey: 'tools.list.debug_sql' },
+  { name: 'graph_cypher',     source: 'Neo4j',          descKey: 'tools.list.graph_cypher' },
 ]
-
-// 把 audit_log 的 action 名翻译成更"Skill"友好的显示
-function prettifyAction(a: string): string {
-  const map: Record<string, string> = {
-    qa_ask:           '知识问答（调用）',
-    qa_answered:      '知识问答（完成）',
-    qa_intent_classified: '意图识别',
-    ingest_done:      '文档入库',
-    ingest_failed:    '入库失败',
-    ingest_started:   '开始解析',
-    bookstack_page_create: 'BookStack 建页',
-    asset_register:   '资产登记',
-    login_success:    '登录成功',
-    login_failed:     '登录失败',
-    logout:           '登出',
-    user_register:    '新建用户',
-    user_updated:     '用户更新',
-    user_deleted:     '用户删除',
-    user_password_changed: '用户自助改密',
-    user_password_reset_by_admin: '管理员重置密码',
-    acl_rule_create:  '新建 ACL 规则',
-    acl_rule_update:  '改 ACL 规则',
-    acl_rule_delete:  '删 ACL 规则',
-  }
-  return map[a] ?? a
-}
 
 type ConnStatus = 'idle' | 'checking' | 'ok' | 'error'
 
@@ -90,21 +54,21 @@ function KpiCard({
 }
 
 export default function Mcp() {
+  const { t } = useTranslation('mcp')
+  const timeAgo = useTimeAgo()
   // 连接健康状态
   const [connStatus, setConnStatus] = useState<ConnStatus>('idle')
   const [connErr, setConnErr] = useState<string | null>(null)
 
   // TBD-09 · 真 stats —— 原手写 useEffect + cancelled 标志在 React 18 StrictMode
-  // 双挂载下出现竞态（首次响应被 cancelled 吞掉、再刷不触发），表现为 /mcp 永久
-  // "加载中…"。改用 react-query：StrictMode-safe、带去重、30s 轮询、错误可见。
+  // 双挂载下出现竞态，改用 react-query：StrictMode-safe、带去重、30s 轮询、错误可见。
   const statsQuery = useQuery<McpStats>({
     queryKey: ['mcp-stats'],
     queryFn: async () => {
       const s = await mcpDebugApi.getStats()
       // 防御：后端偶发返回空对象或被代理吞成 HTML 时，强制报错让 UI 走 error 分支
-      // 而不是装作 loaded 显示一堆 '—'
       if (!s || typeof s !== 'object' || typeof (s as { assetsTotal?: unknown }).assetsTotal !== 'number') {
-        throw new Error('/api/mcp/stats 返回结构不符')
+        throw new Error(t('errors.statsShape'))
       }
       return s
     },
@@ -116,7 +80,7 @@ export default function Mcp() {
   const statsErr = statsQuery.error
     ? (() => {
         const e = statsQuery.error as { response?: { data?: { error?: string } }; message?: string }
-        return e.response?.data?.error || e.message || '加载失败'
+        return e.response?.data?.error || e.message || t('errors.loadFailed')
       })()
     : null
 
@@ -142,11 +106,11 @@ export default function Mcp() {
         setConnStatus('ok')
       } else {
         setConnStatus('error')
-        setConnErr('qa-service 未响应（:3001）')
+        setConnErr(t('errors.qaServiceDown'))
       }
     } catch (e) {
       setConnStatus('error')
-      setConnErr(e instanceof Error ? e.message : '连接失败')
+      setConnErr(e instanceof Error ? e.message : t('errors.connectFailed'))
     }
   }
 
@@ -158,7 +122,7 @@ export default function Mcp() {
       const r = await mcpDebugApi.debugQuery(sqlSource, sql)
       setSqlResult(r)
     } catch (e) {
-      setSqlErr(e instanceof Error ? e.message : '查询失败')
+      setSqlErr(e instanceof Error ? e.message : t('errors.queryFailed'))
     } finally {
       setSqlLoading(false)
     }
@@ -172,7 +136,7 @@ export default function Mcp() {
       const r = await mcpDebugApi.runCypher(cypher)
       setCypherResult(r)
     } catch (e) {
-      setCypherErr(e instanceof Error ? e.message : '查询失败')
+      setCypherErr(e instanceof Error ? e.message : t('errors.queryFailed'))
     } finally {
       setCypherLoading(false)
     }
@@ -186,17 +150,17 @@ export default function Mcp() {
         gap: 10, flexWrap: 'wrap',
       }}>
         <div>
-          <div className="page-title">数据接入层</div>
+          <div className="page-title">{t('title')}</div>
           <div className="page-sub">
-            MCP 查询层 · 文档访问 Skill 层 · 向量检索与图查询连接状态
+            {t('subtitle')}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn" disabled={connStatus === 'checking'} onClick={() => void handleTestConn()}>
-            {connStatus === 'checking' ? '检测中…' : '测试连接'}
+            {connStatus === 'checking' ? t('testing') : t('testConn')}
           </button>
-          {connStatus === 'ok'    && <span className="pill green" style={{ cursor: 'default' }}>● qa-service 正常</span>}
-          {connStatus === 'error' && <span className="pill red"   style={{ cursor: 'default' }}>● 连接失败</span>}
+          {connStatus === 'ok'    && <span className="pill green" style={{ cursor: 'default' }}>{t('connOk')}</span>}
+          {connStatus === 'error' && <span className="pill red"   style={{ cursor: 'default' }}>{t('connError')}</span>}
         </div>
       </div>
 
@@ -213,30 +177,29 @@ export default function Mcp() {
       )}
 
       {/* KPI —— 4 指标（真数据） */}
-      {/* 错误时 4 张卡都统一显示错误，不再静默吞；加载时 4 张卡都显示"加载中…" */}
       <div className="kc-grid-4">
         <KpiCard
-          label="接入资产"
+          label={t('kpi.assetsLabel')}
           value={fmtNum(stats?.assetsTotal)}
-          detail={statsErr ? statsErr : stats ? `总资产数（已合并不计）` : '加载中…'}
+          detail={statsErr ? statsErr : stats ? t('kpi.assetsDetail') : t('kpi.loading')}
           color="#2563eb"
         />
         <KpiCard
-          label="向量切片"
+          label={t('kpi.chunksLabel')}
           value={fmtNum(stats?.chunksEmbedded)}
-          detail={statsErr ? statsErr : stats ? `已嵌入 / 总 ${fmtNum(stats.chunksTotal)}` : '加载中…'}
+          detail={statsErr ? statsErr : stats ? t('kpi.chunksDetail', { total: fmtNum(stats.chunksTotal) }) : t('kpi.loading')}
           color="#16a34a"
         />
         <KpiCard
-          label="近 24h 入库"
+          label={t('kpi.ingest24hLabel')}
           value={fmtNum(stats?.ingestsLast24h)}
-          detail={statsErr ? statsErr : stats ? `近 7 日共 ${fmtNum(stats.ingestsLast7d)}` : '加载中…'}
+          detail={statsErr ? statsErr : stats ? t('kpi.ingest24hDetail', { total: fmtNum(stats.ingestsLast7d) }) : t('kpi.loading')}
           color="#f59e0b"
         />
         <KpiCard
-          label="近 24h 问答"
+          label={t('kpi.qa24hLabel')}
           value={fmtNum(stats?.qasLast24h)}
-          detail={statsErr ? statsErr : stats ? `上次 ${timeAgo(stats.lastQaAt)}` : '加载中…'}
+          detail={statsErr ? statsErr : stats ? t('kpi.qa24hDetail', { ago: timeAgo(stats.lastQaAt) }) : t('kpi.loading')}
           color="#9333ea"
         />
       </div>
@@ -244,27 +207,27 @@ export default function Mcp() {
       {/* 数据源概览（真数据） */}
       <div className="surface-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
         <div className="panel-head" style={{ marginBottom: 10 }}>
-          <span className="panel-title">📚 非结构化数据源 · BookStack + pgvector</span>
-          <span style={{ marginLeft: 8 }} className="pill pill-green">● 真数据</span>
+          <span className="panel-title">{t('sources.panelTitle')}</span>
+          <span style={{ marginLeft: 8 }} className="pill pill-green">{t('sources.realDataPill')}</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, fontSize: 12 }}>
           <div>
-            <div style={{ color: 'var(--muted)' }}>接入资产数</div>
+            <div style={{ color: 'var(--muted)' }}>{t('sources.assetsCount')}</div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{fmtNum(stats?.assetsTotal)}</div>
           </div>
           <div>
-            <div style={{ color: 'var(--muted)' }}>已嵌入切片</div>
+            <div style={{ color: 'var(--muted)' }}>{t('sources.chunksEmbedded')}</div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>
               {fmtNum(stats?.chunksEmbedded)}
               {stats && stats.chunksTotal > stats.chunksEmbedded && (
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400, marginLeft: 4 }}>
-                  / {fmtNum(stats.chunksTotal)} 总切片
+                  {t('sources.totalChunks', { total: fmtNum(stats.chunksTotal) })}
                 </span>
               )}
             </div>
           </div>
           <div>
-            <div style={{ color: 'var(--muted)' }}>最近索引</div>
+            <div style={{ color: 'var(--muted)' }}>{t('sources.lastIndex')}</div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{timeAgo(stats?.lastAssetIndexedAt ?? null)}</div>
           </div>
         </div>
@@ -272,19 +235,18 @@ export default function Mcp() {
           marginTop: 10, padding: 10, background: '#fff7e6', border: '1px solid #ffd591',
           borderRadius: 8, fontSize: 12, color: '#874d00',
         }}>
-          📌 当前向量检索走 BookStack 代理 + pgvector 嵌入的原生路径，语义上与 RAGFlow 的检索层一致。
-          可在后续版本无感切换到 RAGFlow 产品化编排层。
+          {t('sources.ragNote')}
         </div>
       </div>
 
       {/* MCP Tools */}
       <div className="surface-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
         <div className="panel-head" style={{ marginBottom: 10 }}>
-          <span className="panel-title">🛠 MCP Tools 一览</span>
+          <span className="panel-title">{t('tools.panelTitle')}</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          {MCP_TOOLS.map((t) => (
-            <div key={t.name} style={{
+          {MCP_TOOLS.map((tool) => (
+            <div key={tool.name} style={{
               border: '1px solid var(--border)', borderRadius: 8, padding: 12,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -292,11 +254,11 @@ export default function Mcp() {
                   fontSize: 12, fontWeight: 700, color: 'var(--p)',
                   background: 'var(--p-light)', padding: '2px 6px', borderRadius: 4,
                 }}>
-                  {t.name}
+                  {tool.name}
                 </code>
-                <span style={{ fontSize: 11, color: 'var(--muted)' }}>· {t.source}</span>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>· {tool.source}</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>{t.desc}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>{t(tool.descKey)}</div>
             </div>
           ))}
         </div>
@@ -305,9 +267,9 @@ export default function Mcp() {
       {/* SQL 调试区 */}
       <div className="surface-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
         <div className="panel-head" style={{ marginBottom: 10 }}>
-          <span className="panel-title">🧪 结构化 SQL 调试</span>
+          <span className="panel-title">{t('sql.panelTitle')}</span>
           <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted)' }}>
-            只读 SELECT · 含授权链路演示
+            {t('sql.panelSub')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -321,7 +283,7 @@ export default function Mcp() {
             <option value="procurement_dm">procurement_dm</option>
           </select>
           <button className="btn" disabled={sqlLoading} onClick={() => void handleRunSql()}>
-            {sqlLoading ? '执行中…' : '执行'}
+            {sqlLoading ? t('sql.running') : t('sql.run')}
           </button>
         </div>
         <textarea
@@ -346,7 +308,7 @@ export default function Mcp() {
               borderRadius: 6, marginBottom: 10, fontSize: 12,
             }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                {sqlResult.ok ? '✓ 授权通过' : '✗ 授权拦截'} · {sqlResult.durationMs}ms
+                {sqlResult.ok ? t('sql.authPass') : t('sql.authBlock')} · {sqlResult.durationMs}ms
                 {sqlResult.reason && <span style={{ color: '#B91C1C' }}> · {sqlResult.reason}</span>}
               </div>
               {sqlResult.authCheck.rules.map((r, i) => (
@@ -354,12 +316,12 @@ export default function Mcp() {
               ))}
               {sqlResult.rowFilter && (
                 <div style={{ marginTop: 6, color: '#555' }}>
-                  行级过滤：<code>{sqlResult.rowFilter}</code>
+                  {t('sql.rowFilter')}<code>{sqlResult.rowFilter}</code>
                 </div>
               )}
               {sqlResult.maskedFields && sqlResult.maskedFields.length > 0 && (
                 <div style={{ color: '#555' }}>
-                  脱敏字段：{sqlResult.maskedFields.map((f) => <code key={f} style={{ marginRight: 6 }}>{f}</code>)}
+                  {t('sql.maskedFields')}{sqlResult.maskedFields.map((f) => <code key={f} style={{ marginRight: 6 }}>{f}</code>)}
                 </div>
               )}
             </div>
@@ -395,37 +357,42 @@ export default function Mcp() {
       {/* 近 7 日动作调用（真 audit_log 聚合） */}
       <div className="surface-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
         <div className="panel-head" style={{ marginBottom: 10 }}>
-          <span className="panel-title">⚙️ 近 7 日动作调用</span>
-          <span style={{ marginLeft: 8 }} className="pill pill-green">● 真数据</span>
+          <span className="panel-title">{t('actions7d.panelTitle')}</span>
+          <span style={{ marginLeft: 8 }} className="pill pill-green">{t('actions7d.realDataPill')}</span>
           <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>
-            来自 audit_log；每 30s 自动刷新
+            {t('actions7d.subtitle')}
           </span>
         </div>
         {!stats ? (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>加载中…</div>
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>{t('actions7d.loading')}</div>
         ) : stats.actions7d.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
-            近 7 日无动作记录。点一下问答 / 上传 / 规则编辑就有数据了。
+            {t('actions7d.empty')}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead style={{ background: '#f9fafb' }}>
               <tr>
-                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>动作名称</th>
-                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>原 action code</th>
-                <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>7 日调用</th>
-                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>最近</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>{t('actions7d.colName')}</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>{t('actions7d.colCode')}</th>
+                <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>{t('actions7d.colCount')}</th>
+                <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>{t('actions7d.colLast')}</th>
               </tr>
             </thead>
             <tbody>
-              {stats.actions7d.map((a) => (
-                <tr key={a.action} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '6px 10px', fontWeight: 600 }}>{prettifyAction(a.action)}</td>
-                  <td style={{ padding: '6px 10px' }}><code style={{ fontSize: 11, color: 'var(--muted)' }}>{a.action}</code></td>
-                  <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600 }}>{fmtNum(a.count)}</td>
-                  <td style={{ padding: '6px 10px', color: 'var(--muted)' }}>{timeAgo(a.last_at)}</td>
-                </tr>
-              ))}
+              {stats.actions7d.map((a) => {
+                // 已知 action code 走字典翻译；未知 fallback 到原 code
+                const knownLabel = t(`actions7d.actionLabels.${a.action}`, { defaultValue: '' })
+                const display = knownLabel || a.action
+                return (
+                  <tr key={a.action} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '6px 10px', fontWeight: 600 }}>{display}</td>
+                    <td style={{ padding: '6px 10px' }}><code style={{ fontSize: 11, color: 'var(--muted)' }}>{a.action}</code></td>
+                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600 }}>{fmtNum(a.count)}</td>
+                    <td style={{ padding: '6px 10px', color: 'var(--muted)' }}>{timeAgo(a.last_at)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -434,14 +401,14 @@ export default function Mcp() {
       {/* Neo4j Cypher 调试 */}
       <div className="surface-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
         <div className="panel-head" style={{ marginBottom: 10 }}>
-          <span className="panel-title">🕸 Neo4j Cypher 调试</span>
-          <span style={{ marginLeft: 8 }} className="pill">示例模式</span>
+          <span className="panel-title">{t('cypher.panelTitle')}</span>
+          <span style={{ marginLeft: 8 }} className="pill">{t('cypher.samplePill')}</span>
         </div>
         <div style={{
           padding: 10, background: '#fff7e6', border: '1px solid #ffd591',
           borderRadius: 8, fontSize: 12, color: '#874d00', marginBottom: 10,
         }}>
-          📌 当前为示例模式，真实图库尚未接入；执行会返回示例图结果，前端行为与生产一致。
+          {t('cypher.sampleNote')}
         </div>
         <textarea
           value={cypher}
@@ -454,7 +421,7 @@ export default function Mcp() {
         />
         <div style={{ marginTop: 8 }}>
           <button className="btn" disabled={cypherLoading} onClick={() => void handleRunCypher()}>
-            {cypherLoading ? '执行中…' : '执行 Cypher'}
+            {cypherLoading ? t('cypher.running') : t('cypher.run')}
           </button>
         </div>
         {cypherErr && (
@@ -465,7 +432,7 @@ export default function Mcp() {
         {cypherResult && (
           <div style={{ marginTop: 10 }}>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
-              {cypherResult.durationMs}ms · 节点 {cypherResult.nodes.length} 条 / 边 {cypherResult.edges.length} 条
+              {t('cypher.result', { ms: cypherResult.durationMs, nodes: cypherResult.nodes.length, edges: cypherResult.edges.length })}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>

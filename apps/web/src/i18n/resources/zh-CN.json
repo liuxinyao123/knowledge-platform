@@ -1,0 +1,859 @@
+{
+  "common": {
+    "actions": {
+      "create": "创建",
+      "cancel": "取消",
+      "save": "保存",
+      "edit": "编辑",
+      "delete": "删除",
+      "confirm": "确认",
+      "close": "关闭",
+      "back": "返回",
+      "share": "共享",
+      "submit": "提交",
+      "retry": "重试",
+      "search": "搜索",
+      "refresh": "刷新",
+      "open": "打开",
+      "addOne": "+ 加一条"
+    },
+    "states": {
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "creating": "创建中…",
+      "saving": "保存中…",
+      "empty": "暂无数据",
+      "required": "必填",
+      "optional": "选填"
+    },
+    "errors": {
+      "generic": "出错了，请重试",
+      "createFailed": "创建失败",
+      "saveFailed": "保存失败",
+      "deleteFailed": "删除失败",
+      "loadFailed": "加载失败"
+    },
+    "language": {
+      "switchTitle": "切换语言"
+    },
+    "validation": {
+      "atLeast_one": "至少 {{count}} 条",
+      "atMost_one": "最多 {{count}} 条",
+      "atLeastChars": "至少 {{count}} 字",
+      "atMostChars": "最多 {{count}} 字"
+    },
+    "placeholderDash": "—"
+  },
+  "nav": {
+    "brand": "知识中台",
+    "brandShort": "知识中台",
+    "newTaskCta": "去问一问",
+    "sidebarSearchPlaceholder": "搜索任务/知识…",
+    "sectionPrimary": "知识中台",
+    "sectionManage": "管理与数据",
+    "sectionExtra": "辅助工具",
+    "sectionAdmin": "管理端",
+    "tabs": {
+      "qa": "💬 问答",
+      "search": "🔎 检索",
+      "spaces": "🗂 空间",
+      "ingest": "⬆️ 入库",
+      "overview": "🏠 总览",
+      "agent": "🤖 Agent",
+      "governance": "🛡 治理",
+      "assets": "📦 资产",
+      "mcp": "🔌 数据接入"
+    },
+    "labels": {
+      "qa": "问一问",
+      "search": "搜一搜",
+      "spaces": "我的空间",
+      "ingest": "上传与收录",
+      "overview": "运行概览",
+      "insights": "图谱洞察",
+      "knowledgeGraph": "知识图谱",
+      "governance": "内容治理",
+      "assets": "资产目录",
+      "mcp": "数据接入",
+      "agent": "Agent",
+      "notebooks": "笔记本",
+      "eval": "评测中心",
+      "iam": "身份与权限"
+    },
+    "tabsAriaLabel": "知识中台模块",
+    "topbarQuickCreate": "快捷创建（去问一问）",
+    "topbarAssetsBtn": "资产目录"
+  },
+  "auth": {
+    "login": {
+      "title": "知识中台",
+      "subtitle": "登录到你的工作区",
+      "emailLabel": "邮箱",
+      "passwordLabel": "密码",
+      "submit": "登录",
+      "submitting": "登录中…",
+      "errorInvalid": "邮箱或密码不正确",
+      "errorNoSecret": "服务端未配置登录密钥（AUTH_HS256_SECRET 未设）",
+      "errorNetwork": "登录失败"
+    },
+    "userArea": {
+      "changePassword": "改密",
+      "changePasswordTitle": "修改密码",
+      "changePasswordDevTooltip": "DEV 模式不支持改密",
+      "logout": "登出",
+      "logoutTitle": "登出",
+      "devSuffix": "DEV"
+    },
+    "changePasswordModal": {
+      "title": "修改密码",
+      "currentLabel": "当前密码",
+      "newLabel": "新密码",
+      "confirmLabel": "确认新密码",
+      "submit": "保存",
+      "submitting": "保存中…",
+      "cancel": "取消",
+      "errorMismatch": "两次新密码不一致",
+      "errorWrongCurrent": "当前密码错误",
+      "successTitle": "密码已修改"
+    }
+  },
+  "overview": {
+    "title": "运行概览",
+    "subtitle": "先想「我要做什么」：问清楚、找得到、放得进；数字概览给需要盯盘的人看。",
+    "actions": {
+      "askQuestion": "问一个问题",
+      "search": "搜资料",
+      "newSpace": "+ 新建空间",
+      "importKnowledge": "导入知识"
+    },
+    "quickStart": {
+      "skipHeading": "想不起来点哪？从下面选一件最常见的事",
+      "ariaLabel": "快捷入口",
+      "qaTitle": "问一问",
+      "qaDesc": "用自然语言提问，看引用片段与来源，适合「这规定怎么说」「有没有先例」。",
+      "searchTitle": "搜一搜",
+      "searchDesc": "按关键词、标签或语义找文档、纪要、网页摘录，自己定位原文。",
+      "ingestTitle": "上传与收录",
+      "ingestDesc": "把文件、链接或剪贴内容放进可检索的知识库，让后面的人能复用。"
+    },
+    "kpiSection": "空间与数据健康度（管理者、Owner 常看）",
+    "kpi": {
+      "documents": "文档条目",
+      "documentsSub": "含：文档、FAQ、会议纪要、网页",
+      "documentsRecent": "+{{count}} 近7天",
+      "recentDays": "近 7 天",
+      "spaces": "知识空间",
+      "spacesSub": "跨部门共享与私有空间",
+      "spacesPill": "我管理 {{count}}",
+      "ingestPending": "待处理入库",
+      "ingestPendingSub": "切分 / 解析 / 向量化",
+      "ingestProcessing": "处理中",
+      "ingestAllDone": "已全部入库",
+      "anomaly": "异常 / 低质",
+      "anomalySub": "重复、过期、缺字段",
+      "anomalyNeedsReview": "需治理",
+      "anomalyNoIssue": "无问题"
+    },
+    "panels": {
+      "recentUpdates": "最近更新",
+      "myFavorites": "我的收藏",
+      "activeSpaces": "活跃空间 Top5",
+      "goSearch": "去检索 ›",
+      "goSearchPlain": "去检索",
+      "bookPrefix": "书 #{{id}}",
+      "spaceBooksCount": "{{count}} 个知识库"
+    },
+    "empty": {
+      "noDocs": "暂无文档，去导入知识吧",
+      "noFavorites": "还没有收藏的内容，去检索页收藏文档吧",
+      "noShelves": "暂无空间数据"
+    },
+    "errors": {
+      "apiDown": "API 连接失败。请确认 BookStack（:6875）与 qa-service（:3001）已运行，且服务端已配置 BookStack Token。"
+    },
+    "loadFailedHint": "加载失败，稍后重试",
+    "tilesBlocked": "权限不足，无法访问该模块"
+  },
+  "qa": {
+    "title": "问一问",
+    "subtitle": "用一句话描述你的场景；有引用才放心采纳，点右侧可核对原文。",
+    "scopeAll": "检索范围：所有空间",
+    "scopeOnly": "仅限：{{name}}",
+    "spacePillFallback": "空间",
+    "sessions": {
+      "ariaLabel": "问一问：会话与历史",
+      "headTitle": "历史会话",
+      "headHint": "找空间、搜资料请用左侧主菜单；这里只切换本会话的线程列表。",
+      "newSession": "+ 新建会话",
+      "emptyHint": "暂无历史会话。点击上方「+ 新建会话」开始。",
+      "deleteAriaLabel": "删除会话",
+      "deleteConfirm": "删除该会话及其历史？此操作不可撤销。",
+      "defaultTitle": "新会话",
+      "legacyTitle": "我的会话",
+      "groupToday": "今天",
+      "groupWeek": "近 7 天",
+      "groupEarlier": "更早"
+    },
+    "hero": {
+      "h1Main": "基于知识库内容问答",
+      "h1Suffix": "— AI 问答",
+      "subPrimary": "向知识助手提问，获取精准引用答案",
+      "subSecondary": "基于当前空间内文档与向量化内容作答；可配置联网、推理强度与模型。",
+      "hint": "你可以这样问我"
+    },
+    "samples": [
+      "文档「这是一个测试文档.docx」的具体内容是什么？",
+      "如何编辑首页文档中的愿景和目标部分？",
+      "我们现在的知识治理应该从哪些指标开始？",
+      "如何向知识库中上传文档？"
+    ],
+    "bubble": {
+      "thinking": "思考中...",
+      "userLabel": "你",
+      "aiLabel": "知识助手",
+      "expandTrace": "展开检索过程",
+      "collapseTrace": "收起检索过程",
+      "traceFiltered": "检索 {{initial}} 篇 → 保留 {{kept}} 篇",
+      "rewriteHyDe": "触发查询重写：HyDE（假设答案）",
+      "rewriteStepBack": "触发查询重写：Step-Back（泛化）",
+      "errorDefault": "请求失败，请稍后重试。"
+    },
+    "hint": {
+      "empty": "点击上方「示例问题」可快速填入；发送后，对话在上方区域滚动显示。",
+      "active": "Shift + 回车换行；回车直接发送。"
+    },
+    "composer": {
+      "mustCite": "必须引用",
+      "mustCiteTitle": "必须引用：回答必须基于检索结果",
+      "spacePillTitle": "当前限定的检索空间",
+      "removeSpace": "移除空间限定",
+      "inputLabel": "输入问题",
+      "inputPlaceholder": "输入你的问题，例如：「如何降低知识重复率？」",
+      "imageAttached": "🖼 已附图：",
+      "removeImage": "移除",
+      "scopeSelect": "检索范围",
+      "scopeAllOption": "所有空间",
+      "webSearchOn": "联网检索：开（再点关闭）",
+      "webSearchOff": "联网检索：关（点开）",
+      "imageHasTitle": "已附图：{{name}}（点击重新选择）",
+      "imageEmptyTitle": "附图（多模态 QA · Qwen2.5-VL）",
+      "imageTooLarge": "图片过大（{{mb}}MB），上限 6MB",
+      "abortTitle": "终止生成",
+      "abortAria": "终止",
+      "sendTitle": "发送",
+      "sendAria": "发送"
+    },
+    "rightPanel": {
+      "title": "右侧面板",
+      "tabCitations": "引用",
+      "tabCitationsCount": "引用 {{count}}",
+      "tabAssets": "资产目录",
+      "emptyCitations": "提问后将在此处显示引用来源"
+    },
+    "errors": {
+      "network": "网络错误，请稍后重试。",
+      "401": "未登录或登录已过期，请重新登录。",
+      "403": "无权访问问答接口，联系管理员。",
+      "generic": "请求失败。"
+    },
+    "assetPanel": {
+      "sourceLabel": "数据源",
+      "statusUpdated": "状态 {{status}} · 更新 {{time}}",
+      "syncBtn": "从 BookStack 同步页面",
+      "syncing": "同步中…",
+      "refreshLinks": "刷新向量映射",
+      "refreshingLinks": "刷新中…",
+      "enrichSummary": "摘要(10条)",
+      "enriching": "生成中…",
+      "backToList": "← 返回列表",
+      "tabRag": "RAG / 摘要",
+      "tabGraph": "知识图谱",
+      "rag": {
+        "pageId": "BookStack 页面 ID：{{id}}",
+        "chunkCount": "向量片段数：{{count}}",
+        "indexed": "已入索引：{{yes}}",
+        "linkStatus": "向量映射：{{status}}",
+        "summaryStatus": "摘要状态：{{status}}",
+        "noSummary": "（尚无摘要，可由后续预处理管道写入）"
+      },
+      "graph": {
+        "notConnected": "未接入图谱"
+      },
+      "loading": "加载资产…",
+      "empty": "暂无资产，请点击上方同步",
+      "totalLine": "共 {{total}} 条（本页 {{current}}）",
+      "errors": {
+        "loadSources": "加载数据源失败",
+        "loadList": "加载失败",
+        "loadDetail": "加载详情失败",
+        "syncFailed": "同步失败",
+        "refreshLinksFailed": "刷新映射失败",
+        "enrichFailed": "摘要生成失败"
+      },
+      "yes": "是",
+      "no": "否"
+    },
+    "answerContent": {
+      "imageAlt": "答案附图",
+      "loadFailed": "[图片加载失败: {{url}}]"
+    }
+  },
+  "assets": {
+    "title": "资产目录",
+    "subtitle": "数据源 / 文档库 / 在线文档等资产统一视图",
+    "backToOverview": "返回运行概览",
+    "newSource": "+ 新增数据源",
+    "subtabs": {
+      "governance": "知识治理",
+      "assets": "资产目录",
+      "iam": "数据权限"
+    },
+    "search": {
+      "placeholder": "搜索资产名、标签…",
+      "spaceAll": "所有空间",
+      "clear": "清除"
+    },
+    "typeFilters": {
+      "all": "全部",
+      "structured": "结构化",
+      "document": "文件型",
+      "online": "在线文档",
+      "fallbackDash": "—"
+    },
+    "status": {
+      "ok": "正常",
+      "pending": "待索引"
+    },
+    "list": {
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "retry": "重试",
+      "empty": "当前条件下无资产",
+      "clearFilters": "清除筛选"
+    },
+    "card": {
+      "type": "类型",
+      "updated": "更新时间",
+      "scale": "规模",
+      "scaleChunks": "{{count}} 切片",
+      "scaleImagesSuffix": " · {{count}} 图",
+      "deleteTitle": "永久删除该资产（不可恢复）",
+      "deleteAria": "删除资产 {{name}}",
+      "deleteConfirm": "确认删除资产「{{name}}」？\n\n会清除 {{chunks}} 个切片{{imagesPart}}，不可恢复。",
+      "deleteImagesPart": "、{{count}} 张图",
+      "deleteFailed": "删除失败",
+      "deleteFailedAlert": "删除失败：{{msg}}"
+    },
+    "time": {
+      "notIndexed": "未索引",
+      "justNow": "刚刚",
+      "minutes": "{{n}} 分钟前",
+      "hours": "{{n}} 小时前",
+      "days": "{{n}} 天前"
+    },
+    "detail": {
+      "title": "资产详情",
+      "loading": "加载中…",
+      "back": "← 返回列表",
+      "backToList": "返回目录",
+      "permButton": "🔒 权限设置",
+      "permButtonTitle": "打开该资产的权限抽屉（V2 · F-2）",
+      "deleteAssetBtn": "🗑 删除资产",
+      "deleting": "删除中…",
+      "deleteAssetTitle": "永久删除该资产（含切片和图片，不可恢复）",
+      "deleteAssetConfirm": "确认删除资产「{{name}}」？\n\n此操作会：\n  · 从资产目录移除该条目\n  · 清除所有向量切片（{{chunks}} 条）\n  · 清除关联图片（{{images}} 张）\n\n删除后不可恢复。",
+      "deleteFailedAlert": "删除失败：{{msg}}",
+      "tabAssets": "资产列表",
+      "tabRagflow": "RAGFlow 摘要",
+      "tabGraph": "知识图谱",
+      "fields": {
+        "type": "类型",
+        "source": "来源",
+        "spaceId": "空间 ID",
+        "indexedAt": "入库时间",
+        "chunks": "切片数",
+        "images": "图片数",
+        "tags": "标签",
+        "summary": "摘要",
+        "noSummary": "（暂无摘要）"
+      },
+      "banner": {
+        "overview": "资产概览",
+        "metaLine": "类型：{{type}} · 状态：{{status}} · 更新时间：{{time}}",
+        "chunksSuffix": " · 切片 {{count}}",
+        "imagesSuffix": " · 图 {{count}}",
+        "sourceSuffix": " · 来源：{{name}}",
+        "extractor": "提取器：",
+        "chunkBreakdown": "切片分类：",
+        "warningsSummary": "⚠ {{count}} 条警告（悬停查看）",
+        "warningsToggle": "查看 {{count}} 条提取警告",
+        "tagPrefix": "标签：{{tag}}"
+      },
+      "loadFailed": "加载失败"
+    },
+    "graph": {
+      "title": "实体 / 关系图谱",
+      "empty": "暂无图谱数据",
+      "loading": "正在加载知识图谱邻域…",
+      "loadFailed": "加载图谱失败",
+      "nodes": "节点 {{count}}",
+      "edges": "边 {{count}}",
+      "selfDegree": "本资产度 {{n}}",
+      "mockBanner": "📌 Mock 图（schema FK / logical）。Apache AGE 暂无该资产邻域 — 入库 / 问答积累后会自动浮现。",
+      "realBanner": "🧠 真实图谱",
+      "tooltip": {
+        "degree": "{{kindLabel}} · 度数 {{deg}}",
+        "count": " · 计数 {{count}}",
+        "idLabel": "ID："
+      },
+      "kindLabels": {
+        "asset": "资产",
+        "entity": "实体",
+        "source": "数据源",
+        "space": "空间",
+        "tag": "标签",
+        "question": "问题",
+        "template": "模板"
+      },
+      "legend": {
+        "mockEntity": "实体（表）",
+        "mockTemplate": "业务模板",
+        "mockFk": "外键 FK",
+        "mockLogical": "业务关联"
+      }
+    },
+    "ragflow": {
+      "panelTitle": "RAGFlow 状态",
+      "notConnected": "尚未接入 RAGFlow",
+      "previewTitle": "语义摘要预览",
+      "previewMeta": "共 {{total}} 切片 · 当前展示前 10 条",
+      "previewSample": "（示例视图）",
+      "regenerate": "重新生成",
+      "sourceOverview": "数据源概述",
+      "summary": "本资产「{{name}}」隶属于 {{source}}（{{connector}}）；当前已索引 {{chunks}} 个切片，包含 {{images}} 张图片。主题标签：{{tags}}。",
+      "noTags": "（暂无标签）",
+      "unknownSource": "未知来源",
+      "tagSeparator": "、",
+      "pillChunks": "共 {{total}} 切片",
+      "pillType": "类型: {{type}}",
+      "pillUpdated": "最近更新 {{date}}",
+      "chunksHeader": "知识切片（Chunks）",
+      "noChunks": "📭 当前没有可用切片",
+      "chunkPage": "page {{page}}",
+      "vectorized": "已向量化 · {{kind}}"
+    },
+    "chunks": {
+      "empty": "🗂 当前资产没有结构化切片；可能是平文本或图片型，请到「RAGFlow 摘要」看正文",
+      "totalLabel": "共 {{count}} 个切片",
+      "showingPart": "· 显示前 {{shown}} / 共 {{total}} 段",
+      "expand": "展开",
+      "collapse": "收起",
+      "kinds": {
+        "heading": "标题",
+        "paragraph": "段落",
+        "table": "表格",
+        "image_caption": "图注",
+        "generic": "正文"
+      },
+      "cols": {
+        "page": "页",
+        "kind": "类型",
+        "content": "内容",
+        "headingPath": "层级路径"
+      }
+    }
+  },
+  "mcp": {
+    "title": "数据接入层",
+    "subtitle": "MCP 查询层 · 文档访问 Skill 层 · 向量检索与图查询连接状态",
+    "testConn": "测试连接",
+    "testing": "检测中…",
+    "connOk": "● qa-service 正常",
+    "connError": "● 连接失败",
+    "errors": {
+      "qaServiceDown": "qa-service 未响应（:3001）",
+      "connectFailed": "连接失败",
+      "queryFailed": "查询失败",
+      "loadFailed": "加载失败",
+      "statsShape": "/api/mcp/stats 返回结构不符"
+    },
+    "kpi": {
+      "assetsLabel": "接入资产",
+      "assetsDetail": "总资产数（已合并不计）",
+      "chunksLabel": "向量切片",
+      "chunksDetail": "已嵌入 / 总 {{total}}",
+      "ingest24hLabel": "近 24h 入库",
+      "ingest24hDetail": "近 7 日共 {{total}}",
+      "qa24hLabel": "近 24h 问答",
+      "qa24hDetail": "上次 {{ago}}",
+      "loading": "加载中…"
+    },
+    "sources": {
+      "panelTitle": "📚 非结构化数据源 · BookStack + pgvector",
+      "realDataPill": "● 真数据",
+      "assetsCount": "接入资产数",
+      "chunksEmbedded": "已嵌入切片",
+      "totalChunks": "/ {{total}} 总切片",
+      "lastIndex": "最近索引",
+      "ragNote": "📌 当前向量检索走 BookStack 代理 + pgvector 嵌入的原生路径，语义上与 RAGFlow 的检索层一致。可在后续版本无感切换到 RAGFlow 产品化编排层。"
+    },
+    "tools": {
+      "panelTitle": "🛠 MCP Tools 一览",
+      "list": {
+        "search_knowledge": "跨书架语义检索，返回文档片段与来源。",
+        "query_pg_asset": "结构化资产目录与元数据（PG + pgvector）。",
+        "debug_sql": "只读 SELECT 调试，带行级过滤与字段脱敏。",
+        "graph_cypher": "Cypher 查询 · 当前为示例模式（真实图库尚未接入，前端组件行为一致）。"
+      }
+    },
+    "sql": {
+      "panelTitle": "🧪 结构化 SQL 调试",
+      "panelSub": "只读 SELECT · 含授权链路演示",
+      "run": "执行",
+      "running": "执行中…",
+      "authPass": "✓ 授权通过",
+      "authBlock": "✗ 授权拦截",
+      "rowFilter": "行级过滤：",
+      "maskedFields": "脱敏字段："
+    },
+    "actions7d": {
+      "panelTitle": "⚙️ 近 7 日动作调用",
+      "realDataPill": "● 真数据",
+      "subtitle": "来自 audit_log；每 30s 自动刷新",
+      "loading": "加载中…",
+      "empty": "近 7 日无动作记录。点一下问答 / 上传 / 规则编辑就有数据了。",
+      "colName": "动作名称",
+      "colCode": "原 action code",
+      "colCount": "7 日调用",
+      "colLast": "最近",
+      "actionLabels": {
+        "qa_ask": "知识问答（调用）",
+        "qa_answered": "知识问答（完成）",
+        "qa_intent_classified": "意图识别",
+        "ingest_done": "文档入库",
+        "ingest_failed": "入库失败",
+        "ingest_started": "开始解析",
+        "bookstack_page_create": "BookStack 建页",
+        "asset_register": "资产登记",
+        "login_success": "登录成功",
+        "login_failed": "登录失败",
+        "logout": "登出",
+        "user_register": "新建用户",
+        "user_updated": "用户更新",
+        "user_deleted": "用户删除",
+        "user_password_changed": "用户自助改密",
+        "user_password_reset_by_admin": "管理员重置密码",
+        "acl_rule_create": "新建 ACL 规则",
+        "acl_rule_update": "改 ACL 规则",
+        "acl_rule_delete": "删 ACL 规则"
+      }
+    },
+    "cypher": {
+      "panelTitle": "🕸 Neo4j Cypher 调试",
+      "samplePill": "示例模式",
+      "sampleNote": "📌 当前为示例模式，真实图库尚未接入；执行会返回示例图结果，前端行为与生产一致。",
+      "run": "执行 Cypher",
+      "running": "执行中…",
+      "result": "{{ms}}ms · 节点 {{nodes}} 条 / 边 {{edges}} 条"
+    },
+    "timeAgo": {
+      "justNow": "刚刚",
+      "minutes": "{{n}} 分钟前",
+      "hours": "{{n}} 小时前",
+      "days": "{{n}} 天前"
+    }
+  },
+  "spaces": {
+    "title": "我的空间",
+    "subtitle": "先选知识库，再在右侧看文档与成员。左侧按「我的 / 团队共享 / 我订阅的」整理。",
+    "backToOverview": "返回运行概览",
+    "newSpace": "+ 新建知识库",
+    "importKnowledge": "导入知识",
+    "detailTitleFallback": "空间详情",
+    "myRolePrefix": "我是",
+    "roleLabels": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "editor": "编辑者",
+      "viewer": "查看者"
+    },
+    "loading": "加载中…",
+    "selectHint": "从左侧选一个空间，或点「新建空间」",
+    "list": {
+      "loading": "加载中…",
+      "empty": "还没有任何空间",
+      "newBtn": "+ 新建知识库",
+      "groupOwned": "我的",
+      "groupShared": "团队共享",
+      "groupSubscribed": "我订阅的",
+      "search": "搜索空间…",
+      "private": "私有",
+      "team": "团队",
+      "public": "公开"
+    },
+    "info": {
+      "title": "空间信息",
+      "fieldName": "名称",
+      "fieldDescription": "描述",
+      "fieldVisibility": "可见性",
+      "fieldOwner": "所有者",
+      "fieldCreated": "创建时间",
+      "fieldUpdated": "更新时间",
+      "edit": "编辑",
+      "delete": "删除空间",
+      "deleteConfirm": "确认删除空间「{{name}}」？此操作不可恢复。"
+    },
+    "members": {
+      "title": "成员与权限",
+      "invite": "+ 邀请成员",
+      "loading": "加载中…",
+      "empty": "暂无成员",
+      "colSubject": "成员",
+      "colRole": "角色",
+      "colAddedAt": "加入时间",
+      "colActions": "操作",
+      "subjectUser": "用户",
+      "subjectTeam": "团队",
+      "removeBtn": "移除",
+      "removeConfirm": "确认移除「{{name}}」？",
+      "saveRole": "保存",
+      "saveFailed": "保存失败",
+      "addUser": "添加用户",
+      "addTeam": "添加团队",
+      "addPlaceholder": "输入邮箱或团队 id",
+      "submit": "添加"
+    },
+    "directory": {
+      "title": "目录结构",
+      "browseTree": "浏览资产树",
+      "attachSource": "+ 关联数据源",
+      "empty": "尚未关联任何资产",
+      "loading": "加载中…",
+      "removeAsset": "移除",
+      "removeConfirm": "确认从空间移除「{{name}}」？资产本身不会删除。"
+    },
+    "create": {
+      "title": "新建空间",
+      "fieldName": "名称",
+      "namePlaceholder": "如：行政内控空间",
+      "fieldSlug": "slug（URL 友好，小写 + 数字 + 短横线）",
+      "fieldDescription": "描述（可选）",
+      "descPlaceholder": "这个空间用来放什么？",
+      "fieldVisibility": "可见范围",
+      "visibilityOrg": "组织内",
+      "visibilityPrivate": "私有",
+      "ownerNote": "创建后当前账号自动成为所有者；组织内空间默认对所有登录用户可见。",
+      "submit": "创建",
+      "submitting": "创建中…",
+      "errorRequired": "名称不能为空",
+      "errorSlug": "slug 必须小写字母/数字/短横线"
+    },
+    "editModal": {
+      "title": "编辑空间",
+      "submit": "保存",
+      "submitting": "保存中…"
+    },
+    "createSource": {
+      "title": "新建数据源",
+      "fieldName": "数据源名称",
+      "fieldType": "类型",
+      "fieldConnector": "连接器",
+      "fieldConfig": "配置（JSON）",
+      "submit": "创建",
+      "submitting": "创建中…",
+      "errorRequired": "名称必填"
+    },
+    "attachSource": {
+      "title": "关联已有数据源",
+      "search": "搜索数据源…",
+      "empty": "没有可关联的数据源",
+      "alreadyAttached": "已在此空间",
+      "attach": "关联",
+      "attaching": "关联中…",
+      "loading": "加载中…",
+      "loadFailed": "加载失败"
+    },
+    "preview": {
+      "title": "预览",
+      "selectAsset": "在左侧选一个资产以预览",
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "openOriginal": "↗ 打开原文",
+      "noContent": "（无可预览内容）",
+      "tabAssets": "资产",
+      "tabContent": "内容",
+      "tabRag": "RAG"
+    },
+    "sourceTreePage": {
+      "title": "{{name}} · 资产树",
+      "loading": "加载中…",
+      "loadFailed": "加载失败",
+      "back": "← 返回空间",
+      "empty": "尚无任何资产"
+    },
+    "errors": {
+      "loadFailed": "加载失败",
+      "deleteFailed": "删除失败",
+      "saveFailed": "保存失败"
+    }
+  },
+  "search": {
+    "title": "统一检索",
+    "subtitle": "全文 / 标签 / 作者 / 时间过滤，支持预览命中片段",
+    "backToOverview": "返回总览",
+    "heroPlaceholder": "搜索：例如「MCP 接入」「增长复盘」「治理指标」",
+    "filters": {
+      "all": "全部空间",
+      "doc": "文档",
+      "minutes": "会议纪要",
+      "faq": "FAQ",
+      "web": "网页"
+    },
+    "panels": {
+      "results": "结果",
+      "preview": "预览",
+      "openOriginal": "↗ 打开原文"
+    },
+    "states": {
+      "promptSearch": "输入关键词开始搜索",
+      "searching": "搜索中…",
+      "noMatch": "没有匹配结果。试试更宽泛的关键词或移除筛选条件。",
+      "selectResult": "在左侧选择一个结果以预览"
+    },
+    "preview": {
+      "typeLabel": "类型：{{label}}",
+      "bookPrefix": "书 #{{id}}",
+      "chapterPrefix": "章 #{{id}}",
+      "favorited": "已收藏",
+      "favorite": "收藏",
+      "copyRef": "⛓ 复制引用",
+      "copySuccess": "已复制引用",
+      "copyFail": "复制失败（剪贴板权限？）",
+      "noSnippet": "（无内容片段）",
+      "tags": "标签",
+      "errorBlob": "（此文档因入库异常暂不可预览）"
+    },
+    "typeLabels": {
+      "bookshelf": "书架",
+      "book": "图书",
+      "chapter": "章节",
+      "page": "页面"
+    }
+  },
+  "components": {
+    "confidence": {
+      "high": "高相关",
+      "medium": "中相关",
+      "weak": "弱相关",
+      "none": "几无相关",
+      "tooltip": "相关性分数：{{score}}"
+    },
+    "rewriteBadge": {
+      "tooltip": "系统用 fast LLM 把你的问题改写成自洽问句以提高检索命中"
+    },
+    "markdown": {
+      "copyCode": "复制代码",
+      "copied": "已复制",
+      "imageLoadFailed": "图片加载失败"
+    }
+  },
+  "notebook": {
+    "list": {
+      "title": "笔记本",
+      "subtitle": "为每个研究任务建一个 notebook，挑入资料后做 scope 内的对话与简报",
+      "newButton": "+ 新建笔记本",
+      "backToOverview": "返回总览",
+      "ownedHeading": "我的（{{count}}）",
+      "sharedHeading": "共享给我的（{{count}}）",
+      "emptyOwned": "还没有笔记本，点右上 + 新建笔记本 开始",
+      "emptyShared": "还没有人把笔记本共享给你",
+      "deleteConfirm": "删除笔记本「{{name}}」？所有资料、对话、简报都会被一并删除。",
+      "untitled": "（未命名笔记本 · #{{id}}）",
+      "accessOwner": "我的",
+      "accessEditor": "可编辑",
+      "accessReader": "只读"
+    },
+    "card": {
+      "sources": "{{count}} 资料",
+      "messages": "{{count}} 消息"
+    },
+    "createModal": {
+      "title": "新建笔记本",
+      "templateSection": "选择模板（可选）",
+      "createMyTemplate": "+ 创建我的模板",
+      "blankIcon": "📄",
+      "blankLabel": "空白",
+      "blankDesc": "从零开始",
+      "nameLabel": "名称",
+      "namePlaceholder": "如：举升门温度补偿调研",
+      "descLabel": "描述（选填）",
+      "descPlaceholder": "这个笔记本要解决什么问题",
+      "errors": {
+        "nameRequired": "请输入名称"
+      }
+    },
+    "templateOption": {
+      "sourceMine": "我的",
+      "sourceCommunity": "社区"
+    },
+    "templateModal": {
+      "createTitle": "+ 创建我的模板",
+      "editTitle": "✎ 编辑模板",
+      "fieldLabel": "名称",
+      "fieldLabelHint": "≤ 10 字",
+      "fieldLabelPlaceholder": "如：周报草稿",
+      "fieldIcon": "图标",
+      "fieldIconHint": "emoji，1-2 字符",
+      "fieldDescription": "描述",
+      "fieldDescriptionHint": "≤ 60 字",
+      "fieldDescriptionPlaceholder": "一句话说这个模板用来干嘛",
+      "fieldHint": "资料提示",
+      "fieldHintHint": "≤ 40 字",
+      "fieldHintPlaceholder": "如：上传周会议纪要 / 项目状态文档",
+      "fieldKinds": "推荐生成",
+      "fieldKindsHint": "0-3 个",
+      "fieldQuestions": "起手提问",
+      "fieldQuestionsHint": "1-3 条，每条 ≤ 50 字",
+      "questionPlaceholder": "第 {{index}} 条...",
+      "removeQuestion": "删除第 {{index}} 条",
+      "errors": {
+        "labelMaxChars": "最多 10 字",
+        "iconMaxChars": "最多 2 字符",
+        "descriptionMaxChars": "最多 60 字",
+        "hintMaxChars": "最多 40 字",
+        "kindsMax": "最多 3 个",
+        "questionsRange": "{{min}}-{{max}} 条",
+        "questionMaxChars": "每条最多 50 字"
+      }
+    },
+    "myTemplateActions": {
+      "edit": "编辑",
+      "delete": "删除",
+      "deleteConfirm": "删除模板「{{label}}」？\n\n已使用此模板的 notebook 不会受影响（template_id 仍保留）。"
+    },
+    "templateHint": {
+      "titleSuffix": "模板",
+      "closeButton": "不再显示这条提示（per-notebook 记忆）",
+      "closeButtonAriaLabel": "关闭模板提示",
+      "recommendedKindsLabel": "推荐生成",
+      "starterQuestionsLabel": "起手提问",
+      "kindTooltip": "触发生成 {{kind}}（去 Studio 面板看进度）",
+      "starterTooltip": "点击预填到下方输入框"
+    },
+    "detail": {
+      "clearChat": "清空对话",
+      "clearChatConfirm": "清空当前对话？所有消息会被删除。",
+      "shareButton": "🔗 共享",
+      "backButton": "← 返回",
+      "invalidId": "非法 notebook id",
+      "actionToastClose": "关闭提示",
+      "triggerArtifactFailed": "触发 {{kind}} 失败：{{message}}",
+      "noSourcesError": "notebook 无任何 source；请先添加资料",
+      "columns": {
+        "sources": "资料",
+        "chat": "对话",
+        "studio": "Studio"
+      }
+    }
+  }
+}

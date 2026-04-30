@@ -29,15 +29,18 @@ export function extractCondenseRewrite(steps: readonly Step[]): { from: string; 
   return { from: m[1], to: m[2] }
 }
 
+import { useTranslation } from 'react-i18next'
+
 interface Props {
   from: string
   to: string
 }
 
 export default function RewriteBadge({ from, to }: Props) {
+  const { t } = useTranslation('components')
   return (
     <div
-      title="系统用 fast LLM 把你的问题改写成自洽问句以提高检索命中"
+      title={t('rewriteBadge.tooltip')}
       style={{
         display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6,
         padding: '6px 10px', background: '#eff6ff', border: '1px solid #bfdbfe',
