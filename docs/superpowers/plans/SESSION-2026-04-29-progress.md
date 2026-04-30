@@ -1,12 +1,55 @@
 # Session Progress · 2026-04-29 → 2026-04-30
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute + archive** + 顺手清 N-006 UI 债 + Detail.tsx UX bug fix → **落地 N-008 Execute + archive**
-> 下一站待选：D-002.7 重新设计 factual_lookup prompt / D-003 评测集扩到 60 case / N-008 macOS 真机 V-2..V-6 验收
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute + archive** + 顺手清 N-006 UI 债 + Detail.tsx UX bug fix → **落地 N-008 Execute + archive** → **i18n 基础设施 + Notebook 模块全量国际化**
+> 下一站待选：i18n P1 模块（Layout/Login/Overview/QA）/ D-002.7 重新设计 factual_lookup prompt / D-003 评测集扩到 60 case / N-008 macOS 真机 V-2..V-6 验收
 
 ---
 
 ## 本次完成（按提交分组）
+
+### Commit ⑮ · i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit 43da800）
+
+应用首次接入 i18n。
+
+**新增**：
+- `apps/web/src/i18n/index.ts`（~80 行）—— i18next init + LanguageDetector + fallback 链
+- `apps/web/src/i18n/resources/{zh-CN,en,ja,ko,vi}.json` —— zh/en 全量，ja/ko/vi 骨架
+- `apps/web/src/i18n/README.md` —— 用法 + 添加 key / 添加语言 + P0..P4 路线图 + 已知 limitation
+- `apps/web/src/i18n/i18n-modules.d.ts` —— ambient stub，让沙箱无 deps 也能 tsc
+- `apps/web/src/components/LanguageSwitcher.tsx` —— Topbar 下拉切换 widget
+
+**修改**：
+- `apps/web/package.json` —— 加 react-i18next ^15.1.0 / i18next ^23.16.0 / i18next-browser-languagedetector ^8.0.0
+- `apps/web/src/main.tsx` —— `import './i18n'`
+- `apps/web/src/components/Layout.tsx` —— Topbar 接 LanguageSwitcher
+- Notebook 模块 5 个组件（index.tsx / Detail.tsx / TemplateHintCard.tsx / CreateTemplateModal.tsx / MyTemplateActions.tsx）—— 全部硬编码中文 → `t()`，插值 + plural 支持
+
+**支持语言**：
+- zh-CN（默认源语言）✅
+- en（全量翻译 Notebook 模块）✅
+- ja / ko / vi（骨架，fallback ja/ko/vi → en → zh-CN）
+
+**激活步骤（用户 macOS）**：
+
+```bash
+cd ~/Git/knowledge-platform
+pnpm install        # 装新 deps
+pnpm --filter web dev
+```
+
+**沙箱验证**：tsc apps/web exit 0（用 ambient stub；pnpm install 后真类型覆盖）
+
+**已知 limitation（README P3..P4 列出）**：
+- system 模板 label / desc / starterQuestions 仍是 DB 里的中文（数据层 i18n 待做）
+- 后端错误信息透传中文原文
+- window.confirm 浏览器原生按钮跟系统语言
+
+**后续 session 候选**：
+- P1: Layout / KnowledgeTabs / Login / Overview / QA
+- P2: Search / KG / Agent / Governance / Spaces / Ingest / Assets / Mcp
+- P3: Notebook 子组件深入 + system 模板数据层 i18n + 后端错误归一化
+- P4: ja/ko/vi 翻译填充
 
 ### Commit ⑭ · N-008 用户自定义模板 Execute + archive（2026-04-30，B 工作流 B-3..B-5）
 
@@ -341,6 +384,7 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #73 | **i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit ⑮ 43da800）** |
 | #72 | **N-008 用户自定义模板 Execute + archive（B 工作流 B-3..B-5，2026-04-30，commit ⑭）** |
 | #71 | **N-007 archive sign-off（B 工作流 B-5，2026-04-30）** |
 | #70 | NotebookDetail UX bug fix: setErr 拆分（C 工作流，commit 7ff13ae）|
@@ -362,6 +406,11 @@ must_pass: 5/5（V-3 三跑稳定）
 ---
 
 ## 待办（下次会话开始时选一个）
+
+### 选项 A'''' · i18n P1 模块迁移（C 工作流，~1.5 小时）
+**做**：把 i18n 推到下一个优先级模块。`apps/web/src/i18n/README.md` P1 列：Layout / KnowledgeTabs / sidebar nav / Login / Overview / QA
+**前置**：用户先 `pnpm install` 激活 react-i18next 等 deps；然后挑哪个模块先做（建议 Layout 优先，影响所有页面）
+**为啥重要**：现在只有 Notebook 是双语；其他页面切到 en 时仍是中文，体验断裂
 
 ### 选项 A''' · N-008 macOS 真机验收（V-2..V-6，~15 分钟）
 **做**：在 macOS 上点一遍 N-008 UI 流程
@@ -439,7 +488,16 @@ must_pass: 5/5（V-3 三跑稳定）
 - `6d7b9d6` feat(web): TemplateHintCard 视觉重写（C 工作流，commit ⑪）
 - `7ff13ae` fix(web): NotebookDetail 错误状态拆分（C 工作流，commit ⑫）
 - `fc427f4` docs: N-007 archive sign-off + V-* 全过（B-5，commit ⑬）
-- `<n008 commit>` feat(notebook): N-008 用户自定义模板 Execute + archive（B-3..B-5，commit ⑭，本次新增）
+- `dde115d` feat(notebook): N-008 用户自定义模板 Execute + archive（commit ⑭）
+- `43da800` feat(web): i18n 基础设施 + Notebook 模块全量国际化（C 工作流，commit ⑮，本次新增）
+
+激活 i18n（用户 macOS 必跑）:
+
+```bash
+cd ~/Git/knowledge-platform
+pnpm install   # 装 react-i18next + i18next + i18next-browser-languagedetector
+pnpm --filter web dev
+```
 
 随时 push：
 
