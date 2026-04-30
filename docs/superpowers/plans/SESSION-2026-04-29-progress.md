@@ -1,12 +1,49 @@
-# Session Progress · 2026-04-29
+# Session Progress · 2026-04-29 → 2026-04-30
 
 > 分支：`feat/rag-followup-condensation`
-> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute（B-3）**（含 cleanup commit + 8 旧 commit 已在远程的发现）
-> 下一站待选：N-007 V-1..V-8 macOS 本地验证 → archive / N-008 Execute（前置 N-007 verified）/ D-002.7 重新设计 factual_lookup prompt
+> 上下文：从 D-003 baseline 3 LLM 截断疑案 → 顺出 SSE race bug → 推进 D-002.2 → 收口 D-003 评测器 → 落地 D-002.3 multi-tool → 加 D-002.4 majority-of-N 评测器 → 修 D-002.5 v2-A V3D 语义筛 → 探索 D-002.6 v1 factual_lookup prompt（探索归零，default off）→ 锁 N-007/N-008 spec → **落地 N-007 Execute（B-3）+ V-* 全过 + archive（B-5）** + 顺手清 N-006 UI 债 + Detail.tsx UX bug fix
+> 下一站待选：N-008 Execute（B 工作流，前置 N-007 已 verified）/ D-002.7 重新设计 factual_lookup prompt
 
 ---
 
 ## 本次完成（按提交分组）
+
+### Commit ⑬ · N-007 archive sign-off（2026-04-30，B 工作流 B-5 Archive）
+**移动**：`docs/superpowers/specs/notebook-public-templates/` → `docs/superpowers/archive/notebook-public-templates/`
+**修改**：`openspec/changes/notebook-public-templates/tasks.md` —— B-3..B-5 全打勾 + 标 V-* 完成日期
+
+V-* 验证完成（用户 macOS Chrome console fetch + DevTools 实测）：
+- META auth 200 + dev_bypass=false（真 PG）
+- V-3 GET /templates 6 + 全 source=system + 6 个 NotebookTemplateId 全对
+- V-4 POST template_id=research_review 201 + id=5 成功
+- V-5 POST template_id=foo_bar 400 + "invalid template_id: foo_bar (不存在或对当前用户不可见)"
+- V-6 前端创建 notebook + TemplateHintCard 渲染（截图为证）
+- V-7 vitest 96/96 / V-8 tsc 双向 exit 0
+- PT-7/PT-8 DB CHECK 真实 INSERT 验证：合资跳过（DDL 写对了 + vitest 文本守卫已覆盖 SQL 'system', NULL 写法）
+
+### Commit ⑫ · NotebookDetail UX bug fix（commit 7ff13ae，C 工作流）
+**修改**：`apps/web/src/knowledge/Notebooks/Detail.tsx`（+41 / -7）
+
+N-006 时 onTriggerArtifact 失败调 `setErr`，跟页面加载失败共用一个 state，chip 触发的 400 (notebook 无 source) 会把页面顶部标题变"加载失败"——用户实测踩到。
+
+修法：
+- 拆 `loadErr` / `actionErr` 两独立 state
+- `loadErr` 才染红顶部标题 + 红色错误条（语义：整页加载失败）
+- `actionErr` 走琥珀色提示条 + 关闭按钮（语义：一次操作失败，页面其它部分仍可用）
+- 优先取后端 `response.data.error` 中文消息
+
+零回归：tsc apps/web exit 0。**不在 N-007 范围**，是 N-006 留的 UX 债。
+
+### Commit ⑪ · TemplateHintCard 视觉重写（commit 6d7b9d6，C 工作流）
+**修改**：`apps/web/src/knowledge/Notebooks/TemplateHintCard.tsx`（+187 / -61）
+
+N-006 用蓝色 `#eff6ff/#bfdbfe` 硬编码、起手问题做成全宽 button 像通知条——用户拍："这 UI 太丑了"。重写：
+- 配色全部走 design token：`var(--p, #6C47FF)` 主紫 / `var(--text)` / `var(--muted)` / `var(--border)`；卡片底用 6% alpha 主紫淡填充，边框用 22% alpha
+- 标题区：emoji 18px 单独大一号 + 模板名 14px 600 主紫色 + 关闭按钮单独 24×24 hover 浮现
+- 推荐生成 / 起手提问统一 chip 样式：白底 + 主紫边 + hover 主紫填充 / 白文字
+- section 改成横向 label(52px) + chip 行布局，不再独占一行
+
+API 不变：`Props.templateId: string`，Detail.tsx 调用方零改动。零回归：tsc apps/web exit 0。**不在 N-007 范围**，是 N-006 视觉债。
 
 ### Commit ⑩ · N-007 公共模板池 Execute（B 工作流 B-3 Execute；commit 36266e4）
 **新增**：`apps/qa-service/src/migrations/002-notebook-template-table.sql`
@@ -268,6 +305,9 @@ must_pass: 5/5（V-3 三跑稳定）
 
 | ID | 内容 |
 |---|---|
+| #71 | **N-007 archive sign-off（B 工作流 B-5，2026-04-30）** |
+| #70 | NotebookDetail UX bug fix: setErr 拆分（C 工作流，commit 7ff13ae）|
+| #69 | TemplateHintCard 视觉重写（C 工作流，commit 6d7b9d6）|
 | #68 | **N-007 公共模板池 Execute（B 工作流 B-3，commit 36266e4）** |
 | #67 | cleanup: 删除 dangling factual-lookup-refusal-fix specs/ 副本（commit 5c16aa9）|
 | #66 | **N-007 + N-008 specs（B 工作流 Explore + Lock 阶段）** |
@@ -286,7 +326,20 @@ must_pass: 5/5（V-3 三跑稳定）
 
 ## 待办（下次会话开始时选一个）
 
-### 选项 A' · N-007 V-1..V-8 macOS 验证 + B-5 archive（~30 分钟）
+### 选项 A'' · N-008 用户自定义模板 Execute（B 工作流，~1 小时）
+**做**：基于 N-007 已 verified 的 schema 实现 4 个 CRUD API + CreateTemplateModal + MyTemplateActions hover 按钮 + source 角标 + env 守卫
+**前置**：N-007 已 archive ✅；spec 已 lock 在 `openspec/changes/notebook-user-templates/`
+**为啥重要**：把模板系统从"管理员配置"扩成"用户共创"
+
+### 选项 B · D-002.7 重新设计 factual_lookup prompt（B 工作流，~1 小时）
+**做**：基于 D-002.6 v1 反直觉发现重新设计严格 prompt（few-shot / chain-of-extract / system-user 解耦三选一）
+**期望**：sop-数值 keywords 2/3→3/3 + pattern_type 也 ≥ 2/3
+
+### 选项 E · D-003 评测集扩到 60 case（C 工作流，~45 分钟手动）
+**做**：当前 15 case 起步集 → 按 doc_type × intent × pattern 矩阵补全到 60
+**前置**：需要更多 doc 入库（presentation_pptx / table_xlsx / short_news_md 三个低 case 数 doc_type）
+
+### ~~选项 A' · N-007 V-1..V-8 macOS 验证 + B-5 archive~~（已做，2026-04-30）
 **做**：在 macOS 本地真 PG 跑 migration / seed / API e2e 验证；通过后 mv specs → archive
 **前置**：commit 36266e4 已落地，等 push（cleanup 5c16aa9 也一起）
 **步骤**：
@@ -336,11 +389,20 @@ must_pass: 5/5（V-3 三跑稳定）
 
 **已在 origin**（commit ①..⑧，分支起点）：D-003 jsonl + SSE 修复 / D-002.2 kb_meta 路由 / D-002.3 multi-tool / D-002.4 majority-of-N / D-002.5 V3D 语义筛 / D-002.6 v1 探索归零 / N-007+N-008 specs lock。
 
-**本地待 push**（2 条）：
+**本地待 push**（2026-04-30 当前 5 条）：
 - `5c16aa9` chore: 删除 dangling factual-lookup-refusal-fix specs/ 副本（commit ⑨）
 - `36266e4` feat(notebook): N-007 公共模板池 Execute (B 工作流 B-3)（commit ⑩）
+- `b44cb95` docs(session): N-007 Execute 进度归档（包在第一次更新内）
+- `6d7b9d6` feat(web): TemplateHintCard 视觉重写（C 工作流，commit ⑪）
+- `7ff13ae` fix(web): NotebookDetail 错误状态拆分（C 工作流，commit ⑫）
+- `<archive commit>` docs: N-007 archive sign-off + tasks 全打勾（B-5，commit ⑬，本次新增）
 
-下次 macOS 会话第一件事：`git push origin feat/rag-followup-condensation`，然后做选项 A' V-1..V-8。
+随时 push：
+
+```bash
+cd ~/Git/knowledge-platform
+git push origin feat/rag-followup-condensation
+```
 
 (旧版 4 条 commit 脚本如下：)
 
